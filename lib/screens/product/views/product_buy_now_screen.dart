@@ -6,7 +6,6 @@ import 'package:shop/components/network_image_with_loader.dart';
 import 'package:shop/screens/product/views/added_to_cart_message_screen.dart';
 import 'package:shop/screens/product/views/components/product_list_tile.dart';
 import 'package:shop/screens/product/views/location_permission_store_availability_screen.dart';
-import 'package:shop/screens/product/views/size_guide_screen.dart';
 
 import '../../../constants.dart';
 import 'components/product_quantity.dart';
@@ -18,7 +17,7 @@ class ProductBuyNowScreen extends StatefulWidget {
   const ProductBuyNowScreen({super.key});
 
   @override
-  _ProductBuyNowScreenState createState() => _ProductBuyNowScreenState();
+  State<ProductBuyNowScreen> createState() => _ProductBuyNowScreenState();
 }
 
 class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
@@ -41,7 +40,9 @@ class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(
-                horizontal: defaultPadding / 2, vertical: defaultPadding),
+              horizontal: defaultPadding / 2,
+              vertical: defaultPadding,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -52,8 +53,13 @@ class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
                 ),
                 IconButton(
                   onPressed: () {},
-                  icon: SvgPicture.asset("assets/icons/Bookmark.svg",
-                      color: Theme.of(context).textTheme.bodyLarge!.color),
+                  icon: SvgPicture.asset(
+                    "assets/icons/Bookmark.svg",
+                    colorFilter: ColorFilter.mode(
+                      Theme.of(context).textTheme.bodyLarge!.color!,
+                      BlendMode.srcIn,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -113,21 +119,6 @@ class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
                   ),
                 ),
                 SliverPadding(
-                  padding: const EdgeInsets.symmetric(vertical: defaultPadding),
-                  sliver: ProductListTile(
-                    title: "Size guide",
-                    svgSrc: "assets/icons/Sizeguid.svg",
-                    isShowBottomBorder: true,
-                    press: () {
-                      customModalBottomSheet(
-                        context,
-                        height: MediaQuery.of(context).size.height * 0.9,
-                        child: const SizeGuideScreen(),
-                      );
-                    },
-                  ),
-                ),
-                SliverPadding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: defaultPadding),
                   sliver: SliverToBoxAdapter(
@@ -141,7 +132,8 @@ class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
                         ),
                         const SizedBox(height: defaultPadding / 2),
                         const Text(
-                            "Select a size to check store availability and In-Store pickup options.")
+                          "Select a size to check store availability and In-Store pickup options.",
+                        ),
                       ],
                     ),
                   ),
@@ -156,16 +148,18 @@ class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
                       customModalBottomSheet(
                         context,
                         height: MediaQuery.of(context).size.height * 0.92,
-                        child: const LocationPermissonStoreAvailabilityScreen(),
+                        child:
+                            const LocationPermissonStoreAvailabilityScreen(),
                       );
                     },
                   ),
                 ),
                 const SliverToBoxAdapter(
-                    child: SizedBox(height: defaultPadding))
+                  child: SizedBox(height: defaultPadding),
+                ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );

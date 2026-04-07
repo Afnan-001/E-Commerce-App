@@ -98,9 +98,7 @@ class ProfileScreen extends StatelessWidget {
             svgSrc: "assets/icons/Notification.svg",
             title: "Notification",
             trilingText: "Off",
-            press: () {
-              Navigator.pushNamed(context, enableNotificationScreenRoute);
-            },
+            press: () {},
           ),
           ProfileMenuListTile(
             text: "Preferences",

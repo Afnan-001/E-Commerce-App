@@ -4,10 +4,10 @@ import 'package:shop/route/screen_export.dart';
 
 import '../../../../constants.dart';
 
-// For preview
 class CategoryModel {
   final String name;
-  final String? svgSrc, route;
+  final String? svgSrc;
+  final String? route;
 
   CategoryModel({
     required this.name,
@@ -19,15 +19,18 @@ class CategoryModel {
 List<CategoryModel> demoCategories = [
   CategoryModel(name: "All Categories"),
   CategoryModel(
-      name: "On Sale",
-      svgSrc: "assets/icons/Sale.svg",
-      route: onSaleScreenRoute),
-  CategoryModel(name: "Man's", svgSrc: "assets/icons/Man.svg"),
-  CategoryModel(name: "Woman’s", svgSrc: "assets/icons/Woman.svg"),
+    name: "Grooming",
+    svgSrc: "assets/icons/Sale.svg",
+    route: discoverScreenRoute,
+  ),
+  CategoryModel(name: "Food", svgSrc: "assets/icons/Man.svg"),
+  CategoryModel(name: "Accessories", svgSrc: "assets/icons/Woman.svg"),
   CategoryModel(
-      name: "Kids", svgSrc: "assets/icons/Child.svg", route: kidsScreenRoute),
+    name: "Care",
+    svgSrc: "assets/icons/Child.svg",
+    route: discoverScreenRoute,
+  ),
 ];
-// End For Preview
 
 class Categories extends StatelessWidget {
   const Categories({
@@ -44,9 +47,9 @@ class Categories extends StatelessWidget {
             demoCategories.length,
             (index) => Padding(
               padding: EdgeInsets.only(
-                  left: index == 0 ? defaultPadding : defaultPadding / 2,
-                  right:
-                      index == demoCategories.length - 1 ? defaultPadding : 0),
+                left: index == 0 ? defaultPadding : defaultPadding / 2,
+                right: index == demoCategories.length - 1 ? defaultPadding : 0,
+              ),
               child: CategoryBtn(
                 category: demoCategories[index].name,
                 svgSrc: demoCategories[index].svgSrc,
@@ -90,9 +93,9 @@ class CategoryBtn extends StatelessWidget {
         decoration: BoxDecoration(
           color: isActive ? primaryColor : Colors.transparent,
           border: Border.all(
-              color: isActive
-                  ? Colors.transparent
-                  : Theme.of(context).dividerColor),
+            color:
+                isActive ? Colors.transparent : Theme.of(context).dividerColor,
+          ),
           borderRadius: const BorderRadius.all(Radius.circular(30)),
         ),
         child: Row(

@@ -5,9 +5,8 @@ import 'package:shop/components/cart_button.dart';
 import 'package:shop/components/custom_modal_bottom_sheet.dart';
 import 'package:shop/components/product/product_card.dart';
 import 'package:shop/constants.dart';
+import 'package:shop/models/product_model.dart';
 import 'package:shop/screens/product/views/product_returns_screen.dart';
-
-import 'package:shop/route/screen_export.dart';
 
 import 'components/notify_me_card.dart';
 import 'components/product_images.dart';
@@ -23,6 +22,8 @@ class ProductDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final relatedProducts = demoPopularProducts.take(4).toList();
+
     return Scaffold(
       bottomNavigationBar: isProductAvailable
           ? CartButton(
@@ -35,10 +36,7 @@ class ProductDetailsScreen extends StatelessWidget {
                 );
               },
             )
-          :
-
-          /// If profuct is not available then show [NotifyMeCard]
-          NotifyMeCard(
+          : NotifyMeCard(
               isNotify: false,
               onChanged: (value) {},
             ),
@@ -51,8 +49,13 @@ class ProductDetailsScreen extends StatelessWidget {
               actions: [
                 IconButton(
                   onPressed: () {},
-                  icon: SvgPicture.asset("assets/icons/Bookmark.svg",
-                      color: Theme.of(context).textTheme.bodyLarge!.color),
+                  icon: SvgPicture.asset(
+                    "assets/icons/Bookmark.svg",
+                    colorFilter: ColorFilter.mode(
+                      Theme.of(context).textTheme.bodyLarge!.color!,
+                      BlendMode.srcIn,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -76,7 +79,8 @@ class ProductDetailsScreen extends StatelessWidget {
                   context,
                   height: MediaQuery.of(context).size.height * 0.92,
                   child: const BuyFullKit(
-                      images: ["assets/screens/Product detail.png"]),
+                    images: ["assets/screens/Product detail.png"],
+                  ),
                 );
               },
             ),
@@ -119,14 +123,6 @@ class ProductDetailsScreen extends StatelessWidget {
                 ),
               ),
             ),
-            ProductListTile(
-              svgSrc: "assets/icons/Chat.svg",
-              title: "Reviews",
-              isShowBottomBorder: true,
-              press: () {
-                Navigator.pushNamed(context, productReviewsScreenRoute);
-              },
-            ),
             SliverPadding(
               padding: const EdgeInsets.all(defaultPadding),
               sliver: SliverToBoxAdapter(
@@ -141,18 +137,20 @@ class ProductDetailsScreen extends StatelessWidget {
                 height: 220,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: 5,
+                  itemCount: relatedProducts.length,
                   itemBuilder: (context, index) => Padding(
                     padding: EdgeInsets.only(
-                        left: defaultPadding,
-                        right: index == 4 ? defaultPadding : 0),
+                      left: defaultPadding,
+                      right:
+                          index == relatedProducts.length - 1 ? defaultPadding : 0,
+                    ),
                     child: ProductCard(
-                      image: productDemoImg2,
-                      title: "Sleeveless Tiered Dobby Swing Dress",
-                      brandName: "LIPSY LONDON",
-                      price: 24.65,
-                      priceAfetDiscount: index.isEven ? 20.99 : null,
-                      dicountpercent: index.isEven ? 25 : null,
+                      image: relatedProducts[index].image,
+                      title: relatedProducts[index].title,
+                      brandName: relatedProducts[index].brandName,
+                      price: relatedProducts[index].price,
+                      priceAfetDiscount: relatedProducts[index].priceAfetDiscount,
+                      dicountpercent: relatedProducts[index].dicountpercent,
                       press: () {},
                     ),
                   ),
@@ -161,7 +159,7 @@ class ProductDetailsScreen extends StatelessWidget {
             ),
             const SliverToBoxAdapter(
               child: SizedBox(height: defaultPadding),
-            )
+            ),
           ],
         ),
       ),
