@@ -1,7 +1,6 @@
 import 'package:shop/models/category_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:shop/firebase_options.dart';
 
 abstract class CategoryRepository {
   Future<List<CategoryModel>> getDiscoverCategories();
@@ -16,7 +15,7 @@ class FirebaseCategoryRepository implements CategoryRepository {
 
   @override
   Future<List<CategoryModel>> getDiscoverCategories() async {
-    if (!DefaultFirebaseOptions.isConfigured || Firebase.apps.isEmpty) {
+    if (Firebase.apps.isEmpty) {
       return const <CategoryModel>[];
     }
 

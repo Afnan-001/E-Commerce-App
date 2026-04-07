@@ -1,7 +1,6 @@
 import 'package:shop/models/product_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:shop/firebase_options.dart';
 
 abstract class ProductRepository {
   Future<List<ProductModel>> getPopularProducts();
@@ -64,7 +63,7 @@ class FirebaseProductRepository implements ProductRepository {
       CollectionReference<Map<String, dynamic>> collection,
     ) queryBuilder,
   }) async {
-    if (!DefaultFirebaseOptions.isConfigured || Firebase.apps.isEmpty) {
+    if (Firebase.apps.isEmpty) {
       return const <ProductModel>[];
     }
 

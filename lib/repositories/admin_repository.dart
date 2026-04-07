@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shop/core/services/cloudinary_service.dart';
-import 'package:shop/firebase_options.dart';
 import 'package:shop/models/order_model.dart';
 import 'package:shop/models/product_model.dart';
 
@@ -25,8 +24,7 @@ class FirestoreAdminRepository implements AdminRepository {
   final FirebaseFirestore _firestore;
   final CloudinaryService _cloudinaryService;
 
-  bool get _isReady =>
-      DefaultFirebaseOptions.isConfigured && Firebase.apps.isNotEmpty;
+  bool get _isReady => Firebase.apps.isNotEmpty;
 
   @override
   Future<void> deleteProduct(String productId) async {

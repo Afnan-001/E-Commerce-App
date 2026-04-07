@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
-import 'package:shop/firebase_options.dart';
 import 'package:shop/models/app_user_model.dart';
 
 abstract class AuthRepository {
@@ -29,8 +28,7 @@ class FirebaseAuthRepository implements AuthRepository {
   final FirebaseAuth _firebaseAuth;
   final FirebaseFirestore _firestore;
 
-  bool get _isReady =>
-      DefaultFirebaseOptions.isConfigured && Firebase.apps.isNotEmpty;
+  bool get _isReady => Firebase.apps.isNotEmpty;
 
   @override
   Future<AppUserModel?> getCurrentUser() async {
