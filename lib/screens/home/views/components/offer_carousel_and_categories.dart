@@ -22,10 +22,25 @@ class OffersCarouselAndCategories extends StatelessWidget {
         const OffersCarousel(),
         const SizedBox(height: defaultPadding / 2),
         Padding(
-          padding: const EdgeInsets.all(defaultPadding),
-          child: Text(
-            'Shop by category',
-            style: Theme.of(context).textTheme.titleSmall,
+          padding: const EdgeInsets.fromLTRB(
+            defaultPadding,
+            defaultPadding / 2,
+            defaultPadding,
+            defaultPadding / 2,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Shop by category',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Explore the catalog the way customers actually browse it.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
           ),
         ),
         if (categories.isEmpty)

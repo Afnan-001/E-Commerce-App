@@ -4,6 +4,7 @@ import 'package:shop/components/network_image_with_loader.dart';
 import 'package:shop/constants.dart';
 import 'package:shop/providers/admin_provider.dart';
 import 'package:shop/providers/auth_provider.dart';
+import 'package:shop/providers/product_provider.dart';
 import 'package:shop/route/route_constants.dart';
 
 class AdminProductsScreen extends StatelessWidget {
@@ -153,9 +154,14 @@ class AdminProductsScreen extends StatelessWidget {
                                         );
 
                                         if (shouldDelete == true && context.mounted) {
-                                          await context
-                                              .read<AdminProvider>()
-                                              .deleteProduct(product.id);
+                                          final admin =
+                                              context.read<AdminProvider>();
+                                          final products =
+                                              context.read<ProductProvider>();
+                                          await admin.deleteProduct(product.id);
+                                          if (context.mounted) {
+                                            await products.loadInitialData();
+                                          }
                                         }
                                       },
                                 child: const Text('Delete'),

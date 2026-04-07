@@ -29,71 +29,88 @@ class ProductCard extends StatelessWidget {
     return OutlinedButton(
       onPressed: press,
       style: OutlinedButton.styleFrom(
-          minimumSize: const Size(140, 220),
-          maximumSize: const Size(140, 220),
-          padding: const EdgeInsets.all(8)),
+        padding: EdgeInsets.zero,
+        side: BorderSide(color: Theme.of(context).dividerColor),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(
+            Radius.circular(defaultBorderRadious),
+          ),
+        ),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+      ),
       child: Column(
         children: [
-          AspectRatio(
-            aspectRatio: 1.15,
-            child: Stack(
-              children: [
-                NetworkImageWithLoader(image, radius: defaultBorderRadious),
-                if (onToggleSaved != null)
-                  Positioned(
-                    left: defaultPadding / 2,
-                    top: defaultPadding / 2,
-                    child: InkWell(
-                      onTap: onToggleSaved,
-                      borderRadius: const BorderRadius.all(
-                        Radius.circular(999),
+          Expanded(
+            flex: 7,
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: NetworkImageWithLoader(
+                      image,
+                      radius: defaultBorderRadious,
+                    ),
+                  ),
+                  if (onToggleSaved != null)
+                    Positioned(
+                      left: defaultPadding / 2,
+                      top: defaultPadding / 2,
+                      child: InkWell(
+                        onTap: onToggleSaved,
+                        borderRadius: const BorderRadius.all(
+                          Radius.circular(999),
+                        ),
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.95),
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(999),
+                            ),
+                          ),
+                          child: Icon(
+                            isSaved ? Icons.bookmark : Icons.bookmark_border,
+                            size: 17,
+                            color: isSaved ? primaryColor : blackColor80,
+                          ),
+                        ),
                       ),
+                    ),
+                  if (dicountpercent != null)
+                    Positioned(
+                      right: defaultPadding / 2,
+                      top: defaultPadding / 2,
                       child: Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.92),
-                          borderRadius: const BorderRadius.all(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: defaultPadding / 2,
+                          vertical: 4,
+                        ),
+                        decoration: const BoxDecoration(
+                          color: errorColor,
+                          borderRadius: BorderRadius.all(
                             Radius.circular(999),
                           ),
                         ),
-                        child: Icon(
-                          isSaved ? Icons.bookmark : Icons.bookmark_border,
-                          size: 16,
-                          color: isSaved ? primaryColor : blackColor80,
+                        child: Text(
+                          "$dicountpercent% off",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                if (dicountpercent != null)
-                  Positioned(
-                    right: defaultPadding / 2,
-                    top: defaultPadding / 2,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: defaultPadding / 2),
-                      height: 16,
-                      decoration: const BoxDecoration(
-                        color: errorColor,
-                        borderRadius: BorderRadius.all(
-                            Radius.circular(defaultBorderRadious)),
-                      ),
-                      child: Text(
-                        "$dicountpercent% off",
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500),
-                      ),
-                    ),
-                  )
-              ],
+                ],
+              ),
             ),
           ),
           Expanded(
+            flex: 5,
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: defaultPadding / 2, vertical: defaultPadding / 2),
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -102,9 +119,13 @@ class ProductCard extends StatelessWidget {
                     style: Theme.of(context)
                         .textTheme
                         .bodyMedium!
-                        .copyWith(fontSize: 10),
+                        .copyWith(
+                          fontSize: 10,
+                          color: blackColor60,
+                          letterSpacing: 0.2,
+                        ),
                   ),
-                  const SizedBox(height: defaultPadding / 2),
+                  const SizedBox(height: 6),
                   Text(
                     title,
                     maxLines: 2,
@@ -112,7 +133,7 @@ class ProductCard extends StatelessWidget {
                     style: Theme.of(context)
                         .textTheme
                         .titleSmall!
-                        .copyWith(fontSize: 12),
+                        .copyWith(fontSize: 13, height: 1.25),
                   ),
                   const Spacer(),
                   priceAfetDiscount != null
@@ -122,19 +143,16 @@ class ProductCard extends StatelessWidget {
                               "Rs ${priceAfetDiscount!.toStringAsFixed(0)}",
                               style: const TextStyle(
                                 color: Color(0xFF31B0D8),
-                                fontWeight: FontWeight.w500,
-                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
                               ),
                             ),
                             const SizedBox(width: defaultPadding / 4),
                             Text(
                               "Rs ${price.toStringAsFixed(0)}",
                               style: TextStyle(
-                                color: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium!
-                                    .color,
-                                fontSize: 10,
+                                color: blackColor60,
+                                fontSize: 11,
                                 decoration: TextDecoration.lineThrough,
                               ),
                             ),
@@ -144,8 +162,8 @@ class ProductCard extends StatelessWidget {
                           "Rs ${price.toStringAsFixed(0)}",
                           style: const TextStyle(
                             color: Color(0xFF31B0D8),
-                            fontWeight: FontWeight.w500,
-                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
                           ),
                         ),
                 ],

@@ -21,14 +21,14 @@ class Categories extends StatelessWidget {
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: defaultPadding),
       child: Row(
         children: [
           ...List.generate(
             categories.length,
             (index) => Padding(
               padding: EdgeInsets.only(
-                left: index == 0 ? defaultPadding : defaultPadding / 2,
-                right: index == categories.length - 1 ? defaultPadding : 0,
+                right: index == categories.length - 1 ? 0 : defaultPadding / 2,
               ),
               child: CategoryBtn(
                 category: categories[index].title,
@@ -64,39 +64,65 @@ class CategoryBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: press,
-      borderRadius: const BorderRadius.all(Radius.circular(30)),
-      child: Container(
-        height: 36,
-        padding: const EdgeInsets.symmetric(horizontal: defaultPadding),
+      borderRadius: const BorderRadius.all(Radius.circular(24)),
+      child: AnimatedContainer(
+        duration: defaultDuration,
+        constraints: const BoxConstraints(minWidth: 112),
+        padding: const EdgeInsets.symmetric(
+          horizontal: defaultPadding * 0.9,
+          vertical: defaultPadding * 0.75,
+        ),
         decoration: BoxDecoration(
-          color: isActive ? primaryColor : Colors.transparent,
+          color: isActive
+              ? primaryColor.withValues(alpha: 0.1)
+              : Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.all(Radius.circular(24)),
           border: Border.all(
-            color:
-                isActive ? Colors.transparent : Theme.of(context).dividerColor,
+            color: isActive
+                ? primaryColor.withValues(alpha: 0.4)
+                : Theme.of(context).dividerColor,
           ),
-          borderRadius: const BorderRadius.all(Radius.circular(30)),
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            if (svgSrc != null && svgSrc!.isNotEmpty)
-              SvgPicture.asset(
-                svgSrc!,
-                height: 20,
-                colorFilter: ColorFilter.mode(
-                  isActive ? Colors.white : Theme.of(context).iconTheme.color!,
-                  BlendMode.srcIn,
-                ),
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: isActive
+                    ? primaryColor
+                    : Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: const BorderRadius.all(Radius.circular(16)),
               ),
-            if (svgSrc != null && svgSrc!.isNotEmpty)
-              const SizedBox(width: defaultPadding / 2),
+              child: Center(
+                child: svgSrc != null && svgSrc!.isNotEmpty
+                    ? SvgPicture.asset(
+                        svgSrc!,
+                        height: 16,
+                        colorFilter: ColorFilter.mode(
+                          isActive
+                              ? Colors.white
+                              : Theme.of(context).iconTheme.color!,
+                          BlendMode.srcIn,
+                        ),
+                      )
+                    : Icon(
+                        Icons.pets_rounded,
+                        size: 16,
+                        color: isActive
+                            ? Colors.white
+                            : Theme.of(context).iconTheme.color,
+                      ),
+              ),
+            ),
+            const SizedBox(width: defaultPadding / 2),
             Text(
               category,
               style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: isActive
-                    ? Colors.white
-                    : Theme.of(context).textTheme.bodyLarge!.color,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).textTheme.bodyLarge!.color,
               ),
             ),
           ],
