@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shop/entry_point.dart';
+import 'package:shop/models/product_model.dart';
 import 'package:shop/route/screen_export.dart';
 
 // Yuo will get 50+ screens and more once you have the full template
@@ -82,8 +83,8 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     case productDetailsScreenRoute:
       return MaterialPageRoute(
         builder: (context) {
-          final isProductAvailable = settings.arguments as bool? ?? true;
-          return ProductDetailsScreen(isProductAvailable: isProductAvailable);
+          final product = settings.arguments as ProductModel?;
+          return ProductDetailsScreen(product: product);
         },
       );
     case homeScreenRoute:
@@ -101,6 +102,25 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     case bookmarkScreenRoute:
       return MaterialPageRoute(
         builder: (context) => const BookmarkScreen(),
+      );
+    case adminDashboardScreenRoute:
+      return MaterialPageRoute(
+        builder: (context) => const AdminDashboardScreen(),
+      );
+    case adminProductsScreenRoute:
+      return MaterialPageRoute(
+        builder: (context) => const AdminProductsScreen(),
+      );
+    case adminProductFormScreenRoute:
+      return MaterialPageRoute(
+        builder: (context) {
+          final product = settings.arguments as ProductModel?;
+          return AdminProductFormScreen(product: product);
+        },
+      );
+    case adminOrdersScreenRoute:
+      return MaterialPageRoute(
+        builder: (context) => const AdminOrdersScreen(),
       );
     case entryPointScreenRoute:
       return MaterialPageRoute(

@@ -19,6 +19,39 @@ class NetworkImageWithLoader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (src.isEmpty) {
+      return Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.all(Radius.circular(radius)),
+        ),
+        child: Icon(
+          Icons.pets_rounded,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      );
+    }
+
+    if (!src.startsWith('http')) {
+      return ClipRRect(
+        borderRadius: BorderRadius.all(Radius.circular(radius)),
+        child: Image.asset(
+          src,
+          fit: fit,
+          errorBuilder: (context, error, stackTrace) => Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.all(Radius.circular(radius)),
+            ),
+            child: Icon(
+              Icons.pets_rounded,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ),
+      );
+    }
+
     return ClipRRect(
       borderRadius: BorderRadius.all(Radius.circular(radius)),
       child: CachedNetworkImage(

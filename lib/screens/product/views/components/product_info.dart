@@ -10,14 +10,14 @@ class ProductInfo extends StatelessWidget {
     required this.title,
     required this.brand,
     required this.description,
-    required this.rating,
-    required this.numOfReviews,
+    this.rating,
+    this.numOfReviews,
     required this.isAvailable,
   });
 
   final String title, brand, description;
-  final double rating;
-  final int numOfReviews;
+  final double? rating;
+  final int? numOfReviews;
   final bool isAvailable;
 
   @override
@@ -42,19 +42,21 @@ class ProductInfo extends StatelessWidget {
             Row(
               children: [
                 ProductAvailabilityTag(isAvailable: isAvailable),
-                const Spacer(),
-                SvgPicture.asset("assets/icons/Star_filled.svg"),
-                const SizedBox(width: defaultPadding / 4),
-                Text(
-                  "$rating ",
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                Text("($numOfReviews Reviews)")
+                if (rating != null && numOfReviews != null) ...[
+                  const Spacer(),
+                  SvgPicture.asset("assets/icons/Star_filled.svg"),
+                  const SizedBox(width: defaultPadding / 4),
+                  Text(
+                    "$rating ",
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                  Text("($numOfReviews ratings)")
+                ],
               ],
             ),
             const SizedBox(height: defaultPadding),
             Text(
-              "Product info",
+              "About this product",
               style: Theme.of(context)
                   .textTheme
                   .titleMedium!

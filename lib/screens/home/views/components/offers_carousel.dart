@@ -23,26 +23,24 @@ class _OffersCarouselState extends State<OffersCarousel> {
   late PageController _pageController;
   late Timer _timer;
 
-  // Offers List
   List offers = [
     BannerMStyle1(
-      text: "New items with \nFree shipping",
+      text: "Pet care picks with \nfast delivery",
       press: () {},
     ),
     BannerMStyle2(
-      title: "Black \nfriday",
-      subtitle: "Collection",
+      title: "Salon \nweek",
+      subtitle: "Grooming Deals",
       discountParcent: 50,
       press: () {},
     ),
     BannerMStyle3(
-      title: "Grab \nyours now",
+      title: "Freshen up \nyour pet",
       discountParcent: 50,
       press: () {},
     ),
     BannerMStyle4(
-      // image: , user your image
-      title: "SUMMER \nSALE",
+      title: "CARE \nESSENTIALS",
       subtitle: "SPECIAL OFFER",
       discountParcent: 80,
       press: () {},
@@ -115,7 +113,7 @@ class _OffersCarouselState extends State<OffersCarousel> {
                 ),
               ),
             ),
-          )
+          ),
         ],
       ),
     );

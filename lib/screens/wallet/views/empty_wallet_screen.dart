@@ -10,7 +10,7 @@ class EmptyWalletScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Wallet"),
+        title: const Text("Store Credit"),
       ),
       body: SafeArea(
         child: Column(
@@ -31,14 +31,16 @@ class EmptyWalletScreen extends StatelessWidget {
             ),
             const Spacer(),
             Text(
-              "Empty wallet history",
+              "No credit activity yet",
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const Padding(
               padding: EdgeInsets.symmetric(
-                  horizontal: defaultPadding * 1.5, vertical: defaultPadding),
+                horizontal: defaultPadding * 1.5,
+                vertical: defaultPadding,
+              ),
               child: Text(
-                "Customer network effects freemium. Advisor android paradigm shift product management. Customer disruptive crowdsource",
+                "Promotional credits, refunds, and future pet care rewards will appear here once your account starts receiving activity.",
                 textAlign: TextAlign.center,
               ),
             ),

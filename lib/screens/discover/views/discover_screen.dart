@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shop/constants.dart';
+import 'package:shop/core/widgets/section_empty_state.dart';
 import 'package:shop/providers/product_provider.dart';
 import 'package:shop/screens/search/views/components/search_form.dart';
 
@@ -26,7 +27,7 @@ class DiscoverScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(
                   horizontal: defaultPadding, vertical: defaultPadding / 2),
               child: Text(
-                "Categories",
+                "Pet categories",
                 style: Theme.of(context).textTheme.titleSmall,
               ),
             ),
@@ -35,14 +36,20 @@ class DiscoverScreen extends StatelessWidget {
             //   child: DiscoverCategoriesSkelton(),
             // ),
             Expanded(
-              child: ListView.builder(
-                itemCount: categories.length,
-                itemBuilder: (context, index) => ExpansionCategory(
-                  svgSrc: categories[index].svgSrc!,
-                  title: categories[index].title,
-                  subCategory: categories[index].subCategories,
-                ),
-              ),
+              child: categories.isEmpty
+                  ? const SectionEmptyState(
+                      title: "No pet categories yet",
+                      message:
+                          "Add active categories in Firestore to organize products and grooming services here.",
+                    )
+                  : ListView.builder(
+                      itemCount: categories.length,
+                      itemBuilder: (context, index) => ExpansionCategory(
+                        svgSrc: categories[index].svgSrc!,
+                        title: categories[index].title,
+                        subCategory: categories[index].subCategories,
+                      ),
+                    ),
             )
           ],
         ),

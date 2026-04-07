@@ -7,9 +7,15 @@ class SignUpForm extends StatelessWidget {
   const SignUpForm({
     super.key,
     required this.formKey,
+    required this.nameController,
+    required this.emailController,
+    required this.passwordController,
   });
 
   final GlobalKey<FormState> formKey;
+  final TextEditingController nameController;
+  final TextEditingController emailController;
+  final TextEditingController passwordController;
 
   @override
   Widget build(BuildContext context) {
@@ -18,9 +24,38 @@ class SignUpForm extends StatelessWidget {
       child: Column(
         children: [
           TextFormField(
-            onSaved: (emal) {
-              // Email
+            controller: nameController,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Name is required';
+              }
+              return null;
             },
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              hintText: "Full name",
+              prefixIcon: Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: defaultPadding * 0.75),
+                child: SvgPicture.asset(
+                  "assets/icons/Profile.svg",
+                  height: 24,
+                  width: 24,
+                  colorFilter: ColorFilter.mode(
+                    Theme.of(context)
+                        .textTheme
+                        .bodyLarge!
+                        .color!
+                        .withValues(alpha: 0.3),
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: defaultPadding),
+          TextFormField(
+            controller: emailController,
             validator: emaildValidator.call,
             textInputAction: TextInputAction.next,
             keyboardType: TextInputType.emailAddress,
@@ -47,9 +82,7 @@ class SignUpForm extends StatelessWidget {
           ),
           const SizedBox(height: defaultPadding),
           TextFormField(
-            onSaved: (pass) {
-              // Password
-            },
+            controller: passwordController,
             validator: passwordValidator.call,
             obscureText: true,
             decoration: InputDecoration(

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:shop/constants.dart';
-import 'package:shop/models/product_model.dart';
 
-import 'components/wallet_balance_card.dart';
-import 'components/wallet_history_card.dart';
+import 'package:shop/constants.dart';
+import 'package:shop/core/widgets/section_empty_state.dart';
 
 class WalletScreen extends StatelessWidget {
   const WalletScreen({super.key});
@@ -12,49 +10,15 @@ class WalletScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Wallet"),
+        title: const Text("Store credit"),
       ),
-      body: SafeArea(
+      body: const SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: defaultPadding),
-          child: CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(vertical: defaultPadding),
-                sliver: SliverToBoxAdapter(
-                  child: WalletBalanceCard(
-                    balance: 384.90,
-                    onTabChargeBalance: () {},
-                  ),
-                ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.only(top: defaultPadding / 2),
-                sliver: SliverToBoxAdapter(
-                  child: Text(
-                    "Wallet history",
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                ),
-              ),
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) => Padding(
-                    padding: const EdgeInsets.only(top: defaultPadding),
-                    child: WalletHistoryCard(
-                      isReturn: index == 1,
-                      date: "JUN 12, 2020",
-                      amount: 129,
-                      products: [
-                        demoPopularProducts.first,
-                        demoPopularProducts[1],
-                      ],
-                    ),
-                  ),
-                  childCount: 4,
-                ),
-              )
-            ],
+          padding: EdgeInsets.symmetric(horizontal: defaultPadding),
+          child: SectionEmptyState(
+            title: "Store credit will appear here",
+            message:
+                "Credit activity will be shown after refunds, promotional credit, or wallet support is connected to your pet store flows.",
           ),
         ),
       ),

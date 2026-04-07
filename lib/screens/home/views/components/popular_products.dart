@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shop/components/product/product_card.dart';
+import 'package:shop/core/widgets/section_empty_state.dart';
 import 'package:shop/providers/product_provider.dart';
 import 'package:shop/route/screen_export.dart';
 
@@ -26,33 +27,41 @@ class PopularProducts extends StatelessWidget {
             style: Theme.of(context).textTheme.titleSmall,
           ),
         ),
-        // While loading use 👇
-        // const ProductsSkelton(),
-        SizedBox(
-          height: 220,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: products.length,
-            itemBuilder: (context, index) => Padding(
-              padding: EdgeInsets.only(
-                left: defaultPadding,
-                right: index == products.length - 1 ? defaultPadding : 0,
-              ),
-              child: ProductCard(
-                image: products[index].image,
-                brandName: products[index].brandName,
-                title: products[index].title,
-                price: products[index].price,
-                priceAfetDiscount: products[index].priceAfetDiscount,
-                dicountpercent: products[index].dicountpercent,
-                press: () {
-                  Navigator.pushNamed(context, productDetailsScreenRoute,
-                      arguments: index.isEven);
-                },
+        if (products.isEmpty)
+          const SectionEmptyState(
+            title: "No featured pet products yet",
+            message:
+                "Add products in Firebase to show your popular grooming and shop items here.",
+          )
+        else
+          SizedBox(
+            height: 220,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: products.length,
+              itemBuilder: (context, index) => Padding(
+                padding: EdgeInsets.only(
+                  left: defaultPadding,
+                  right: index == products.length - 1 ? defaultPadding : 0,
+                ),
+                child: ProductCard(
+                  image: products[index].image,
+                  brandName: products[index].brandName,
+                  title: products[index].title,
+                  price: products[index].price,
+                  priceAfetDiscount: products[index].priceAfetDiscount,
+                  dicountpercent: products[index].dicountpercent,
+                  press: () {
+                    Navigator.pushNamed(
+                      context,
+                      productDetailsScreenRoute,
+                      arguments: products[index],
+                    );
+                  },
+                ),
               ),
             ),
           ),
-        )
       ],
     );
   }

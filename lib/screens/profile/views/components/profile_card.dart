@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:shop/components/network_image_with_loader.dart';
 
 import '../../../../constants.dart';
 
@@ -9,43 +8,61 @@ class ProfileCard extends StatelessWidget {
     super.key,
     required this.name,
     required this.email,
-    required this.imageSrc,
-    this.proLableText = "Pro",
+    this.proLableText = "Admin",
     this.isPro = false,
     this.press,
     this.isShowHi = true,
     this.isShowArrow = true,
   });
 
-  final String name, email, imageSrc;
+  final String name;
+  final String email;
   final String proLableText;
-  final bool isPro, isShowHi, isShowArrow;
+  final bool isPro;
+  final bool isShowHi;
+  final bool isShowArrow;
   final VoidCallback? press;
 
   @override
   Widget build(BuildContext context) {
+    final initials = name.trim().isEmpty
+        ? 'PP'
+        : name
+            .trim()
+            .split(RegExp(r'\s+'))
+            .take(2)
+            .map((part) => part.characters.first.toUpperCase())
+            .join();
+
     return ListTile(
       onTap: press,
       leading: CircleAvatar(
         radius: 28,
-        child: NetworkImageWithLoader(
-          imageSrc,
-          radius: 100,
+        backgroundColor: primaryColor.withValues(alpha: 0.12),
+        child: Text(
+          initials,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: primaryColor,
+                fontWeight: FontWeight.w700,
+              ),
         ),
       ),
       title: Row(
         children: [
-          Text(
-            isShowHi ? "Hi, $name" : name,
-            style: const TextStyle(fontWeight: FontWeight.w500),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          Expanded(
+            child: Text(
+              isShowHi ? "Hi, $name" : name,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          const SizedBox(width: defaultPadding / 2),
           if (isPro)
             Container(
               padding: const EdgeInsets.symmetric(
-                  horizontal: defaultPadding / 2, vertical: defaultPadding / 4),
+                horizontal: defaultPadding / 2,
+                vertical: defaultPadding / 4,
+              ),
               decoration: const BoxDecoration(
                 color: primaryColor,
                 borderRadius:

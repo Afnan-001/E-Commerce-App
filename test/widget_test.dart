@@ -15,7 +15,7 @@ void main() {
     await tester.pumpWidget(const AppScope(child: MyApp()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Skip'), findsOneWidget);
-    expect(find.textContaining('Find the item'), findsOneWidget);
+    expect(find.text('Later'), findsOneWidget);
+    expect(find.textContaining('Find trusted products'), findsOneWidget);
   });
 }
