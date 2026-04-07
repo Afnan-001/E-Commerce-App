@@ -15,56 +15,73 @@ class PopularProducts extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final productProvider = context.watch<ProductProvider>();
-    final products = productProvider.popularProducts;
+    final products = productProvider.catalogProducts;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: defaultPadding / 2),
         Padding(
-          padding: const EdgeInsets.all(defaultPadding),
-          child: Text(
-            "Popular products",
-            style: Theme.of(context).textTheme.titleSmall,
+          padding: const EdgeInsets.symmetric(
+            horizontal: defaultPadding,
+            vertical: defaultPadding / 2,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Products',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              Text(
+                '${products.length} items',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
           ),
         ),
         if (products.isEmpty)
           const SectionEmptyState(
-            title: "No featured pet products yet",
+            title: 'No products yet',
             message:
-                "Add products in Firebase to show your popular grooming and shop items here.",
+                'Add products from the admin panel and they will appear here automatically.',
           )
         else
-          SizedBox(
-            height: 220,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
+          Padding(
+            padding: const EdgeInsets.all(defaultPadding),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
               itemCount: products.length,
-              itemBuilder: (context, index) => Padding(
-                padding: EdgeInsets.only(
-                  left: defaultPadding,
-                  right: index == products.length - 1 ? defaultPadding : 0,
-                ),
-                child: ProductCard(
-                  image: products[index].image,
-                  brandName: products[index].brandName,
-                  title: products[index].title,
-                  price: products[index].price,
-                  priceAfetDiscount: products[index].priceAfetDiscount,
-                  dicountpercent: products[index].dicountpercent,
-                  isSaved: productProvider.isBookmarked(products[index].id),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: defaultPadding,
+                crossAxisSpacing: defaultPadding,
+                childAspectRatio: 0.64,
+              ),
+              itemBuilder: (context, index) {
+                final product = products[index];
+                return ProductCard(
+                  image: product.image,
+                  brandName: product.brandName,
+                  title: product.title,
+                  price: product.price,
+                  priceAfetDiscount: product.priceAfetDiscount,
+                  dicountpercent: product.dicountpercent,
+                  isSaved: productProvider.isBookmarked(product.id),
                   onToggleSaved: () {
-                    context.read<ProductProvider>().toggleBookmark(products[index]);
+                    context.read<ProductProvider>().toggleBookmark(product);
                   },
                   press: () {
                     Navigator.pushNamed(
                       context,
                       productDetailsScreenRoute,
-                      arguments: products[index],
+                      arguments: product,
                     );
                   },
-                ),
-              ),
+                );
+              },
             ),
           ),
       ],
