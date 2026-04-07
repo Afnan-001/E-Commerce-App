@@ -6,6 +6,8 @@ export '/screens/auth/views/signup_screen.dart';
 export '/route/route_constants.dart';
 export '/screens/bookmark/views/bookmark_screen.dart';
 export '/screens/admin/views/admin_dashboard_screen.dart';
+export '/screens/admin/views/admin_categories_screen.dart';
+export '/screens/admin/views/admin_category_form_screen.dart';
 export '/screens/admin/views/admin_orders_screen.dart';
 export '/screens/admin/views/admin_product_form_screen.dart';
 export '/screens/admin/views/admin_products_screen.dart';

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shop/entry_point.dart';
+import 'package:shop/models/category_model.dart';
 import 'package:shop/models/product_model.dart';
 import 'package:shop/route/screen_export.dart';
 
@@ -47,6 +48,17 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     case adminDashboardScreenRoute:
       return MaterialPageRoute(
         builder: (context) => const AdminDashboardScreen(),
+      );
+    case adminCategoriesScreenRoute:
+      return MaterialPageRoute(
+        builder: (context) => const AdminCategoriesScreen(),
+      );
+    case adminCategoryFormScreenRoute:
+      return MaterialPageRoute(
+        builder: (context) {
+          final category = settings.arguments as CategoryModel?;
+          return AdminCategoryFormScreen(category: category);
+        },
       );
     case adminProductsScreenRoute:
       return MaterialPageRoute(

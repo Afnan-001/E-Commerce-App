@@ -1,36 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
+import 'package:shop/providers/product_provider.dart';
 import 'package:shop/route/screen_export.dart';
 
 import '../../../../constants.dart';
-
-class CategoryModel {
-  final String name;
-  final String? svgSrc;
-  final String? route;
-
-  CategoryModel({
-    required this.name,
-    this.svgSrc,
-    this.route,
-  });
-}
-
-List<CategoryModel> demoCategories = [
-  CategoryModel(name: "All Categories"),
-  CategoryModel(
-    name: "Grooming",
-    svgSrc: "assets/icons/Sale.svg",
-    route: discoverScreenRoute,
-  ),
-  CategoryModel(name: "Food", svgSrc: "assets/icons/Man.svg"),
-  CategoryModel(name: "Accessories", svgSrc: "assets/icons/Woman.svg"),
-  CategoryModel(
-    name: "Care",
-    svgSrc: "assets/icons/Child.svg",
-    route: discoverScreenRoute,
-  ),
-];
 
 class Categories extends StatelessWidget {
   const Categories({
@@ -39,25 +13,29 @@ class Categories extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final categories = context.watch<ProductProvider>().discoverCategories;
+
+    if (categories.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
           ...List.generate(
-            demoCategories.length,
+            categories.length,
             (index) => Padding(
               padding: EdgeInsets.only(
                 left: index == 0 ? defaultPadding : defaultPadding / 2,
-                right: index == demoCategories.length - 1 ? defaultPadding : 0,
+                right: index == categories.length - 1 ? defaultPadding : 0,
               ),
               child: CategoryBtn(
-                category: demoCategories[index].name,
-                svgSrc: demoCategories[index].svgSrc,
+                category: categories[index].title,
+                svgSrc: categories[index].svgSrc,
                 isActive: index == 0,
                 press: () {
-                  if (demoCategories[index].route != null) {
-                    Navigator.pushNamed(context, demoCategories[index].route!);
-                  }
+                  Navigator.pushNamed(context, discoverScreenRoute);
                 },
               ),
             ),
@@ -100,7 +78,7 @@ class CategoryBtn extends StatelessWidget {
         ),
         child: Row(
           children: [
-            if (svgSrc != null)
+            if (svgSrc != null && svgSrc!.isNotEmpty)
               SvgPicture.asset(
                 svgSrc!,
                 height: 20,
@@ -109,7 +87,8 @@ class CategoryBtn extends StatelessWidget {
                   BlendMode.srcIn,
                 ),
               ),
-            if (svgSrc != null) const SizedBox(width: defaultPadding / 2),
+            if (svgSrc != null && svgSrc!.isNotEmpty)
+              const SizedBox(width: defaultPadding / 2),
             Text(
               category,
               style: TextStyle(

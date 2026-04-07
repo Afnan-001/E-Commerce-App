@@ -22,11 +22,14 @@ class FirebaseAuthRepository implements AuthRepository {
   FirebaseAuthRepository({
     FirebaseAuth? firebaseAuth,
     FirebaseFirestore? firestore,
-  })  : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance;
+  })  : _firebaseAuth = firebaseAuth,
+        _firestore = firestore;
 
-  final FirebaseAuth _firebaseAuth;
-  final FirebaseFirestore _firestore;
+  final FirebaseAuth? _firebaseAuth;
+  final FirebaseFirestore? _firestore;
+
+  FirebaseAuth get _auth => _firebaseAuth ?? FirebaseAuth.instance;
+  FirebaseFirestore get _db => _firestore ?? FirebaseFirestore.instance;
 
   bool get _isReady => Firebase.apps.isNotEmpty;
 
@@ -34,7 +37,7 @@ class FirebaseAuthRepository implements AuthRepository {
   Future<AppUserModel?> getCurrentUser() async {
     if (!_isReady) return null;
 
-    final user = _firebaseAuth.currentUser;
+    final user = _auth.currentUser;
     if (user == null) return null;
 
     return _loadUserProfile(user);
@@ -47,7 +50,7 @@ class FirebaseAuthRepository implements AuthRepository {
   }) async {
     _ensureReady();
 
-    final credential = await _firebaseAuth.signInWithEmailAndPassword(
+    final credential = await _auth.signInWithEmailAndPassword(
       email: email.trim(),
       password: password,
     );
@@ -63,7 +66,7 @@ class FirebaseAuthRepository implements AuthRepository {
   }) async {
     _ensureReady();
 
-    final credential = await _firebaseAuth.createUserWithEmailAndPassword(
+    final credential = await _auth.createUserWithEmailAndPassword(
       email: email.trim(),
       password: password,
     );
@@ -79,18 +82,18 @@ class FirebaseAuthRepository implements AuthRepository {
       createdAt: DateTime.now(),
     );
 
-    await _firestore.collection('users').doc(user.uid).set(appUser.toMap());
+    await _db.collection('users').doc(user.uid).set(appUser.toMap());
     return appUser;
   }
 
   @override
   Future<void> signOut() async {
     if (!_isReady) return;
-    await _firebaseAuth.signOut();
+    await _auth.signOut();
   }
 
   Future<AppUserModel> _loadUserProfile(User user) async {
-    final doc = await _firestore.collection('users').doc(user.uid).get();
+    final doc = await _db.collection('users').doc(user.uid).get();
 
     if (doc.exists && doc.data() != null) {
       return AppUserModel.fromMap(user.uid, doc.data()!);
@@ -104,7 +107,7 @@ class FirebaseAuthRepository implements AuthRepository {
       createdAt: DateTime.now(),
     );
 
-    await _firestore.collection('users').doc(user.uid).set(
+    await _db.collection('users').doc(user.uid).set(
           fallbackUser.toMap(),
           SetOptions(merge: true),
         );

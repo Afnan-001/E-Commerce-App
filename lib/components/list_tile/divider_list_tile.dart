@@ -76,23 +76,27 @@ class DividerListTileWithTrilingText extends StatelessWidget {
             title,
             style: const TextStyle(fontSize: 14, height: 1),
           ),
-          trailing: SizedBox(
-            width: 50,
-            child: Row(
-              children: [
-                const Spacer(),
-                Text(trilingText),
-                SvgPicture.asset(
-                  "assets/icons/miniRight.svg",
-                  colorFilter: ColorFilter.mode(
-                      Theme.of(context)
-                          .iconTheme
-                          .color!
-                          .withValues(alpha: 0.4),
-                      BlendMode.srcIn),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  trilingText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 4),
+              SvgPicture.asset(
+                "assets/icons/miniRight.svg",
+                colorFilter: ColorFilter.mode(
+                    Theme.of(context)
+                        .iconTheme
+                        .color!
+                        .withValues(alpha: 0.4),
+                    BlendMode.srcIn),
+              ),
+            ],
           ),
         ),
         if (isShowArrow) const Divider(height: 1),

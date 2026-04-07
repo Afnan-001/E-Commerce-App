@@ -1,120 +1,131 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:shop/components/Banner/M/banner_m_style_1.dart';
-import 'package:shop/components/Banner/M/banner_m_style_2.dart';
-import 'package:shop/components/Banner/M/banner_m_style_3.dart';
-import 'package:shop/components/Banner/M/banner_m_style_4.dart';
-import 'package:shop/components/dot_indicators.dart';
+import 'package:provider/provider.dart';
+import 'package:shop/constants.dart';
+import 'package:shop/providers/product_provider.dart';
 
-import '../../../../constants.dart';
-
-class OffersCarousel extends StatefulWidget {
+class OffersCarousel extends StatelessWidget {
   const OffersCarousel({
     super.key,
   });
 
   @override
-  State<OffersCarousel> createState() => _OffersCarouselState();
-}
-
-class _OffersCarouselState extends State<OffersCarousel> {
-  int _selectedIndex = 0;
-  late PageController _pageController;
-  late Timer _timer;
-
-  List offers = [
-    BannerMStyle1(
-      text: "Pet care picks with \nfast delivery",
-      press: () {},
-    ),
-    BannerMStyle2(
-      title: "Salon \nweek",
-      subtitle: "Grooming Deals",
-      discountParcent: 50,
-      press: () {},
-    ),
-    BannerMStyle3(
-      title: "Freshen up \nyour pet",
-      discountParcent: 50,
-      press: () {},
-    ),
-    BannerMStyle4(
-      title: "CARE \nESSENTIALS",
-      subtitle: "SPECIAL OFFER",
-      discountParcent: 80,
-      press: () {},
-    ),
-  ];
-
-  @override
-  void initState() {
-    _pageController = PageController(initialPage: 0);
-    _timer = Timer.periodic(const Duration(seconds: 4), (Timer timer) {
-      if (_selectedIndex < offers.length - 1) {
-        _selectedIndex++;
-      } else {
-        _selectedIndex = 0;
-      }
-
-      _pageController.animateToPage(
-        _selectedIndex,
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeOutCubic,
-      );
-    });
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    _timer.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 1.87,
-      child: Stack(
-        alignment: Alignment.bottomRight,
-        children: [
-          PageView.builder(
-            controller: _pageController,
-            itemCount: offers.length,
-            onPageChanged: (int index) {
-              setState(() {
-                _selectedIndex = index;
-              });
-            },
-            itemBuilder: (context, index) => offers[index],
+    final productProvider = context.watch<ProductProvider>();
+    final featuredCount = productProvider.popularProducts.length;
+    final categoryCount = productProvider.discoverCategories.length;
+    final catalogCount = productProvider.catalogProducts.length;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        defaultPadding,
+        defaultPadding,
+        defaultPadding,
+        defaultPadding / 2,
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(defaultPadding),
+        decoration: const BoxDecoration(
+          borderRadius: BorderRadius.all(
+            Radius.circular(defaultBorderRadious * 1.5),
           ),
-          FittedBox(
-            child: Padding(
-              padding: const EdgeInsets.all(defaultPadding),
-              child: SizedBox(
-                height: 16,
-                child: Row(
-                  children: List.generate(
-                    offers.length,
-                    (index) {
-                      return Padding(
-                        padding:
-                            const EdgeInsets.only(left: defaultPadding / 4),
-                        child: DotIndicator(
-                          isActive: index == _selectedIndex,
-                          activeColor: Colors.white70,
-                          inActiveColor: Colors.white54,
-                        ),
-                      );
-                    },
-                  ),
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFFF2E1C8),
+              Color(0xFFDCEFE3),
+              Color(0xFFF9F5EE),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: defaultPadding / 2,
+                vertical: defaultPadding / 4,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.8),
+                borderRadius: const BorderRadius.all(
+                  Radius.circular(defaultBorderRadious),
+                ),
+              ),
+              child: const Text(
+                'Pet shop + grooming',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: defaultPadding),
+            Text(
+              'Daily care for pets, built around your live catalog',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    height: 1.15,
+                  ),
+            ),
+            const SizedBox(height: defaultPadding / 2),
+            Text(
+              'Everything on this screen now reflects what you add in Firebase admin, from categories to featured pet products.',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.45),
+            ),
+            const SizedBox(height: defaultPadding),
+            Wrap(
+              spacing: defaultPadding / 2,
+              runSpacing: defaultPadding / 2,
+              children: [
+                _StatPill(label: 'Featured', value: '$featuredCount'),
+                _StatPill(label: 'Categories', value: '$categoryCount'),
+                _StatPill(label: 'Catalog', value: '$catalogCount'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatPill extends StatelessWidget {
+  const _StatPill({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: defaultPadding * 0.75,
+        vertical: defaultPadding / 2,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.82),
+        borderRadius: const BorderRadius.all(
+          Radius.circular(999),
+        ),
+      ),
+      child: RichText(
+        text: TextSpan(
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+          children: [
+            TextSpan(text: '$value '),
+            TextSpan(
+              text: label,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
+        ),
       ),
     );
   }

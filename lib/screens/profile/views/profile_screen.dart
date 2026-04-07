@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:shop/components/list_tile/divider_list_tile.dart';
 import 'package:shop/constants.dart';
 import 'package:shop/providers/auth_provider.dart';
+import 'package:shop/providers/cart_provider.dart';
+import 'package:shop/providers/product_provider.dart';
 import 'package:shop/route/screen_export.dart';
 
 import 'components/profile_card.dart';
@@ -15,7 +17,7 @@ class ProfileScreen extends StatelessWidget {
   void _showComingSoon(BuildContext context, String label) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text("$label will be connected in the next implementation step."),
+        content: Text('$label will be connected in the next implementation step.'),
       ),
     );
   }
@@ -23,6 +25,8 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
+    final cartProvider = context.watch<CartProvider>();
+    final productProvider = context.watch<ProductProvider>();
     final user = authProvider.currentUser;
     final displayName =
         user?.name.trim().isNotEmpty == true ? user!.name.trim() : 'Pet Parent';
@@ -35,6 +39,7 @@ class ProfileScreen extends StatelessWidget {
 
     return Scaffold(
       body: ListView(
+        padding: const EdgeInsets.only(bottom: defaultPadding),
         children: [
           ProfileCard(
             name: displayName,
@@ -73,36 +78,64 @@ class ProfileScreen extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: defaultPadding),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _ProfileMetricCard(
+                    label: 'Saved',
+                    value: productProvider.bookmarkedCount.toString(),
+                  ),
+                ),
+                const SizedBox(width: defaultPadding),
+                Expanded(
+                  child: _ProfileMetricCard(
+                    label: 'Cart items',
+                    value: cartProvider.totalItems.toString(),
+                  ),
+                ),
+                const SizedBox(width: defaultPadding),
+                Expanded(
+                  child: _ProfileMetricCard(
+                    label: 'Catalog',
+                    value: productProvider.catalogProducts.length.toString(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: defaultPadding),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: defaultPadding),
             child: Text(
-              "Shopping",
+              'Shopping',
               style: Theme.of(context).textTheme.titleSmall,
             ),
           ),
           const SizedBox(height: defaultPadding / 2),
           ProfileMenuListTile(
-            text: "Orders",
-            svgSrc: "assets/icons/Order.svg",
+            text: 'Orders',
+            svgSrc: 'assets/icons/Order.svg',
             press: () {
               Navigator.pushNamed(context, ordersScreenRoute);
             },
           ),
           ProfileMenuListTile(
-            text: "Saved products",
-            svgSrc: "assets/icons/Wishlist.svg",
+            text: 'Saved products',
+            svgSrc: 'assets/icons/Wishlist.svg',
             press: () {
               Navigator.pushNamed(context, bookmarkScreenRoute);
             },
           ),
           ProfileMenuListTile(
-            text: "Addresses",
-            svgSrc: "assets/icons/Address.svg",
+            text: 'Addresses',
+            svgSrc: 'assets/icons/Address.svg',
             press: () {
               Navigator.pushNamed(context, addressesScreenRoute);
             },
           ),
           ProfileMenuListTile(
-            text: "Cart",
-            svgSrc: "assets/icons/Bag.svg",
+            text: 'Cart',
+            svgSrc: 'assets/icons/Bag.svg',
             press: () {
               Navigator.pushNamed(context, cartScreenRoute);
             },
@@ -112,27 +145,27 @@ class ProfileScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: defaultPadding),
             child: Text(
-              "Services",
+              'Services',
               style: Theme.of(context).textTheme.titleSmall,
             ),
           ),
           const SizedBox(height: defaultPadding / 2),
           DividerListTileWithTrilingText(
-            svgSrc: "assets/icons/Notification.svg",
-            title: "Grooming alerts",
-            trilingText: "Soon",
-            press: () => _showComingSoon(context, "Grooming alerts"),
+            svgSrc: 'assets/icons/Notification.svg',
+            title: 'Grooming alerts',
+            trilingText: 'Soon',
+            press: () => _showComingSoon(context, 'Grooming alerts'),
           ),
           ProfileMenuListTile(
-            text: "Pet care preferences",
-            svgSrc: "assets/icons/Preferences.svg",
+            text: 'Pet care preferences',
+            svgSrc: 'assets/icons/Preferences.svg',
             press: () {
               Navigator.pushNamed(context, preferencesScreenRoute);
             },
           ),
           ProfileMenuListTile(
-            text: "Store credit",
-            svgSrc: "assets/icons/Discount.svg",
+            text: 'Store credit',
+            svgSrc: 'assets/icons/Discount.svg',
             press: () {
               Navigator.pushNamed(context, walletScreenRoute);
             },
@@ -143,16 +176,23 @@ class ProfileScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: defaultPadding),
               child: Text(
-                "Admin",
+                'Admin',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
             ),
             const SizedBox(height: defaultPadding / 2),
             ProfileMenuListTile(
-              text: "Admin panel",
-              svgSrc: "assets/icons/Setting.svg",
+              text: 'Admin panel',
+              svgSrc: 'assets/icons/Setting.svg',
               press: () {
                 Navigator.pushNamed(context, adminDashboardScreenRoute);
+              },
+            ),
+            ProfileMenuListTile(
+              text: 'Manage categories',
+              svgSrc: 'assets/icons/Category.svg',
+              press: () {
+                Navigator.pushNamed(context, adminCategoriesScreenRoute);
               },
               isShowDivider: false,
             ),
@@ -161,20 +201,20 @@ class ProfileScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: defaultPadding),
             child: Text(
-              "Support",
+              'Support',
               style: Theme.of(context).textTheme.titleSmall,
             ),
           ),
           const SizedBox(height: defaultPadding / 2),
           ProfileMenuListTile(
-            text: "Customer support",
-            svgSrc: "assets/icons/Help.svg",
-            press: () => _showComingSoon(context, "Customer support"),
+            text: 'Customer support',
+            svgSrc: 'assets/icons/Help.svg',
+            press: () => _showComingSoon(context, 'Customer support'),
           ),
           ProfileMenuListTile(
-            text: "Grooming assistance",
-            svgSrc: "assets/icons/Return.svg",
-            press: () => _showComingSoon(context, "Grooming assistance"),
+            text: 'Grooming assistance',
+            svgSrc: 'assets/icons/Return.svg',
+            press: () => _showComingSoon(context, 'Grooming assistance'),
             isShowDivider: false,
           ),
           const SizedBox(height: defaultPadding),
@@ -192,7 +232,7 @@ class ProfileScreen extends StatelessWidget {
                   },
             minLeadingWidth: 24,
             leading: SvgPicture.asset(
-              "assets/icons/Logout.svg",
+              'assets/icons/Logout.svg',
               height: 24,
               width: 24,
               colorFilter: const ColorFilter.mode(
@@ -201,9 +241,45 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             title: Text(
-              authProvider.isLoading ? "Please wait..." : "Log out",
+              authProvider.isLoading ? 'Please wait...' : 'Log out',
               style: const TextStyle(color: errorColor, fontSize: 14, height: 1),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileMetricCard extends StatelessWidget {
+  const _ProfileMetricCard({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(defaultPadding),
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).dividerColor),
+        borderRadius: const BorderRadius.all(
+          Radius.circular(defaultBorderRadious),
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: defaultPadding / 4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
           ),
         ],
       ),

@@ -54,7 +54,6 @@ class AppScope extends StatelessWidget {
         ChangeNotifierProvider<AdminProvider>(
           create: (context) => AdminProvider(
             adminRepository: context.read<AdminRepository>(),
-            categoryRepository: context.read<CategoryRepository>(),
           )..loadAdminData(),
         ),
       ],

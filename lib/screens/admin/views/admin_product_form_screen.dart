@@ -7,6 +7,8 @@ import 'package:shop/models/category_model.dart';
 import 'package:shop/models/product_model.dart';
 import 'package:shop/providers/admin_provider.dart';
 import 'package:shop/providers/auth_provider.dart';
+import 'package:shop/providers/product_provider.dart';
+import 'package:shop/route/route_constants.dart';
 
 class AdminProductFormScreen extends StatefulWidget {
   const AdminProductFormScreen({
@@ -199,12 +201,38 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
                       value == null || value.isEmpty ? 'Choose a category' : null,
                 )
               else
-                TextFormField(
-                  controller: _categoryNameController,
-                  decoration: const InputDecoration(labelText: 'Category name'),
-                  validator: (value) => value == null || value.trim().isEmpty
-                      ? 'Category is required'
-                      : null,
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(defaultPadding),
+                  decoration: BoxDecoration(
+                    color: primaryColor.withValues(alpha: 0.08),
+                    borderRadius: const BorderRadius.all(
+                      Radius.circular(defaultBorderRadious),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'No categories available',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: defaultPadding / 2),
+                      const Text(
+                        'Add categories from the admin panel first, then return here to choose one from the dropdown.',
+                      ),
+                      const SizedBox(height: defaultPadding),
+                      OutlinedButton(
+                        onPressed: () {
+                          Navigator.pushNamed(
+                            context,
+                            adminCategoriesScreenRoute,
+                          );
+                        },
+                        child: const Text('Manage categories'),
+                      ),
+                    ],
+                  ),
                 ),
               const SizedBox(height: defaultPadding),
               TextFormField(
@@ -300,12 +328,24 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
                     : () async {
                         final messenger = ScaffoldMessenger.of(context);
                         final admin = context.read<AdminProvider>();
+                        final productProvider = context.read<ProductProvider>();
                         final navigator = Navigator.of(context);
                         if (!_formKey.currentState!.validate()) return;
                         if ((_imageUrl ?? '').trim().isEmpty) {
                           messenger.showSnackBar(
                             const SnackBar(
                               content: Text('Upload a product image first.'),
+                            ),
+                          );
+                          return;
+                        }
+                        if (_selectedCategoryId == null ||
+                            _categoryNameController.text.trim().isEmpty) {
+                          messenger.showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Add and select a category before saving the product.',
+                              ),
                             ),
                           );
                           return;
@@ -346,6 +386,8 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
                         final success =
                             await admin.saveProduct(product);
                         if (!mounted || !success) return;
+                        await productProvider.loadInitialData();
+                        if (!mounted) return;
                         navigator.pop();
                       },
                 child: Text(

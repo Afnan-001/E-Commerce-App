@@ -49,6 +49,8 @@ class ProductDetailsScreen extends StatelessWidget {
         ? const <String>['']
         : <String>[currentProduct.imageUrl];
     final displayPrice = currentProduct.salePrice ?? currentProduct.price;
+    final isBookmarked =
+        context.watch<ProductProvider>().isBookmarked(currentProduct.id);
 
     return Scaffold(
       bottomNavigationBar: isProductAvailable
@@ -74,11 +76,15 @@ class ProductDetailsScreen extends StatelessWidget {
               floating: true,
               actions: [
                 IconButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    context.read<ProductProvider>().toggleBookmark(currentProduct);
+                  },
                   icon: SvgPicture.asset(
                     "assets/icons/Bookmark.svg",
                     colorFilter: ColorFilter.mode(
-                      Theme.of(context).textTheme.bodyLarge!.color!,
+                      isBookmarked
+                          ? primaryColor
+                          : Theme.of(context).textTheme.bodyLarge!.color!,
                       BlendMode.srcIn,
                     ),
                   ),

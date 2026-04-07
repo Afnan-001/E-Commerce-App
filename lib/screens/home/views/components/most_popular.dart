@@ -14,7 +14,8 @@ class MostPopular extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final products = context.watch<ProductProvider>().mostPopularProducts;
+    final productProvider = context.watch<ProductProvider>();
+    final products = productProvider.mostPopularProducts;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,6 +52,10 @@ class MostPopular extends StatelessWidget {
                   price: products[index].price,
                   priceAfetDiscount: products[index].priceAfetDiscount,
                   dicountpercent: products[index].dicountpercent,
+                  isSaved: productProvider.isBookmarked(products[index].id),
+                  onToggleSaved: () {
+                    context.read<ProductProvider>().toggleBookmark(products[index]);
+                  },
                   press: () {
                     Navigator.pushNamed(
                       context,

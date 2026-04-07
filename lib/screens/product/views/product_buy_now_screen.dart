@@ -6,6 +6,7 @@ import 'package:shop/components/custom_modal_bottom_sheet.dart';
 import 'package:shop/components/network_image_with_loader.dart';
 import 'package:shop/models/product_model.dart';
 import 'package:shop/providers/cart_provider.dart';
+import 'package:shop/providers/product_provider.dart';
 import 'package:shop/screens/product/views/added_to_cart_message_screen.dart';
 import 'package:shop/screens/product/views/components/product_list_tile.dart';
 import 'package:shop/screens/product/views/location_permission_store_availability_screen.dart';
@@ -35,6 +36,7 @@ class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
   Widget build(BuildContext context) {
     final product = widget.product;
     final totalPrice = _unitPrice * _quantity;
+    final isBookmarked = context.watch<ProductProvider>().isBookmarked(product.id);
 
     return Scaffold(
       bottomNavigationBar: CartButton(
@@ -71,11 +73,15 @@ class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
                   ),
                 ),
                 IconButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    context.read<ProductProvider>().toggleBookmark(product);
+                  },
                   icon: SvgPicture.asset(
                     "assets/icons/Bookmark.svg",
                     colorFilter: ColorFilter.mode(
-                      Theme.of(context).textTheme.bodyLarge!.color!,
+                      isBookmarked
+                          ? primaryColor
+                          : Theme.of(context).textTheme.bodyLarge!.color!,
                       BlendMode.srcIn,
                     ),
                   ),

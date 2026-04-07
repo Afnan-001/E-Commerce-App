@@ -15,7 +15,8 @@ class FlashSale extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final products = context.watch<ProductProvider>().flashSaleProducts;
+    final productProvider = context.watch<ProductProvider>();
+    final products = productProvider.flashSaleProducts;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,6 +58,10 @@ class FlashSale extends StatelessWidget {
                   price: products[index].price,
                   priceAfetDiscount: products[index].priceAfetDiscount,
                   dicountpercent: products[index].dicountpercent,
+                  isSaved: productProvider.isBookmarked(products[index].id),
+                  onToggleSaved: () {
+                    context.read<ProductProvider>().toggleBookmark(products[index]);
+                  },
                   press: () {
                     Navigator.pushNamed(
                       context,

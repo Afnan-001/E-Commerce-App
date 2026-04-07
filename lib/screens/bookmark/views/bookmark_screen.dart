@@ -12,7 +12,8 @@ class BookmarkScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final products = context.watch<ProductProvider>().bookmarkedProducts;
+    final productProvider = context.watch<ProductProvider>();
+    final products = productProvider.bookmarkedProducts;
 
     return Scaffold(
       appBar: AppBar(
@@ -48,6 +49,12 @@ class BookmarkScreen extends StatelessWidget {
                           price: products[index].price,
                           priceAfetDiscount: products[index].priceAfetDiscount,
                           dicountpercent: products[index].dicountpercent,
+                          isSaved: productProvider.isBookmarked(products[index].id),
+                          onToggleSaved: () {
+                            context
+                                .read<ProductProvider>()
+                                .toggleBookmark(products[index]);
+                          },
                           press: () {
                             Navigator.pushNamed(
                               context,

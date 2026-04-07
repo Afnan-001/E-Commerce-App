@@ -4,17 +4,13 @@ import 'package:shop/models/category_model.dart';
 import 'package:shop/models/order_model.dart';
 import 'package:shop/models/product_model.dart';
 import 'package:shop/repositories/admin_repository.dart';
-import 'package:shop/repositories/category_repository.dart';
 
 class AdminProvider extends ChangeNotifier {
   AdminProvider({
     required AdminRepository adminRepository,
-    required CategoryRepository categoryRepository,
-  })  : _adminRepository = adminRepository,
-        _categoryRepository = categoryRepository;
+  }) : _adminRepository = adminRepository;
 
   final AdminRepository _adminRepository;
-  final CategoryRepository _categoryRepository;
 
   bool _isLoading = false;
   bool _isSaving = false;
@@ -37,14 +33,14 @@ class AdminProvider extends ChangeNotifier {
 
     try {
       final results = await Future.wait<dynamic>(<Future<dynamic>>[
+        _adminRepository.getCategories(),
         _adminRepository.getProducts(),
         _adminRepository.getOrders(),
-        _categoryRepository.getDiscoverCategories(),
       ]);
 
-      _products = results[0] as List<ProductModel>;
-      _orders = results[1] as List<OrderModel>;
-      _categories = results[2] as List<CategoryModel>;
+      _categories = results[0] as List<CategoryModel>;
+      _products = results[1] as List<ProductModel>;
+      _orders = results[2] as List<OrderModel>;
     } catch (error) {
       _errorMessage = error.toString();
     }
@@ -82,6 +78,40 @@ class AdminProvider extends ChangeNotifier {
     } catch (error) {
       _errorMessage = error.toString();
       return false;
+    } finally {
+      _isSaving = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> saveCategory(CategoryModel category) async {
+    _isSaving = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _adminRepository.saveCategory(category);
+      await loadAdminData();
+      return true;
+    } catch (error) {
+      _errorMessage = error.toString();
+      return false;
+    } finally {
+      _isSaving = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> deleteCategory(String categoryId) async {
+    _isSaving = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _adminRepository.deleteCategory(categoryId);
+      await loadAdminData();
+    } catch (error) {
+      _errorMessage = error.toString();
     } finally {
       _isSaving = false;
       notifyListeners();

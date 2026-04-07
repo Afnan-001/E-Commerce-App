@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 abstract class ProductRepository {
+  Future<List<ProductModel>> getCatalogProducts();
   Future<List<ProductModel>> getPopularProducts();
   Future<List<ProductModel>> getFlashSaleProducts();
   Future<List<ProductModel>> getBestSellerProducts();
@@ -13,16 +14,21 @@ abstract class ProductRepository {
 class FirebaseProductRepository implements ProductRepository {
   FirebaseProductRepository({
     FirebaseFirestore? firestore,
-  }) : _firestore = firestore ?? FirebaseFirestore.instance;
+  }) : _firestore = firestore;
 
-  final FirebaseFirestore _firestore;
+  final FirebaseFirestore? _firestore;
+
+  FirebaseFirestore get _db => _firestore ?? FirebaseFirestore.instance;
+
+  @override
+  Future<List<ProductModel>> getCatalogProducts() async {
+    return _loadActiveProducts();
+  }
 
   @override
   Future<List<ProductModel>> getBestSellerProducts() async {
-    return _loadProducts(
-      queryBuilder: (collection) =>
-          collection.where('isActive', isEqualTo: true).limit(10),
-    );
+    final products = await _loadActiveProducts();
+    return products.take(10).toList();
   }
 
   @override
@@ -32,46 +38,32 @@ class FirebaseProductRepository implements ProductRepository {
 
   @override
   Future<List<ProductModel>> getFlashSaleProducts() async {
-    return _loadProducts(
-      queryBuilder: (collection) => collection
-          .where('isActive', isEqualTo: true)
-          .where('salePrice', isNull: false)
-          .limit(10),
-    );
+    final products = await _loadActiveProducts();
+    return products.where((product) => product.salePrice != null).take(10).toList();
   }
 
   @override
   Future<List<ProductModel>> getMostPopularProducts() async {
-    return _loadProducts(
-      queryBuilder: (collection) =>
-          collection.where('isActive', isEqualTo: true).limit(10),
-    );
+    final products = await _loadActiveProducts();
+    return products.take(10).toList();
   }
 
   @override
   Future<List<ProductModel>> getPopularProducts() async {
-    return _loadProducts(
-      queryBuilder: (collection) => collection
-          .where('isActive', isEqualTo: true)
-          .where('isFeatured', isEqualTo: true)
-          .limit(10),
-    );
+    final products = await _loadActiveProducts();
+    return products.where((product) => product.isFeatured).take(10).toList();
   }
 
-  Future<List<ProductModel>> _loadProducts({
-    required Query<Map<String, dynamic>> Function(
-      CollectionReference<Map<String, dynamic>> collection,
-    ) queryBuilder,
-  }) async {
+  Future<List<ProductModel>> _loadActiveProducts() async {
     if (Firebase.apps.isEmpty) {
       return const <ProductModel>[];
     }
 
-    final collection = _firestore.collection('products');
-    final snapshot = await queryBuilder(collection).get();
+    final snapshot = await _db.collection('products').get();
 
     return snapshot.docs
         .map((doc) => ProductModel.fromMap(doc.id, doc.data()))
+        .where((product) => product.isActive)
         .toList();
   }
 }

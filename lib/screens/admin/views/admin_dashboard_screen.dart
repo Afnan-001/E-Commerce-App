@@ -65,20 +65,37 @@ class AdminDashboardScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: _MetricCard(
+                    label: 'Categories',
+                    value: adminProvider.categories.length.toString(),
+                  ),
+                ),
+                const SizedBox(width: defaultPadding),
+                Expanded(
+                  child: _MetricCard(
                     label: 'Products',
                     value: adminProvider.products.length.toString(),
                   ),
                 ),
-                const SizedBox(width: defaultPadding),
+              ],
+            ),
+            const SizedBox(height: defaultPadding),
+            Row(
+              children: [
                 Expanded(
                   child: _MetricCard(
                     label: 'Orders',
                     value: adminProvider.orders.length.toString(),
                   ),
                 ),
+                const SizedBox(width: defaultPadding),
+                const Expanded(
+                  child: _MetricCard(
+                    label: 'Uploads',
+                    value: 'Cloudinary',
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: defaultPadding),
             _StatusCard(
               title: 'Firebase status',
               subtitle:
@@ -92,6 +109,13 @@ class AdminDashboardScreen extends StatelessWidget {
                   : 'Add your cloud name and unsigned upload preset in lib/core/config/cloudinary_config.dart.',
             ),
             const SizedBox(height: defaultPadding),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, adminCategoriesScreenRoute);
+              },
+              child: const Text('Manage categories'),
+            ),
+            const SizedBox(height: defaultPadding / 2),
             ElevatedButton(
               onPressed: () {
                 Navigator.pushNamed(context, adminProductsScreenRoute);

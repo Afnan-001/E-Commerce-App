@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shop/core/widgets/section_empty_state.dart';
+import 'package:shop/providers/product_provider.dart';
 
 import '../../../../constants.dart';
 import 'categories.dart';
@@ -11,23 +14,28 @@ class OffersCarouselAndCategories extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final categories = context.watch<ProductProvider>().discoverCategories;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // While loading use 👇
-        // const OffersSkelton(),
         const OffersCarousel(),
         const SizedBox(height: defaultPadding / 2),
         Padding(
           padding: const EdgeInsets.all(defaultPadding),
           child: Text(
-            "Pet categories",
+            'Shop by category',
             style: Theme.of(context).textTheme.titleSmall,
           ),
         ),
-        // While loading use 👇
-        // const CategoriesSkelton(),
-        const Categories(),
+        if (categories.isEmpty)
+          const SectionEmptyState(
+            title: 'No categories added yet',
+            message:
+                'Admin categories will automatically appear here and in the discover screen.',
+          )
+        else
+          const Categories(),
       ],
     );
   }

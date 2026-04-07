@@ -9,9 +9,11 @@ abstract class CategoryRepository {
 class FirebaseCategoryRepository implements CategoryRepository {
   FirebaseCategoryRepository({
     FirebaseFirestore? firestore,
-  }) : _firestore = firestore ?? FirebaseFirestore.instance;
+  }) : _firestore = firestore;
 
-  final FirebaseFirestore _firestore;
+  final FirebaseFirestore? _firestore;
+
+  FirebaseFirestore get _db => _firestore ?? FirebaseFirestore.instance;
 
   @override
   Future<List<CategoryModel>> getDiscoverCategories() async {
@@ -19,15 +21,13 @@ class FirebaseCategoryRepository implements CategoryRepository {
       return const <CategoryModel>[];
     }
 
-    final snapshot = await _firestore
-        .collection('categories')
-        .where('isActive', isEqualTo: true)
-        .orderBy('sortOrder')
-        .get();
+    final snapshot = await _db.collection('categories').get();
 
     final categories = snapshot.docs
         .map((doc) => CategoryModel.fromMap(doc.id, doc.data()))
-        .toList();
+        .where((category) => category.isActive)
+        .toList()
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
     final parentCategories =
         categories.where((category) => category.parentId == null).toList();
