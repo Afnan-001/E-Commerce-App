@@ -20,36 +20,37 @@ class _OnBordingScreenState extends State<OnBordingScreen> {
     Onbord(
       image: "assets/Illustration/Illustration-0.png",
       imageDarkTheme: "assets/Illustration/Illustration_darkTheme_0.png",
-      title: "Find the item you’ve \nbeen looking for",
+      title: "Find trusted products \nfor every pet",
       description:
-          "Here you’ll see rich varieties of goods, carefully classified for seamless browsing experience.",
+          "Browse grooming products, pet accessories, and daily essentials in one easy place.",
     ),
     Onbord(
       image: "assets/Illustration/Illustration-1.png",
       imageDarkTheme: "assets/Illustration/Illustration_darkTheme_1.png",
-      title: "Get those shopping \nbags filled",
+      title: "Book grooming \nand shop quickly",
       description:
-          "Add any item you want to your cart, or save it on your wishlist, so you don’t miss it in your future purchases.",
+          "Add pet care products to your cart, save favorites, and get ready for your next grooming visit.",
     ),
     Onbord(
       image: "assets/Illustration/Illustration-2.png",
       imageDarkTheme: "assets/Illustration/Illustration_darkTheme_2.png",
-      title: "Fast & secure \npayment",
-      description: "There are many payment options available for your ease.",
+      title: "Easy checkout \nwith secure payment",
+      description:
+          "Pay online or choose cash on delivery for a simple checkout experience.",
     ),
     Onbord(
       image: "assets/Illustration/Illustration-3.png",
       imageDarkTheme: "assets/Illustration/Illustration_darkTheme_3.png",
-      title: "Package tracking",
+      title: "Track orders \nand grooming updates",
       description:
-          "In particular, Shoplon can pack your orders, and help you seamlessly manage your shipments.",
+          "Stay updated on order progress, service confirmations, and delivery status in one place.",
     ),
     Onbord(
       image: "assets/Illustration/Illustration-4.png",
       imageDarkTheme: "assets/Illustration/Illustration_darkTheme_4.png",
-      title: "Nearby stores",
+      title: "Nearby care \nand pickup support",
       description:
-          "Easily track nearby shops, browse through their items and get information about their prodcuts.",
+          "Check pickup options, nearby service support, and useful details before you place an order.",
     ),
   ];
 
@@ -80,9 +81,10 @@ class _OnBordingScreenState extends State<OnBordingScreen> {
                     Navigator.pushNamed(context, logInScreenRoute);
                   },
                   child: Text(
-                    "Skip",
+                    "Later",
                     style: TextStyle(
-                        color: Theme.of(context).textTheme.bodyLarge!.color),
+                      color: Theme.of(context).textTheme.bodyLarge!.color,
+                    ),
                   ),
                 ),
               ),
@@ -123,7 +125,9 @@ class _OnBordingScreenState extends State<OnBordingScreen> {
                       onPressed: () {
                         if (_pageIndex < _onbordData.length - 1) {
                           _pageController.nextPage(
-                              curve: Curves.ease, duration: defaultDuration);
+                            curve: Curves.ease,
+                            duration: defaultDuration,
+                          );
                         } else {
                           Navigator.pushNamed(context, logInScreenRoute);
                         }
@@ -152,7 +156,9 @@ class _OnBordingScreenState extends State<OnBordingScreen> {
 }
 
 class Onbord {
-  final String image, title, description;
+  final String image;
+  final String title;
+  final String description;
   final String? imageDarkTheme;
 
   Onbord({

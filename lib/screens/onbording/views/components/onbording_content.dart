@@ -12,35 +12,31 @@ class OnbordingContent extends StatelessWidget {
   });
 
   final bool isTextOnTop;
-  final String title, description, image;
+  final String title;
+  final String description;
+  final String image;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         const Spacer(),
-
         if (isTextOnTop)
           OnbordTitleDescription(
             title: title,
             description: description,
           ),
         if (isTextOnTop) const Spacer(),
-
-        /// if you are using SVG then replace [Image.asset] with [SvgPicture.asset]
-
         Image.asset(
           image,
           height: 250,
         ),
         if (!isTextOnTop) const Spacer(),
         if (!isTextOnTop)
-          const OnbordTitleDescription(
-            title: "Find the item you’ve \nbeen looking for",
-            description:
-                "Here you’ll see rich varieties of goods, carefully classified for seamless browsing experience.",
+          OnbordTitleDescription(
+            title: title,
+            description: description,
           ),
-
         const Spacer(),
       ],
     );
@@ -54,7 +50,8 @@ class OnbordTitleDescription extends StatelessWidget {
     required this.description,
   });
 
-  final String title, description;
+  final String title;
+  final String description;
 
   @override
   Widget build(BuildContext context) {

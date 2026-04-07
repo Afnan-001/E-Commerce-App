@@ -63,17 +63,17 @@ class ProductDetailsScreen extends StatelessWidget {
               images: [productDemoImg1, productDemoImg2, productDemoImg3],
             ),
             ProductInfo(
-              brand: "LIPSY LONDON",
-              title: "Sleeveless Ruffle",
+              brand: "PawPure",
+              title: "Oatmeal Dog Shampoo",
               isAvailable: isProductAvailable,
               description:
-                  "A cool gray cap in soft corduroy. Watch me.' By buying cotton products from Lindex, you’re supporting more responsibly...",
+                  "A gentle grooming shampoo made for regular coat cleaning, odor control, and a softer finish after every wash.",
               rating: 4.4,
               numOfReviews: 126,
             ),
             ProductListTile(
               svgSrc: "assets/icons/Product.svg",
-              title: "Product Details",
+              title: "Care details",
               press: () {
                 customModalBottomSheet(
                   context,
@@ -86,7 +86,7 @@ class ProductDetailsScreen extends StatelessWidget {
             ),
             ProductListTile(
               svgSrc: "assets/icons/Delivery.svg",
-              title: "Shipping Information",
+              title: "Delivery information",
               press: () {
                 customModalBottomSheet(
                   context,
@@ -99,7 +99,7 @@ class ProductDetailsScreen extends StatelessWidget {
             ),
             ProductListTile(
               svgSrc: "assets/icons/Return.svg",
-              title: "Returns",
+              title: "Care policy",
               isShowBottomBorder: true,
               press: () {
                 customModalBottomSheet(
@@ -127,7 +127,7 @@ class ProductDetailsScreen extends StatelessWidget {
               padding: const EdgeInsets.all(defaultPadding),
               sliver: SliverToBoxAdapter(
                 child: Text(
-                  "You may also like",
+                  "You may also need",
                   style: Theme.of(context).textTheme.titleSmall!,
                 ),
               ),

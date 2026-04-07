@@ -16,7 +16,6 @@ class _EntryPointState extends State<EntryPoint> {
     HomeScreen(),
     DiscoverScreen(),
     BookmarkScreen(),
-    // EmptyCartScreen(), // if Cart is empty
     CartScreen(),
     ProfileScreen(),
   ];
@@ -29,30 +28,27 @@ class _EntryPointState extends State<EntryPoint> {
         src,
         height: 24,
         colorFilter: ColorFilter.mode(
-            color ??
-                Theme.of(context).iconTheme.color!.withValues(
-                    alpha: Theme.of(context).brightness == Brightness.dark
-                        ? 0.3
-                        : 1),
-            BlendMode.srcIn),
+          color ??
+              Theme.of(context).iconTheme.color!.withValues(
+                    alpha:
+                        Theme.of(context).brightness == Brightness.dark ? 0.3 : 1,
+                  ),
+          BlendMode.srcIn,
+        ),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        // pinned: true,
-        // floating: true,
-        // snap: true,
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         leading: const SizedBox(),
         leadingWidth: 0,
         centerTitle: false,
-        title: SvgPicture.asset(
-          "assets/logo/Shoplon.svg",
-          colorFilter: ColorFilter.mode(
-              Theme.of(context).iconTheme.color!, BlendMode.srcIn),
-          height: 20,
-          width: 100,
+        title: Text(
+          "PawCare",
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
         ),
         actions: [
           IconButton(
@@ -63,13 +59,13 @@ class _EntryPointState extends State<EntryPoint> {
               "assets/icons/Search.svg",
               height: 24,
               colorFilter: ColorFilter.mode(
-                  Theme.of(context).textTheme.bodyLarge!.color!,
-                  BlendMode.srcIn),
+                Theme.of(context).textTheme.bodyLarge!.color!,
+                BlendMode.srcIn,
+              ),
             ),
           ),
         ],
       ),
-      // body: _pages[_currentIndex],
       body: PageTransitionSwitcher(
         duration: defaultDuration,
         transitionBuilder: (child, animation, secondAnimation) {
@@ -99,7 +95,6 @@ class _EntryPointState extends State<EntryPoint> {
               ? Colors.white
               : const Color(0xFF101015),
           type: BottomNavigationBarType.fixed,
-          // selectedLabelStyle: TextStyle(color: primaryColor),
           selectedFontSize: 12,
           selectedItemColor: primaryColor,
           unselectedItemColor: Colors.transparent,
@@ -119,7 +114,7 @@ class _EntryPointState extends State<EntryPoint> {
               icon: svgIcon("assets/icons/Bookmark.svg"),
               activeIcon:
                   svgIcon("assets/icons/Bookmark.svg", color: primaryColor),
-              label: "Bookmark",
+              label: "Saved",
             ),
             BottomNavigationBarItem(
               icon: svgIcon("assets/icons/Bag.svg"),

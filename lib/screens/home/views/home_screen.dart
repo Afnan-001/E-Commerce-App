@@ -28,11 +28,11 @@ class HomeScreen extends StatelessWidget {
             SliverToBoxAdapter(
               child: Column(
                 children: [
-                  // While loading use 👇
+                  
                   // const BannerMSkelton(),‚
                   BannerSStyle1(
-                    title: "New \narrival",
-                    subtitle: "SPECIAL OFFER",
+                    title: "Fresh \narrivals",
+                    subtitle: "GROOMING PICKS",
                     discountParcent: 50,
                     press: () {
                       Navigator.pushNamed(context, discoverScreenRoute);
@@ -54,9 +54,9 @@ class HomeScreen extends StatelessWidget {
                   // While loading use 👇
                   // const BannerSSkelton(),
                   BannerSStyle5(
-                    title: "Black \nfriday",
+                    title: "Healthy \ncoat",
                     subtitle: "50% Off",
-                    bottomText: "Collection".toUpperCase(),
+                    bottomText: "CARE RANGE",
                     press: () {
                       Navigator.pushNamed(context, discoverScreenRoute);
                     },

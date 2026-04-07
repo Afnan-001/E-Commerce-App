@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../constants.dart';
 
@@ -18,14 +17,6 @@ class BuyFullKit extends StatefulWidget {
 
 class _BuyFullKitState extends State<BuyFullKit> {
   bool _isCopied = false;
-  final Uri _url = Uri.parse(
-      'https://app.gumroad.com/checkout?_gl=1*1j1owy*_ga*Nzc0MTA1NTYwLjE3MjAwMTA3MzM.*_ga_6LJN6D94N6*MTcyMDA0MjQzMC41LjEuMTcyMDA0MjQzMS4wLjAuMA..&product=uxznc&option=B3wWhE6QH46cfm31C7jEmQ%3D%3D&quantity=1&referrer=App');
-  Future<void> buyLink() async {
-    if (!await launchUrl(_url)) {
-      throw Exception('Could not launch $_url');
-    }
-  }
-
   late PageController _pageController;
   late Timer _timer;
   int _currentPage = 0;
@@ -65,7 +56,6 @@ class _BuyFullKitState extends State<BuyFullKit> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Image.asset("assets/screens/Forgot_password.png"),
           PageView.builder(
             controller: _pageController,
             itemCount: widget.images.length,
@@ -94,19 +84,19 @@ class _BuyFullKitState extends State<BuyFullKit> {
                         color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 20,
                         offset: const Offset(4, 10),
-                      )
+                      ),
                     ],
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "Get the full template",
+                        "This section is coming next",
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: defaultPadding),
                       const Text(
-                        "Thank you for using The Flutter Way shop template. You're currently using the free version. Please get the full kit to use this screen.",
+                        "We are adapting this screen for grooming bookings, pet products, and client operations. The layout is ready and the real workflow will be connected in the next development step.",
                       ),
                       const SizedBox(height: defaultPadding),
                       Row(
@@ -114,24 +104,23 @@ class _BuyFullKitState extends State<BuyFullKit> {
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: () async {
-                                await Clipboard.setData(const ClipboardData(
-                                        text:
-                                            "https://app.gumroad.com/checkout?_gl=1*1j1owy*_ga*Nzc0MTA1NTYwLjE3MjAwMTA3MzM.*_ga_6LJN6D94N6*MTcyMDA0MjQzMC41LjEuMTcyMDA0MjQzMS4wLjAuMA..&product=uxznc&option=B3wWhE6QH46cfm31C7jEmQ%3D%3D&quantity=1&referrer=App"))
-                                    .then((value) {
+                                await Clipboard.setData(
+                                  const ClipboardData(
+                                    text:
+                                        "PawCare feature planning in progress",
+                                  ),
+                                ).then((value) {
                                   setState(() {
                                     _isCopied = true;
                                   });
-                                  Future.delayed(const Duration(seconds: 2),
-                                      () {
+                                  Future.delayed(const Duration(seconds: 2), () {
                                     setState(() {
                                       _isCopied = false;
                                     });
                                   });
                                 });
                               },
-                              // child: Text("Get full kit"),
-                              label:
-                                  Text(_isCopied ? "Link Copyed" : "Copy link"),
+                              label: Text(_isCopied ? "Copied" : "Copy note"),
                               icon: SvgPicture.asset(
                                 "assets/icons/world_map.svg",
                                 colorFilter: const ColorFilter.mode(
@@ -144,19 +133,16 @@ class _BuyFullKitState extends State<BuyFullKit> {
                           const SizedBox(width: defaultPadding),
                           Expanded(
                             child: OutlinedButton.icon(
-                              onPressed: () async {
-                                buyLink();
+                              onPressed: () {
+                                Navigator.pop(context);
                               },
-                              // child: Text("Get full kit"),
-                              label: const Text("Get full code"),
+                              label: const Text("Back"),
                               icon: SvgPicture.asset(
                                 "assets/icons/Bag.svg",
                                 colorFilter: const ColorFilter.mode(
                                   primaryColor,
                                   BlendMode.srcIn,
                                 ),
-                                // height: 24,
-                                // width: 24,
                               ),
                             ),
                           ),
@@ -167,7 +153,7 @@ class _BuyFullKitState extends State<BuyFullKit> {
                 ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );

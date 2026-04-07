@@ -32,12 +32,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Welcome back!",
+                    "Welcome back to PawCare!",
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: defaultPadding / 2),
                   const Text(
-                    "Log in with your data that you intered during your registration.",
+                    "Sign in to manage grooming bookings, pet orders, and your saved pet care essentials.",
                   ),
                   const SizedBox(height: defaultPadding),
                   LogInForm(formKey: _formKey),
@@ -46,7 +46,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: const Text("Forgot password"),
                       onPressed: () {
                         Navigator.pushNamed(
-                            context, passwordRecoveryScreenRoute);
+                          context,
+                          passwordRecoveryScreenRoute,
+                        );
                       },
                     ),
                   ),
@@ -59,9 +61,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
                         Navigator.pushNamedAndRemoveUntil(
-                            context,
-                            entryPointScreenRoute,
-                            ModalRoute.withName(logInScreenRoute));
+                          context,
+                          entryPointScreenRoute,
+                          ModalRoute.withName(logInScreenRoute),
+                        );
                       }
                     },
                     child: const Text("Log in"),
@@ -75,12 +78,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           Navigator.pushNamed(context, signUpScreenRoute);
                         },
                         child: const Text("Sign up"),
-                      )
+                      ),
                     ],
                   ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),

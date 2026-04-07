@@ -1,7 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:shop/screens/auth/views/components/sign_up_form.dart';
 import 'package:shop/route/route_constants.dart';
+import 'package:shop/screens/auth/views/components/sign_up_form.dart';
 
 import '../../../constants.dart';
 
@@ -33,12 +33,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Let’s get started!",
+                    "Create your PawCare account",
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: defaultPadding / 2),
                   const Text(
-                    "Please enter your valid data in order to create an account.",
+                    "Create an account to book grooming services, shop pet products, and track your orders.",
                   ),
                   const SizedBox(height: defaultPadding),
                   SignUpForm(formKey: _formKey),
@@ -58,7 +58,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 recognizer: TapGestureRecognizer()
                                   ..onTap = () {
                                     Navigator.pushNamed(
-                                        context, termsOfServicesScreenRoute);
+                                      context,
+                                      termsOfServicesScreenRoute,
+                                    );
                                   },
                                 text: " Terms of service ",
                                 style: const TextStyle(
@@ -72,15 +74,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             ],
                           ),
                         ),
-                      )
+                      ),
                     ],
                   ),
                   const SizedBox(height: defaultPadding * 2),
                   ElevatedButton(
                     onPressed: () {
-                      // There is 2 more screens while user complete their profile
-                      // afre sign up, it's available on the pro version get it now
-                      // 🔗 https://theflutterway.gumroad.com/l/fluttershop
                       Navigator.pushNamed(context, entryPointScreenRoute);
                     },
                     child: const Text("Continue"),
@@ -94,12 +93,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           Navigator.pushNamed(context, logInScreenRoute);
                         },
                         child: const Text("Log in"),
-                      )
+                      ),
                     ],
                   ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),

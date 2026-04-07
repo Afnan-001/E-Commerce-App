@@ -12,7 +12,7 @@ class WalletScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Wallet"),
+        title: const Text("Store Credit"),
       ),
       body: SafeArea(
         child: Padding(
@@ -32,7 +32,7 @@ class WalletScreen extends StatelessWidget {
                 padding: const EdgeInsets.only(top: defaultPadding / 2),
                 sliver: SliverToBoxAdapter(
                   child: Text(
-                    "Wallet history",
+                    "Credit activity",
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                 ),
@@ -53,7 +53,7 @@ class WalletScreen extends StatelessWidget {
                   ),
                   childCount: 4,
                 ),
-              )
+              ),
             ],
           ),
         ),

@@ -48,7 +48,7 @@ class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
               children: [
                 const BackButton(),
                 Text(
-                  "Sleeveless Ruffle",
+                  "Oatmeal Dog Shampoo",
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
                 IconButton(
@@ -132,7 +132,7 @@ class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
                         ),
                         const SizedBox(height: defaultPadding / 2),
                         const Text(
-                          "Select a size to check store availability and In-Store pickup options.",
+                          "Choose a product option to check store pickup availability and nearby support.",
                         ),
                       ],
                     ),

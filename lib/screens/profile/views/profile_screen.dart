@@ -55,12 +55,12 @@ class ProfileScreen extends StatelessWidget {
             },
           ),
           ProfileMenuListTile(
-            text: "Returns",
+            text: "Support",
             svgSrc: "assets/icons/Return.svg",
             press: () {},
           ),
           ProfileMenuListTile(
-            text: "Wishlist",
+            text: "Saved items",
             svgSrc: "assets/icons/Wishlist.svg",
             press: () {},
           ),
@@ -74,12 +74,10 @@ class ProfileScreen extends StatelessWidget {
           ProfileMenuListTile(
             text: "Payment",
             svgSrc: "assets/icons/card.svg",
-            press: () {
-              Navigator.pushNamed(context, emptyPaymentScreenRoute);
-            },
+            press: () {},
           ),
           ProfileMenuListTile(
-            text: "Wallet",
+            text: "Store credit",
             svgSrc: "assets/icons/Wallet.svg",
             press: () {
               Navigator.pushNamed(context, walletScreenRoute);
@@ -119,9 +117,7 @@ class ProfileScreen extends StatelessWidget {
           ProfileMenuListTile(
             text: "Language",
             svgSrc: "assets/icons/Language.svg",
-            press: () {
-              Navigator.pushNamed(context, selectLanguageScreenRoute);
-            },
+            press: () {},
           ),
           ProfileMenuListTile(
             text: "Location",
@@ -140,9 +136,7 @@ class ProfileScreen extends StatelessWidget {
           ProfileMenuListTile(
             text: "Get Help",
             svgSrc: "assets/icons/Help.svg",
-            press: () {
-              Navigator.pushNamed(context, getHelpScreenRoute);
-            },
+            press: () {},
           ),
           ProfileMenuListTile(
             text: "FAQ",

@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:shop/components/buy_full_ui_kit.dart';
+import 'package:shop/core/widgets/feature_placeholder_screen.dart';
 
 class OrdersScreen extends StatelessWidget {
   const OrdersScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const BuyFullKit(images: [
-      "assets/screens/Orders.png",
-      "assets/screens/Cancel order - Select a reason.png"
-    ]);
+    return const FeaturePlaceholderScreen(
+      title: 'Orders',
+      description:
+          'Order history and status tracking will be connected to Firestore after checkout is implemented.',
+    );
   }
 }
