@@ -35,7 +35,7 @@ class HomeScreen extends StatelessWidget {
                     subtitle: "SPECIAL OFFER",
                     discountParcent: 50,
                     press: () {
-                      Navigator.pushNamed(context, onSaleScreenRoute);
+                      Navigator.pushNamed(context, discoverScreenRoute);
                     },
                   ),
                   const SizedBox(height: defaultPadding / 4),
@@ -58,7 +58,7 @@ class HomeScreen extends StatelessWidget {
                     subtitle: "50% Off",
                     bottomText: "Collection".toUpperCase(),
                     press: () {
-                      Navigator.pushNamed(context, onSaleScreenRoute);
+                      Navigator.pushNamed(context, discoverScreenRoute);
                     },
                   ),
                   const SizedBox(height: defaultPadding / 4),

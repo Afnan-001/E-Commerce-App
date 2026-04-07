@@ -85,7 +85,8 @@ class _ProductImagesState extends State<ProductImages> {
                               .textTheme
                               .bodyLarge!
                               .color!
-                              .withOpacity(index == _currentPage ? 1 : 0.2),
+                              .withValues(
+                                  alpha: index == _currentPage ? 1 : 0.2),
                         ),
                       ),
                     ),

@@ -30,8 +30,10 @@ class _EntryPointState extends State<EntryPoint> {
         height: 24,
         colorFilter: ColorFilter.mode(
             color ??
-                Theme.of(context).iconTheme.color!.withOpacity(
-                    Theme.of(context).brightness == Brightness.dark ? 0.3 : 1),
+                Theme.of(context).iconTheme.color!.withValues(
+                    alpha: Theme.of(context).brightness == Brightness.dark
+                        ? 0.3
+                        : 1),
             BlendMode.srcIn),
       );
     }
@@ -59,18 +61,6 @@ class _EntryPointState extends State<EntryPoint> {
             },
             icon: SvgPicture.asset(
               "assets/icons/Search.svg",
-              height: 24,
-              colorFilter: ColorFilter.mode(
-                  Theme.of(context).textTheme.bodyLarge!.color!,
-                  BlendMode.srcIn),
-            ),
-          ),
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(context, notificationsScreenRoute);
-            },
-            icon: SvgPicture.asset(
-              "assets/icons/Notification.svg",
               height: 24,
               colorFilter: ColorFilter.mode(
                   Theme.of(context).textTheme.bodyLarge!.color!,

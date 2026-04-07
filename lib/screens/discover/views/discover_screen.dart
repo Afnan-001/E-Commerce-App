@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shop/constants.dart';
-import 'package:shop/models/category_model.dart';
+import 'package:shop/providers/product_provider.dart';
 import 'package:shop/screens/search/views/components/search_form.dart';
 
 import 'components/expansion_category.dart';
@@ -10,6 +11,8 @@ class DiscoverScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final categories = context.watch<ProductProvider>().discoverCategories;
+
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -33,11 +36,11 @@ class DiscoverScreen extends StatelessWidget {
             // ),
             Expanded(
               child: ListView.builder(
-                itemCount: demoCategories.length,
+                itemCount: categories.length,
                 itemBuilder: (context, index) => ExpansionCategory(
-                  svgSrc: demoCategories[index].svgSrc!,
-                  title: demoCategories[index].title,
-                  subCategory: demoCategories[index].subCategories!,
+                  svgSrc: categories[index].svgSrc!,
+                  title: categories[index].title,
+                  subCategory: categories[index].subCategories,
                 ),
               ),
             )

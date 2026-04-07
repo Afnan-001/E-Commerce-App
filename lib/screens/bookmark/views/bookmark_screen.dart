@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shop/components/product/product_card.dart';
-import 'package:shop/models/product_model.dart';
+import 'package:shop/providers/product_provider.dart';
 import 'package:shop/route/route_constants.dart';
 
 import '../../../constants.dart';
@@ -10,6 +11,8 @@ class BookmarkScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final products = context.watch<ProductProvider>().bookmarkedProducts;
+
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -28,19 +31,18 @@ class BookmarkScreen extends StatelessWidget {
               delegate: SliverChildBuilderDelegate(
                 (BuildContext context, int index) {
                   return ProductCard(
-                    image: demoPopularProducts[index].image,
-                    brandName: demoPopularProducts[index].brandName,
-                    title: demoPopularProducts[index].title,
-                    price: demoPopularProducts[index].price,
-                    priceAfetDiscount:
-                        demoPopularProducts[index].priceAfetDiscount,
-                    dicountpercent: demoPopularProducts[index].dicountpercent,
+                    image: products[index].image,
+                    brandName: products[index].brandName,
+                    title: products[index].title,
+                    price: products[index].price,
+                    priceAfetDiscount: products[index].priceAfetDiscount,
+                    dicountpercent: products[index].dicountpercent,
                     press: () {
                       Navigator.pushNamed(context, productDetailsScreenRoute);
                     },
                   );
                 },
-                childCount: demoPopularProducts.length,
+                childCount: products.length,
               ),
             ),
           ),
