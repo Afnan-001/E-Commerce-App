@@ -1,7 +1,9 @@
 import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 import 'package:shop/constants.dart';
+import 'package:shop/providers/auth_provider.dart';
 import 'package:shop/route/screen_export.dart';
 
 class EntryPoint extends StatefulWidget {
@@ -23,6 +25,8 @@ class _EntryPointState extends State<EntryPoint> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+
     SvgPicture svgIcon(String src, {Color? color}) {
       return SvgPicture.asset(
         src,
@@ -51,6 +55,20 @@ class _EntryPointState extends State<EntryPoint> {
               ),
         ),
         actions: [
+          if (authProvider.isAdmin)
+            IconButton(
+              onPressed: () {
+                Navigator.pushNamed(context, adminDashboardScreenRoute);
+              },
+              icon: SvgPicture.asset(
+                "assets/icons/Setting.svg",
+                height: 24,
+                colorFilter: ColorFilter.mode(
+                  Theme.of(context).textTheme.bodyLarge!.color!,
+                  BlendMode.srcIn,
+                ),
+              ),
+            ),
           IconButton(
             onPressed: () {
               Navigator.pushNamed(context, searchScreenRoute);

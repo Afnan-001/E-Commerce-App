@@ -10,7 +10,7 @@ class PreferencesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Cookie preferences"),
+        title: const Text("App preferences"),
         actions: [
           TextButton(
             onPressed: () {},
@@ -23,33 +23,33 @@ class PreferencesScreen extends StatelessWidget {
         child: Column(
           children: [
             PreferencesListTile(
-              titleText: "Analytics",
+              titleText: "Order updates",
               subtitleTxt:
-                  "Analytics cookies help us improve our application by collecting and reporting info on how you use it. They collect information in a way that does not directly identify anyone.",
+                  "Control how often you receive order, delivery, and grooming appointment updates inside the app.",
               isActive: true,
               press: () {},
             ),
             const Divider(height: defaultPadding * 2),
             PreferencesListTile(
-              titleText: "Personalization",
+              titleText: "Pet care reminders",
               subtitleTxt:
-                  "Personalisation cookies collect information about your use of this app in order to display contect and experience that are relevant to you.",
+                  "Enable reminders for grooming schedules, repeat orders, and routine pet care follow-ups.",
               isActive: false,
               press: () {},
             ),
             const Divider(height: defaultPadding * 2),
             PreferencesListTile(
-              titleText: "Marketing",
+              titleText: "Offers and promotions",
               subtitleTxt:
-                  "Maarketing cookies collec information about your use of this and other apps to enable display ads and other marketing that is more relevant to you.",
+                  "Choose whether to receive offers on pet products, grooming bundles, and seasonal care campaigns.",
               isActive: false,
               press: () {},
             ),
             const Divider(height: defaultPadding * 2),
             PreferencesListTile(
-              titleText: "Social media cookies",
+              titleText: "Community updates",
               subtitleTxt:
-                  "These cookies are set by a range of social media services that we have added to the site to enable you to share our content with your friends and networks.",
+                  "Stay informed about store announcements, new services, and helpful pet care content from the brand.",
               isActive: false,
               press: () {},
             ),

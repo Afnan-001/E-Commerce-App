@@ -10,24 +10,84 @@ class AuthProvider extends ChangeNotifier {
 
   AppUserModel? _currentUser;
   bool _isLoading = false;
+  String? _errorMessage;
 
   AppUserModel? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _currentUser != null;
   bool get isAdmin => _currentUser?.isAdmin ?? false;
+  String? get errorMessage => _errorMessage;
 
   Future<void> restoreSession() async {
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
-    _currentUser = await _authRepository.getCurrentUser();
+    try {
+      _currentUser = await _authRepository.getCurrentUser();
+    } catch (error) {
+      _errorMessage = error.toString();
+    }
 
     _isLoading = false;
     notifyListeners();
   }
 
-  void setPreviewUser(AppUserModel? user) {
-    _currentUser = user;
+  Future<bool> signIn({
+    required String email,
+    required String password,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _currentUser = await _authRepository.signIn(
+        email: email,
+        password: password,
+      );
+      return true;
+    } catch (error) {
+      _errorMessage = error.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> signUp({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _currentUser = await _authRepository.signUp(
+        name: name,
+        email: email,
+        password: password,
+      );
+      return true;
+    } catch (error) {
+      _errorMessage = error.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> signOut() async {
+    _isLoading = true;
+    notifyListeners();
+
+    await _authRepository.signOut();
+    _currentUser = null;
+    _isLoading = false;
     notifyListeners();
   }
 }

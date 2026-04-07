@@ -1,5 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shop/providers/auth_provider.dart';
 import 'package:shop/route/route_constants.dart';
 import 'package:shop/screens/auth/views/components/sign_up_form.dart';
 
@@ -14,9 +16,22 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+
     return Scaffold(
       body: SingleChildScrollView(
         child: Column(
@@ -41,13 +56,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     "Create an account to book grooming services, shop pet products, and track your orders.",
                   ),
                   const SizedBox(height: defaultPadding),
-                  SignUpForm(formKey: _formKey),
+                  SignUpForm(
+                    formKey: _formKey,
+                    nameController: _nameController,
+                    emailController: _emailController,
+                    passwordController: _passwordController,
+                  ),
+                  if (authProvider.errorMessage != null) ...[
+                    const SizedBox(height: defaultPadding / 2),
+                    Text(
+                      authProvider.errorMessage!,
+                      style: const TextStyle(color: errorColor),
+                    ),
+                  ],
                   const SizedBox(height: defaultPadding),
                   Row(
                     children: [
                       Checkbox(
                         onChanged: (value) {},
-                        value: false,
+                        value: true,
                       ),
                       Expanded(
                         child: Text.rich(
@@ -55,13 +82,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             text: "I agree with the",
                             children: [
                               TextSpan(
-                                recognizer: TapGestureRecognizer()
-                                  ..onTap = () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      termsOfServicesScreenRoute,
-                                    );
-                                  },
+                                recognizer: TapGestureRecognizer()..onTap = () {},
                                 text: " Terms of service ",
                                 style: const TextStyle(
                                   color: primaryColor,
@@ -79,10 +100,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   const SizedBox(height: defaultPadding * 2),
                   ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, entryPointScreenRoute);
-                    },
-                    child: const Text("Continue"),
+                    onPressed: authProvider.isLoading
+                        ? null
+                        : () async {
+                            if (!_formKey.currentState!.validate()) return;
+                            final auth = context.read<AuthProvider>();
+                            final navigator = Navigator.of(context);
+                            final success = await auth.signUp(
+                              name: _nameController.text,
+                              email: _emailController.text,
+                              password: _passwordController.text,
+                            );
+
+                            if (!mounted || !success) return;
+
+                            navigator.pushNamedAndRemoveUntil(
+                              entryPointScreenRoute,
+                              (route) => false,
+                            );
+                          },
+                    child:
+                        Text(authProvider.isLoading ? "Please wait..." : "Continue"),
                   ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,

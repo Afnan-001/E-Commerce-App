@@ -2,9 +2,11 @@ import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 
 import 'package:shop/providers/auth_provider.dart';
+import 'package:shop/providers/admin_provider.dart';
 import 'package:shop/providers/cart_provider.dart';
 import 'package:shop/providers/order_provider.dart';
 import 'package:shop/providers/product_provider.dart';
+import 'package:shop/repositories/admin_repository.dart';
 import 'package:shop/repositories/auth_repository.dart';
 import 'package:shop/repositories/category_repository.dart';
 import 'package:shop/repositories/product_repository.dart';
@@ -22,13 +24,16 @@ class AppScope extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider<AuthRepository>(
-          create: (_) => const DemoAuthRepository(),
+          create: (_) => FirebaseAuthRepository(),
         ),
         Provider<ProductRepository>(
-          create: (_) => const DemoProductRepository(),
+          create: (_) => FirebaseProductRepository(),
         ),
         Provider<CategoryRepository>(
-          create: (_) => const DemoCategoryRepository(),
+          create: (_) => FirebaseCategoryRepository(),
+        ),
+        Provider<AdminRepository>(
+          create: (_) => FirestoreAdminRepository(),
         ),
         ChangeNotifierProvider<AuthProvider>(
           create: (context) =>
@@ -45,6 +50,12 @@ class AppScope extends StatelessWidget {
         ),
         ChangeNotifierProvider<OrderProvider>(
           create: (_) => OrderProvider(),
+        ),
+        ChangeNotifierProvider<AdminProvider>(
+          create: (context) => AdminProvider(
+            adminRepository: context.read<AdminRepository>(),
+            categoryRepository: context.read<CategoryRepository>(),
+          )..loadAdminData(),
         ),
       ],
       child: child,

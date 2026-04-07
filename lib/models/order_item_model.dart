@@ -30,6 +30,16 @@ class OrderItemModel {
     );
   }
 
+  factory OrderItemModel.fromMap(Map<String, dynamic> data) {
+    return OrderItemModel(
+      productId: data['productId'] as String? ?? '',
+      name: data['name'] as String? ?? '',
+      imageUrl: data['imageUrl'] as String? ?? '',
+      unitPrice: (data['unitPrice'] as num?)?.toDouble() ?? 0,
+      quantity: data['quantity'] as int? ?? 0,
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'productId': productId,

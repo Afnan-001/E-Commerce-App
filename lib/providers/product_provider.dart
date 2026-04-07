@@ -16,6 +16,7 @@ class ProductProvider extends ChangeNotifier {
   final CategoryRepository _categoryRepository;
 
   bool _isLoading = false;
+  String? _errorMessage;
   List<ProductModel> _popularProducts = const <ProductModel>[];
   List<ProductModel> _flashSaleProducts = const <ProductModel>[];
   List<ProductModel> _bestSellerProducts = const <ProductModel>[];
@@ -24,6 +25,7 @@ class ProductProvider extends ChangeNotifier {
   List<CategoryModel> _discoverCategories = const <CategoryModel>[];
 
   bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
   List<ProductModel> get popularProducts => _popularProducts;
   List<ProductModel> get flashSaleProducts => _flashSaleProducts;
   List<ProductModel> get bestSellerProducts => _bestSellerProducts;
@@ -33,23 +35,28 @@ class ProductProvider extends ChangeNotifier {
 
   Future<void> loadInitialData() async {
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
-    final results = await Future.wait<dynamic>(<Future<dynamic>>[
-      _productRepository.getPopularProducts(),
-      _productRepository.getFlashSaleProducts(),
-      _productRepository.getBestSellerProducts(),
-      _productRepository.getMostPopularProducts(),
-      _productRepository.getBookmarkedProducts(),
-      _categoryRepository.getDiscoverCategories(),
-    ]);
+    try {
+      final results = await Future.wait<dynamic>(<Future<dynamic>>[
+        _productRepository.getPopularProducts(),
+        _productRepository.getFlashSaleProducts(),
+        _productRepository.getBestSellerProducts(),
+        _productRepository.getMostPopularProducts(),
+        _productRepository.getBookmarkedProducts(),
+        _categoryRepository.getDiscoverCategories(),
+      ]);
 
-    _popularProducts = results[0] as List<ProductModel>;
-    _flashSaleProducts = results[1] as List<ProductModel>;
-    _bestSellerProducts = results[2] as List<ProductModel>;
-    _mostPopularProducts = results[3] as List<ProductModel>;
-    _bookmarkedProducts = results[4] as List<ProductModel>;
-    _discoverCategories = results[5] as List<CategoryModel>;
+      _popularProducts = results[0] as List<ProductModel>;
+      _flashSaleProducts = results[1] as List<ProductModel>;
+      _bestSellerProducts = results[2] as List<ProductModel>;
+      _mostPopularProducts = results[3] as List<ProductModel>;
+      _bookmarkedProducts = results[4] as List<ProductModel>;
+      _discoverCategories = results[5] as List<CategoryModel>;
+    } catch (error) {
+      _errorMessage = error.toString();
+    }
 
     _isLoading = false;
     notifyListeners();
