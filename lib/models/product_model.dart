@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 @immutable
@@ -5,12 +6,11 @@ class ProductModel {
   const ProductModel({
     required this.id,
     required this.name,
-    required this.brandName,
     required this.price,
     required this.imageUrl,
     this.description = '',
-    this.categoryId = '',
-    this.categoryName = '',
+    this.category = '',
+    this.brandName = '',
     this.salePrice,
     this.discountPercent,
     this.stockQuantity = 0,
@@ -22,10 +22,9 @@ class ProductModel {
 
   final String id;
   final String name;
+  final String category;
   final String brandName;
   final String description;
-  final String categoryId;
-  final String categoryName;
   final double price;
   final double? salePrice;
   final int? discountPercent;
@@ -38,6 +37,8 @@ class ProductModel {
 
   String get title => name;
   String get image => imageUrl;
+  String get categoryId => category;
+  String get categoryName => category;
   double? get priceAfetDiscount => salePrice;
   int? get dicountpercent => discountPercent;
   bool get hasDiscount => salePrice != null && salePrice! < price;
@@ -45,10 +46,9 @@ class ProductModel {
   ProductModel copyWith({
     String? id,
     String? name,
+    String? category,
     String? brandName,
     String? description,
-    String? categoryId,
-    String? categoryName,
     double? price,
     double? salePrice,
     int? discountPercent,
@@ -62,10 +62,9 @@ class ProductModel {
     return ProductModel(
       id: id ?? this.id,
       name: name ?? this.name,
+      category: category ?? this.category,
       brandName: brandName ?? this.brandName,
       description: description ?? this.description,
-      categoryId: categoryId ?? this.categoryId,
-      categoryName: categoryName ?? this.categoryName,
       price: price ?? this.price,
       salePrice: salePrice ?? this.salePrice,
       discountPercent: discountPercent ?? this.discountPercent,
@@ -79,20 +78,26 @@ class ProductModel {
   }
 
   factory ProductModel.fromMap(String id, Map<String, dynamic> data) {
+    final basePrice = (data['price'] as num?)?.toDouble() ?? 0;
+    final parsedSalePrice = (data['salePrice'] as num?)?.toDouble();
     return ProductModel(
       id: id,
       name: data['name'] as String? ?? '',
+      category: data['category'] as String? ??
+          data['categoryName'] as String? ??
+          '',
       brandName: data['brandName'] as String? ?? '',
       description: data['description'] as String? ?? '',
-      categoryId: data['categoryId'] as String? ?? '',
-      categoryName: data['categoryName'] as String? ?? '',
-      price: (data['price'] as num?)?.toDouble() ?? 0,
-      salePrice: (data['salePrice'] as num?)?.toDouble(),
-      discountPercent: data['discountPercent'] as int?,
+      price: basePrice,
+      salePrice: parsedSalePrice,
+      discountPercent: data['discountPercent'] as int? ??
+          _discountFromPrices(basePrice, parsedSalePrice),
       imageUrl: data['imageUrl'] as String? ?? '',
       stockQuantity: data['stockQuantity'] as int? ?? 0,
       isActive: data['isActive'] as bool? ?? true,
       isFeatured: data['isFeatured'] as bool? ?? false,
+      createdAt: _dateTimeFromValue(data['createdAt']),
+      updatedAt: _dateTimeFromValue(data['updatedAt']),
     );
   }
 
@@ -101,8 +106,7 @@ class ProductModel {
       'name': name,
       'brandName': brandName,
       'description': description,
-      'categoryId': categoryId,
-      'categoryName': categoryName,
+      'category': category,
       'price': price,
       'salePrice': salePrice,
       'discountPercent': discountPercent,
@@ -113,5 +117,26 @@ class ProductModel {
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
     };
+  }
+
+  static DateTime? _dateTimeFromValue(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+    if (value is DateTime) {
+      return value;
+    }
+    if (value is String && value.isNotEmpty) {
+      return DateTime.tryParse(value);
+    }
+    return null;
+  }
+
+  static int? _discountFromPrices(double price, double? salePrice) {
+    if (salePrice == null || salePrice >= price || price <= 0) {
+      return null;
+    }
+
+    return (((price - salePrice) / price) * 100).round();
   }
 }

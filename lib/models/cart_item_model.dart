@@ -12,7 +12,7 @@ class CartItemModel {
   final ProductModel product;
   final int quantity;
 
-  double get unitPrice => product.salePrice ?? product.price;
+  double get unitPrice => product.price;
   double get totalPrice => unitPrice * quantity;
 
   CartItemModel copyWith({

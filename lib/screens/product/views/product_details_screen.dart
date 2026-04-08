@@ -76,8 +76,19 @@ class ProductDetailsScreen extends StatelessWidget {
               floating: true,
               actions: [
                 IconButton(
-                  onPressed: () {
-                    context.read<ProductProvider>().toggleBookmark(currentProduct);
+                  onPressed: () async {
+                    final productProvider = context.read<ProductProvider>();
+                    final success =
+                        await productProvider.toggleBookmark(currentProduct);
+                    if (!context.mounted || success) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          productProvider.errorMessage ??
+                              'Unable to save this product right now.',
+                        ),
+                      ),
+                    );
                   },
                   icon: SvgPicture.asset(
                     "assets/icons/Bookmark.svg",

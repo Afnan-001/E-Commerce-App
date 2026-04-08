@@ -2,36 +2,40 @@ import 'package:flutter/foundation.dart';
 
 import 'package:shop/models/category_model.dart';
 import 'package:shop/models/product_model.dart';
-import 'package:shop/repositories/category_repository.dart';
 import 'package:shop/repositories/product_repository.dart';
+import 'package:shop/repositories/user_data_repository.dart';
 
 class ProductProvider extends ChangeNotifier {
   ProductProvider({
     required ProductRepository productRepository,
-    required CategoryRepository categoryRepository,
+    required UserDataRepository userDataRepository,
   })  : _productRepository = productRepository,
-        _categoryRepository = categoryRepository;
+        _userDataRepository = userDataRepository;
 
   final ProductRepository _productRepository;
-  final CategoryRepository _categoryRepository;
+  final UserDataRepository _userDataRepository;
 
   bool _isLoading = false;
   String? _errorMessage;
   List<ProductModel> _catalogProducts = const <ProductModel>[];
-  List<ProductModel> _popularProducts = const <ProductModel>[];
-  List<ProductModel> _flashSaleProducts = const <ProductModel>[];
-  List<ProductModel> _bestSellerProducts = const <ProductModel>[];
-  List<ProductModel> _mostPopularProducts = const <ProductModel>[];
-  List<CategoryModel> _discoverCategories = const <CategoryModel>[];
+  List<ProductModel> _featuredProducts = const <ProductModel>[];
+  final List<CategoryModel> _discoverCategories = const <CategoryModel>[
+    CategoryModel(id: 'Dog', title: 'Dog'),
+    CategoryModel(id: 'Cat', title: 'Cat'),
+    CategoryModel(id: 'Grooming', title: 'Grooming'),
+    CategoryModel(id: 'Accessories', title: 'Accessories'),
+  ];
   final Set<String> _bookmarkedProductIds = <String>{};
+  String? _userId;
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   List<ProductModel> get catalogProducts => _catalogProducts;
-  List<ProductModel> get popularProducts => _popularProducts;
-  List<ProductModel> get flashSaleProducts => _flashSaleProducts;
-  List<ProductModel> get bestSellerProducts => _bestSellerProducts;
-  List<ProductModel> get mostPopularProducts => _mostPopularProducts;
+  List<ProductModel> get featuredProducts => _featuredProducts;
+  List<ProductModel> get popularProducts => _featuredProducts;
+  List<ProductModel> get flashSaleProducts => _featuredProducts;
+  List<ProductModel> get bestSellerProducts => _featuredProducts;
+  List<ProductModel> get mostPopularProducts => _featuredProducts;
   List<ProductModel> get bookmarkedProducts => _catalogProducts
       .where((product) => _bookmarkedProductIds.contains(product.id))
       .toList();
@@ -40,7 +44,41 @@ class ProductProvider extends ChangeNotifier {
 
   bool isBookmarked(String productId) => _bookmarkedProductIds.contains(productId);
 
-  void toggleBookmark(ProductModel product) {
+  Future<void> syncUserData(String? userId) async {
+    if (_userId == userId) {
+      return;
+    }
+
+    _userId = userId;
+    _bookmarkedProductIds.clear();
+    notifyListeners();
+
+    if (userId == null || userId.isEmpty) {
+      return;
+    }
+
+    try {
+      final savedIds = await _userDataRepository.getSavedProductIds(userId);
+      _bookmarkedProductIds
+        ..clear()
+        ..addAll(savedIds);
+    } catch (error) {
+      _errorMessage = error.toString();
+    }
+
+    notifyListeners();
+  }
+
+  Future<bool> toggleBookmark(ProductModel product) async {
+    if (_userId == null || _userId!.isEmpty) {
+      _errorMessage = 'Please log in to save products to Firestore.';
+      notifyListeners();
+      return false;
+    }
+
+    _errorMessage = null;
+    final previousBookmarkIds = Set<String>.from(_bookmarkedProductIds);
+    final previousCatalog = List<ProductModel>.from(_catalogProducts);
     if (_bookmarkedProductIds.contains(product.id)) {
       _bookmarkedProductIds.remove(product.id);
     } else {
@@ -49,7 +87,31 @@ class ProductProvider extends ChangeNotifier {
         _catalogProducts = <ProductModel>[product, ..._catalogProducts];
       }
     }
+
     notifyListeners();
+
+    try {
+      if (previousBookmarkIds.contains(product.id)) {
+        await _userDataRepository.removeSavedProduct(
+          userId: _userId!,
+          productId: product.id,
+        );
+      } else {
+        await _userDataRepository.saveProduct(
+          userId: _userId!,
+          product: product,
+        );
+      }
+      return true;
+    } catch (error) {
+      _errorMessage = error.toString();
+      _bookmarkedProductIds
+        ..clear()
+        ..addAll(previousBookmarkIds);
+      _catalogProducts = previousCatalog;
+      notifyListeners();
+      return false;
+    }
   }
 
   Future<void> loadInitialData() async {
@@ -60,19 +122,28 @@ class ProductProvider extends ChangeNotifier {
     try {
       final results = await Future.wait<dynamic>(<Future<dynamic>>[
         _productRepository.getCatalogProducts(),
-        _productRepository.getPopularProducts(),
-        _productRepository.getFlashSaleProducts(),
-        _productRepository.getBestSellerProducts(),
-        _productRepository.getMostPopularProducts(),
-        _categoryRepository.getDiscoverCategories(),
+        _productRepository.getFeaturedProducts(),
       ]);
 
       _catalogProducts = results[0] as List<ProductModel>;
-      _popularProducts = results[1] as List<ProductModel>;
-      _flashSaleProducts = results[2] as List<ProductModel>;
-      _bestSellerProducts = results[3] as List<ProductModel>;
-      _mostPopularProducts = results[4] as List<ProductModel>;
-      _discoverCategories = results[5] as List<CategoryModel>;
+      _featuredProducts = results[1] as List<ProductModel>;
+    } catch (error) {
+      _errorMessage = error.toString();
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> loadProductsByCategory(String category) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _catalogProducts = await _productRepository.getCatalogProducts(
+        category: category,
+      );
     } catch (error) {
       _errorMessage = error.toString();
     }

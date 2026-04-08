@@ -15,6 +15,12 @@ class AdminProductsScreen extends StatelessWidget {
     final authProvider = context.watch<AuthProvider>();
     final adminProvider = context.watch<AdminProvider>();
 
+    if (authProvider.isAdmin &&
+        adminProvider.products.isEmpty &&
+        !adminProvider.isLoading) {
+      Future.microtask(adminProvider.loadAdminData);
+    }
+
     if (!authProvider.isAdmin) {
       return Scaffold(
         appBar: AppBar(title: const Text('Manage products')),
@@ -83,7 +89,11 @@ class AdminProductsScreen extends StatelessWidget {
                                     style: Theme.of(context).textTheme.titleSmall,
                                   ),
                                   const SizedBox(height: defaultPadding / 4),
-                                  Text(product.brandName),
+                                  Text(
+                                    product.brandName.isEmpty
+                                        ? product.categoryName
+                                        : product.brandName,
+                                  ),
                                   const SizedBox(height: defaultPadding / 4),
                                   Text(
                                     'Rs ${product.price.toStringAsFixed(0)}'

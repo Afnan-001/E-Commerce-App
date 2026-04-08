@@ -5,6 +5,7 @@ import 'package:shop/components/list_tile/divider_list_tile.dart';
 import 'package:shop/constants.dart';
 import 'package:shop/providers/auth_provider.dart';
 import 'package:shop/providers/cart_provider.dart';
+import 'package:shop/providers/order_provider.dart';
 import 'package:shop/providers/product_provider.dart';
 import 'package:shop/route/screen_export.dart';
 
@@ -27,6 +28,7 @@ class ProfileScreen extends StatelessWidget {
     final authProvider = context.watch<AuthProvider>();
     final cartProvider = context.watch<CartProvider>();
     final productProvider = context.watch<ProductProvider>();
+    final orderProvider = context.watch<OrderProvider>();
     final user = authProvider.currentUser;
     final displayName =
         user?.name.trim().isNotEmpty == true ? user!.name.trim() : 'Pet Parent';
@@ -96,8 +98,8 @@ class ProfileScreen extends StatelessWidget {
                 const SizedBox(width: defaultPadding),
                 Expanded(
                   child: _ProfileMetricCard(
-                    label: 'Catalog',
-                    value: productProvider.catalogProducts.length.toString(),
+                    label: 'Pending',
+                    value: orderProvider.pendingOrders.length.toString(),
                   ),
                 ),
               ],
@@ -222,7 +224,13 @@ class ProfileScreen extends StatelessWidget {
             onTap: authProvider.isLoading
                 ? null
                 : () async {
+                    final cartProvider = context.read<CartProvider>();
+                    final productProvider = context.read<ProductProvider>();
+                    final orderProvider = context.read<OrderProvider>();
                     await context.read<AuthProvider>().signOut();
+                    await cartProvider.syncForUser(null);
+                    await productProvider.syncUserData(null);
+                    await orderProvider.syncForUser(null);
                     if (!context.mounted) return;
                     Navigator.pushNamedAndRemoveUntil(
                       context,

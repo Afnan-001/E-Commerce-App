@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shop/constants.dart';
 import 'package:shop/providers/auth_provider.dart';
+import 'package:shop/providers/cart_provider.dart';
+import 'package:shop/providers/order_provider.dart';
+import 'package:shop/providers/product_provider.dart';
 import 'package:shop/route/route_constants.dart';
 
 import 'components/login_form.dart';
@@ -86,6 +89,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         : () async {
                             if (!_formKey.currentState!.validate()) return;
                             final auth = context.read<AuthProvider>();
+                            final cartProvider = context.read<CartProvider>();
+                            final productProvider =
+                                context.read<ProductProvider>();
+                            final orderProvider = context.read<OrderProvider>();
                             final navigator = Navigator.of(context);
                             final success = await auth.signIn(
                               email: _emailController.text,
@@ -93,6 +100,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             );
 
                             if (!mounted || !success) return;
+
+                            final userId = auth.currentUser?.uid;
+                            await cartProvider.syncForUser(userId);
+                            await productProvider.syncUserData(userId);
+                            await orderProvider.syncForUser(userId);
+
+                            if (!mounted) return;
 
                             navigator.pushNamedAndRemoveUntil(
                               entryPointScreenRoute,

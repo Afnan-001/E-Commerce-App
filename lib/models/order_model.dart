@@ -1,10 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:shop/models/order_item_model.dart';
 
-enum PaymentMethod { cod, razorpay }
-enum PaymentStatus { pending, paid, failed }
-enum OrderStatus { placed, confirmed, packed, shipped, delivered, cancelled }
+enum OrderStatus { pending, completed }
 
 @immutable
 class OrderModel {
@@ -17,10 +16,9 @@ class OrderModel {
     required this.items,
     required this.subtotal,
     required this.deliveryCharge,
-    required this.total,
-    required this.paymentMethod,
-    this.paymentStatus = PaymentStatus.pending,
-    this.orderStatus = OrderStatus.placed,
+    required this.totalPrice,
+    this.paymentStatus = 'COD',
+    this.orderStatus = OrderStatus.pending,
     this.createdAt,
   });
 
@@ -32,11 +30,12 @@ class OrderModel {
   final List<OrderItemModel> items;
   final double subtotal;
   final double deliveryCharge;
-  final double total;
-  final PaymentMethod paymentMethod;
-  final PaymentStatus paymentStatus;
+  final double totalPrice;
+  final String paymentStatus;
   final OrderStatus orderStatus;
   final DateTime? createdAt;
+
+  double get total => totalPrice;
 
   OrderModel copyWith({
     String? id,
@@ -47,9 +46,8 @@ class OrderModel {
     List<OrderItemModel>? items,
     double? subtotal,
     double? deliveryCharge,
-    double? total,
-    PaymentMethod? paymentMethod,
-    PaymentStatus? paymentStatus,
+    double? totalPrice,
+    String? paymentStatus,
     OrderStatus? orderStatus,
     DateTime? createdAt,
   }) {
@@ -62,8 +60,7 @@ class OrderModel {
       items: items ?? this.items,
       subtotal: subtotal ?? this.subtotal,
       deliveryCharge: deliveryCharge ?? this.deliveryCharge,
-      total: total ?? this.total,
-      paymentMethod: paymentMethod ?? this.paymentMethod,
+      totalPrice: totalPrice ?? this.totalPrice,
       paymentStatus: paymentStatus ?? this.paymentStatus,
       orderStatus: orderStatus ?? this.orderStatus,
       createdAt: createdAt ?? this.createdAt,
@@ -85,17 +82,15 @@ class OrderModel {
       items: items,
       subtotal: (data['subtotal'] as num?)?.toDouble() ?? 0,
       deliveryCharge: (data['deliveryCharge'] as num?)?.toDouble() ?? 0,
-      total: (data['total'] as num?)?.toDouble() ?? 0,
-      paymentMethod: _paymentMethodFromString(
-        data['paymentMethod'] as String?,
-      ),
-      paymentStatus: _paymentStatusFromString(
-        data['paymentStatus'] as String?,
-      ),
+      totalPrice: (data['totalPrice'] as num?)?.toDouble() ??
+          (data['total'] as num?)?.toDouble() ??
+          0,
+      paymentStatus: data['paymentStatus'] as String? ?? 'COD',
       orderStatus: _orderStatusFromString(
         data['orderStatus'] as String?,
       ),
-      createdAt: DateTime.tryParse(data['createdAt'] as String? ?? ''),
+      createdAt: _dateTimeFromValue(data['timestamp']) ??
+          _dateTimeFromValue(data['createdAt']),
     );
   }
 
@@ -108,32 +103,30 @@ class OrderModel {
       'items': items.map((item) => item.toMap()).toList(),
       'subtotal': subtotal,
       'deliveryCharge': deliveryCharge,
-      'total': total,
-      'paymentMethod': paymentMethod.name,
-      'paymentStatus': paymentStatus.name,
+      'totalPrice': totalPrice,
+      'paymentStatus': paymentStatus,
       'orderStatus': orderStatus.name,
-      'createdAt': createdAt?.toIso8601String(),
+      'timestamp': createdAt,
     };
-  }
-
-  static PaymentMethod _paymentMethodFromString(String? value) {
-    return PaymentMethod.values.firstWhere(
-      (method) => method.name == value,
-      orElse: () => PaymentMethod.cod,
-    );
-  }
-
-  static PaymentStatus _paymentStatusFromString(String? value) {
-    return PaymentStatus.values.firstWhere(
-      (status) => status.name == value,
-      orElse: () => PaymentStatus.pending,
-    );
   }
 
   static OrderStatus _orderStatusFromString(String? value) {
     return OrderStatus.values.firstWhere(
       (status) => status.name == value,
-      orElse: () => OrderStatus.placed,
+      orElse: () => OrderStatus.pending,
     );
+  }
+
+  static DateTime? _dateTimeFromValue(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+    if (value is DateTime) {
+      return value;
+    }
+    if (value is String && value.isNotEmpty) {
+      return DateTime.tryParse(value);
+    }
+    return null;
   }
 }

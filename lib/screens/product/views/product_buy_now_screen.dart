@@ -43,8 +43,24 @@ class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
         price: totalPrice,
         title: "Add to cart",
         subTitle: "Total price",
-        press: () {
-          context.read<CartProvider>().addToCart(product, quantity: _quantity);
+        press: () async {
+          final messenger = ScaffoldMessenger.of(context);
+          final cartProvider = context.read<CartProvider>();
+          final success =
+              await cartProvider.addToCart(product, quantity: _quantity);
+          if (!context.mounted) return;
+          if (!success) {
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text(
+                  cartProvider.errorMessage ??
+                      'Unable to save this cart item to Firestore.',
+                ),
+              ),
+            );
+            return;
+          }
+          if (!context.mounted) return;
           customModalBottomSheet(
             context,
             isDismissible: false,
@@ -73,8 +89,20 @@ class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
                   ),
                 ),
                 IconButton(
-                  onPressed: () {
-                    context.read<ProductProvider>().toggleBookmark(product);
+                  onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    final productProvider = context.read<ProductProvider>();
+                    final success =
+                        await productProvider.toggleBookmark(product);
+                    if (!context.mounted || success) return;
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          productProvider.errorMessage ??
+                              'Unable to save this product right now.',
+                        ),
+                      ),
+                    );
                   },
                   icon: SvgPicture.asset(
                     "assets/icons/Bookmark.svg",

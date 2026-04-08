@@ -13,6 +13,12 @@ class AdminOrdersScreen extends StatelessWidget {
     final authProvider = context.watch<AuthProvider>();
     final adminProvider = context.watch<AdminProvider>();
 
+    if (authProvider.isAdmin &&
+        adminProvider.orders.isEmpty &&
+        !adminProvider.isLoading) {
+      Future.microtask(adminProvider.loadAdminData);
+    }
+
     if (!authProvider.isAdmin) {
       return Scaffold(
         appBar: AppBar(title: const Text('Manage orders')),
@@ -74,7 +80,7 @@ class AdminOrdersScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: defaultPadding / 2),
                         Text(
-                          'Payment: ${order.paymentMethod.name.toUpperCase()} | ${order.paymentStatus.name.toUpperCase()}',
+                          'Payment: ${order.paymentStatus}',
                         ),
                         const SizedBox(height: defaultPadding),
                         DropdownButtonFormField<OrderStatus>(

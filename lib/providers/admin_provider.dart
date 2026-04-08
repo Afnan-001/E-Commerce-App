@@ -14,6 +14,7 @@ class AdminProvider extends ChangeNotifier {
 
   bool _isLoading = false;
   bool _isSaving = false;
+  bool _hasLoadedData = false;
   String? _errorMessage;
   List<ProductModel> _products = const <ProductModel>[];
   List<OrderModel> _orders = const <OrderModel>[];
@@ -21,6 +22,7 @@ class AdminProvider extends ChangeNotifier {
 
   bool get isLoading => _isLoading;
   bool get isSaving => _isSaving;
+  bool get hasLoadedData => _hasLoadedData;
   String? get errorMessage => _errorMessage;
   List<ProductModel> get products => _products;
   List<OrderModel> get orders => _orders;
@@ -41,6 +43,7 @@ class AdminProvider extends ChangeNotifier {
       _categories = results[0] as List<CategoryModel>;
       _products = results[1] as List<ProductModel>;
       _orders = results[2] as List<OrderModel>;
+      _hasLoadedData = true;
     } catch (error) {
       _errorMessage = error.toString();
     }

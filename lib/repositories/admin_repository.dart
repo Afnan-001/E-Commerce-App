@@ -5,6 +5,7 @@ import 'package:shop/core/services/cloudinary_service.dart';
 import 'package:shop/models/category_model.dart';
 import 'package:shop/models/order_model.dart';
 import 'package:shop/models/product_model.dart';
+import 'package:shop/repositories/order_repository.dart';
 
 abstract class AdminRepository {
   Future<List<CategoryModel>> getCategories();
@@ -23,10 +24,12 @@ class FirestoreAdminRepository implements AdminRepository {
     FirebaseFirestore? firestore,
     CloudinaryService? cloudinaryService,
   })  : _firestore = firestore,
-        _cloudinaryService = cloudinaryService ?? const CloudinaryService();
+        _cloudinaryService = cloudinaryService ?? const CloudinaryService(),
+        _orderRepository = FirestoreOrderRepository(firestore: firestore);
 
   final FirebaseFirestore? _firestore;
   final CloudinaryService _cloudinaryService;
+  final OrderRepository _orderRepository;
 
   FirebaseFirestore get _db => _firestore ?? FirebaseFirestore.instance;
 
@@ -58,20 +61,7 @@ class FirestoreAdminRepository implements AdminRepository {
 
   @override
   Future<List<OrderModel>> getOrders() async {
-    if (!_isReady) return const <OrderModel>[];
-
-    final snapshot = await _db.collection('orders').get();
-
-    final orders = snapshot.docs
-        .map((doc) => OrderModel.fromMap(doc.id, doc.data()))
-        .toList()
-      ..sort((a, b) {
-        final aDate = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        final bDate = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        return bDate.compareTo(aDate);
-      });
-
-    return orders;
+    return _orderRepository.getAllOrders();
   }
 
   @override
@@ -130,10 +120,7 @@ class FirestoreAdminRepository implements AdminRepository {
 
   @override
   Future<void> updateOrderStatus(String orderId, OrderStatus status) async {
-    _ensureReady();
-    await _db.collection('orders').doc(orderId).update(
-      <String, dynamic>{'orderStatus': status.name},
-    );
+    await _orderRepository.updateOrderStatus(orderId, status);
   }
 
   @override

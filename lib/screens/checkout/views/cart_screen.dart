@@ -116,10 +116,19 @@ class CartScreen extends StatelessWidget {
                                     children: [
                                       _QuantityButton(
                                         icon: Icons.remove,
-                                        onTap: () {
-                                          cartProvider.updateQuantity(
+                                        onTap: () async {
+                                          final success = await cartProvider.updateQuantity(
                                             item.product.id,
                                             item.quantity - 1,
+                                          );
+                                          if (!context.mounted || success) return;
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                cartProvider.errorMessage ??
+                                                    'Unable to update cart in Firestore.',
+                                              ),
+                                            ),
                                           );
                                         },
                                       ),
@@ -131,18 +140,36 @@ class CartScreen extends StatelessWidget {
                                       ),
                                       _QuantityButton(
                                         icon: Icons.add,
-                                        onTap: () {
-                                          cartProvider.updateQuantity(
+                                        onTap: () async {
+                                          final success = await cartProvider.updateQuantity(
                                             item.product.id,
                                             item.quantity + 1,
+                                          );
+                                          if (!context.mounted || success) return;
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                cartProvider.errorMessage ??
+                                                    'Unable to update cart in Firestore.',
+                                              ),
+                                            ),
                                           );
                                         },
                                       ),
                                       const Spacer(),
                                       TextButton(
-                                        onPressed: () {
-                                          cartProvider.removeFromCart(
+                                        onPressed: () async {
+                                          final success = await cartProvider.removeFromCart(
                                             item.product.id,
+                                          );
+                                          if (!context.mounted || success) return;
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                cartProvider.errorMessage ??
+                                                    'Unable to remove cart item from Firestore.',
+                                              ),
+                                            ),
                                           );
                                         },
                                         child: const Text('Remove'),
@@ -186,13 +213,7 @@ class CartScreen extends StatelessWidget {
                       const SizedBox(height: defaultPadding),
                       ElevatedButton(
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Checkout flow is the next implementation step.',
-                              ),
-                            ),
-                          );
+                          Navigator.pushNamed(context, checkoutScreenRoute);
                         },
                         child: const Text('Proceed to checkout'),
                       ),

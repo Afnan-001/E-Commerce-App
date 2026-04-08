@@ -78,14 +78,6 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
     super.dispose();
   }
 
-  String _slugify(String value) {
-    return value
-        .trim()
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
-        .replaceAll(RegExp(r'^_+|_+$'), '');
-  }
-
   Future<void> _pickAndUploadImage() async {
     final file = await _picker.pickImage(
       source: ImageSource.gallery,
@@ -107,6 +99,12 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
     final authProvider = context.watch<AuthProvider>();
     final adminProvider = context.watch<AdminProvider>();
     final categories = adminProvider.categories;
+
+    if (authProvider.isAdmin &&
+        categories.isEmpty &&
+        !adminProvider.isLoading) {
+      Future.microtask(adminProvider.loadAdminData);
+    }
 
     if (!authProvider.isAdmin) {
       return Scaffold(
@@ -352,9 +350,6 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
                         }
 
                         final categoryName = _categoryNameController.text.trim();
-                        final categoryId = (_selectedCategoryId ?? '').isNotEmpty
-                            ? _selectedCategoryId!
-                            : _slugify(categoryName);
                         final price = double.parse(_priceController.text.trim());
                         final salePriceText = _salePriceController.text.trim();
                         final salePrice = salePriceText.isEmpty
@@ -368,10 +363,9 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
                         final product = ProductModel(
                           id: widget.product?.id ?? '',
                           name: _nameController.text.trim(),
+                          category: categoryName,
                           brandName: _brandController.text.trim(),
                           description: _descriptionController.text.trim(),
-                          categoryId: categoryId,
-                          categoryName: categoryName,
                           price: price,
                           salePrice: salePrice,
                           discountPercent: discountPercent,

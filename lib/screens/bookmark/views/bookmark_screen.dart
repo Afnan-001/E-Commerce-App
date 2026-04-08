@@ -23,7 +23,7 @@ class BookmarkScreen extends StatelessWidget {
           ? const SectionEmptyState(
               title: "No saved products yet",
               message:
-                  "Products you bookmark from the pet shop will appear here once wishlist syncing is added.",
+                  "Products you bookmark from the pet shop are stored for your account and will appear here on your next login too.",
             )
           : CustomScrollView(
               slivers: [

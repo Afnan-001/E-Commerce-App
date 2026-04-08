@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:shop/constants.dart';
 import 'package:shop/providers/auth_provider.dart';
+import 'package:shop/providers/cart_provider.dart';
 import 'package:shop/route/screen_export.dart';
 
 class EntryPoint extends StatefulWidget {
@@ -26,6 +27,7 @@ class _EntryPointState extends State<EntryPoint> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
+    final cartProvider = context.watch<CartProvider>();
 
     SvgPicture svgIcon(String src, {Color? color}) {
       return SvgPicture.asset(
@@ -69,18 +71,45 @@ class _EntryPointState extends State<EntryPoint> {
                 ),
               ),
             ),
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(context, searchScreenRoute);
-            },
-            icon: SvgPicture.asset(
-              "assets/icons/Search.svg",
-              height: 24,
-              colorFilter: ColorFilter.mode(
-                Theme.of(context).textTheme.bodyLarge!.color!,
-                BlendMode.srcIn,
+          Stack(
+            children: [
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _currentIndex = 3;
+                  });
+                },
+                icon: SvgPicture.asset(
+                  "assets/icons/Bag.svg",
+                  height: 24,
+                  colorFilter: ColorFilter.mode(
+                    Theme.of(context).textTheme.bodyLarge!.color!,
+                    BlendMode.srcIn,
+                  ),
+                ),
               ),
-            ),
+              if (cartProvider.totalItems > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: const BoxDecoration(
+                      color: errorColor,
+                      borderRadius: BorderRadius.all(Radius.circular(999)),
+                    ),
+                    child: Text(
+                      '${cartProvider.totalItems}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),

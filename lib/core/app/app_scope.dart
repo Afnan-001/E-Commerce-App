@@ -8,8 +8,9 @@ import 'package:shop/providers/order_provider.dart';
 import 'package:shop/providers/product_provider.dart';
 import 'package:shop/repositories/admin_repository.dart';
 import 'package:shop/repositories/auth_repository.dart';
-import 'package:shop/repositories/category_repository.dart';
+import 'package:shop/repositories/order_repository.dart';
 import 'package:shop/repositories/product_repository.dart';
+import 'package:shop/repositories/user_data_repository.dart';
 
 class AppScope extends StatelessWidget {
   const AppScope({
@@ -29,11 +30,14 @@ class AppScope extends StatelessWidget {
         Provider<ProductRepository>(
           create: (_) => FirebaseProductRepository(),
         ),
-        Provider<CategoryRepository>(
-          create: (_) => FirebaseCategoryRepository(),
-        ),
         Provider<AdminRepository>(
           create: (_) => FirestoreAdminRepository(),
+        ),
+        Provider<OrderRepository>(
+          create: (_) => FirestoreOrderRepository(),
+        ),
+        Provider<UserDataRepository>(
+          create: (_) => FirestoreUserDataRepository(),
         ),
         ChangeNotifierProvider<AuthProvider>(
           create: (context) =>
@@ -42,19 +46,23 @@ class AppScope extends StatelessWidget {
         ChangeNotifierProvider<ProductProvider>(
           create: (context) => ProductProvider(
             productRepository: context.read<ProductRepository>(),
-            categoryRepository: context.read<CategoryRepository>(),
+            userDataRepository: context.read<UserDataRepository>(),
           )..loadInitialData(),
         ),
         ChangeNotifierProvider<CartProvider>(
-          create: (_) => CartProvider(),
+          create: (context) => CartProvider(
+            userDataRepository: context.read<UserDataRepository>(),
+          ),
         ),
         ChangeNotifierProvider<OrderProvider>(
-          create: (_) => OrderProvider(),
+          create: (context) => OrderProvider(
+            orderRepository: context.read<OrderRepository>(),
+          ),
         ),
         ChangeNotifierProvider<AdminProvider>(
           create: (context) => AdminProvider(
             adminRepository: context.read<AdminRepository>(),
-          )..loadAdminData(),
+          ),
         ),
       ],
       child: child,
