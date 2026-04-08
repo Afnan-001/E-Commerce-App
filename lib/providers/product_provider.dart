@@ -1,30 +1,37 @@
 import 'package:flutter/foundation.dart';
 
 import 'package:shop/models/category_model.dart';
+import 'package:shop/models/home_banner_model.dart';
 import 'package:shop/models/product_model.dart';
+import 'package:shop/repositories/category_repository.dart';
 import 'package:shop/repositories/product_repository.dart';
 import 'package:shop/repositories/user_data_repository.dart';
 
 class ProductProvider extends ChangeNotifier {
   ProductProvider({
     required ProductRepository productRepository,
+    required CategoryRepository categoryRepository,
     required UserDataRepository userDataRepository,
-  })  : _productRepository = productRepository,
-        _userDataRepository = userDataRepository;
+  }) : _productRepository = productRepository,
+       _categoryRepository = categoryRepository,
+       _userDataRepository = userDataRepository;
 
   final ProductRepository _productRepository;
+  final CategoryRepository _categoryRepository;
   final UserDataRepository _userDataRepository;
 
   bool _isLoading = false;
   String? _errorMessage;
   List<ProductModel> _catalogProducts = const <ProductModel>[];
   List<ProductModel> _featuredProducts = const <ProductModel>[];
-  final List<CategoryModel> _discoverCategories = const <CategoryModel>[
+  HomeBannerModel _homeBanner = HomeBannerModel.defaultBanner();
+  static const List<CategoryModel> _fallbackCategories = <CategoryModel>[
     CategoryModel(id: 'Dog', title: 'Dog'),
     CategoryModel(id: 'Cat', title: 'Cat'),
     CategoryModel(id: 'Grooming', title: 'Grooming'),
     CategoryModel(id: 'Accessories', title: 'Accessories'),
   ];
+  List<CategoryModel> _discoverCategories = _fallbackCategories;
   final Set<String> _bookmarkedProductIds = <String>{};
   String? _userId;
 
@@ -32,6 +39,7 @@ class ProductProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   List<ProductModel> get catalogProducts => _catalogProducts;
   List<ProductModel> get featuredProducts => _featuredProducts;
+  HomeBannerModel get homeBanner => _homeBanner;
   List<ProductModel> get popularProducts => _featuredProducts;
   List<ProductModel> get flashSaleProducts => _featuredProducts;
   List<ProductModel> get bestSellerProducts => _featuredProducts;
@@ -42,7 +50,8 @@ class ProductProvider extends ChangeNotifier {
   List<CategoryModel> get discoverCategories => _discoverCategories;
   int get bookmarkedCount => _bookmarkedProductIds.length;
 
-  bool isBookmarked(String productId) => _bookmarkedProductIds.contains(productId);
+  bool isBookmarked(String productId) =>
+      _bookmarkedProductIds.contains(productId);
 
   Future<void> syncUserData(String? userId) async {
     if (_userId == userId) {
@@ -123,10 +132,20 @@ class ProductProvider extends ChangeNotifier {
       final results = await Future.wait<dynamic>(<Future<dynamic>>[
         _productRepository.getCatalogProducts(),
         _productRepository.getFeaturedProducts(),
+        _productRepository.getHomeBanner(),
+        _categoryRepository.getDiscoverCategories(),
       ]);
 
       _catalogProducts = results[0] as List<ProductModel>;
       _featuredProducts = results[1] as List<ProductModel>;
+      final loadedBanner = results[2] as HomeBannerModel?;
+      final loadedCategories = results[3] as List<CategoryModel>;
+      _homeBanner = (loadedBanner == null || !loadedBanner.isActive)
+          ? HomeBannerModel.defaultBanner()
+          : loadedBanner;
+      _discoverCategories = loadedCategories.isEmpty
+          ? _fallbackCategories
+          : loadedCategories;
     } catch (error) {
       _errorMessage = error.toString();
     }
@@ -150,5 +169,27 @@ class ProductProvider extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  List<ProductModel> searchInCatalog(
+    String query, {
+    List<ProductModel>? source,
+  }) {
+    final normalized = query.trim().toLowerCase();
+    final items = source ?? _catalogProducts;
+    if (normalized.isEmpty) {
+      return items;
+    }
+
+    return items.where((product) {
+      final name = product.name.toLowerCase();
+      final category = product.category.toLowerCase();
+      final description = product.description.toLowerCase();
+      final brand = product.brandName.toLowerCase();
+      return name.contains(normalized) ||
+          category.contains(normalized) ||
+          description.contains(normalized) ||
+          brand.contains(normalized);
+    }).toList();
   }
 }

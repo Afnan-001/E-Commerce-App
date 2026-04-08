@@ -15,14 +15,9 @@ class EntryPoint extends StatefulWidget {
 }
 
 class _EntryPointState extends State<EntryPoint> {
-  final List _pages = const [
-    HomeScreen(),
-    DiscoverScreen(),
-    BookmarkScreen(),
-    CartScreen(),
-    ProfileScreen(),
-  ];
   int _currentIndex = 0;
+  String? _discoverCategoryTitle;
+  int _discoverFilterSeed = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -36,13 +31,28 @@ class _EntryPointState extends State<EntryPoint> {
         colorFilter: ColorFilter.mode(
           color ??
               Theme.of(context).iconTheme.color!.withValues(
-                    alpha:
-                        Theme.of(context).brightness == Brightness.dark ? 0.3 : 1,
-                  ),
+                alpha: Theme.of(context).brightness == Brightness.dark
+                    ? 0.3
+                    : 1,
+              ),
           BlendMode.srcIn,
         ),
       );
     }
+
+    final pages = <Widget>[
+      HomeScreen(
+        onOpenDiscover: () => _openDiscover(),
+        onOpenCategory: (categoryTitle) =>
+            _openDiscover(categoryTitle: categoryTitle),
+      ),
+      DiscoverScreen(
+        initialCategoryTitle: _discoverCategoryTitle,
+        filterSeed: _discoverFilterSeed,
+      ),
+      const BookmarkScreen(),
+      const ProfileScreen(),
+    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -51,10 +61,10 @@ class _EntryPointState extends State<EntryPoint> {
         leadingWidth: 0,
         centerTitle: false,
         title: Text(
-          "PawCare",
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+          "PetsWorld",
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
         ),
         actions: [
           if (authProvider.isAdmin)
@@ -75,9 +85,7 @@ class _EntryPointState extends State<EntryPoint> {
             children: [
               IconButton(
                 onPressed: () {
-                  setState(() {
-                    _currentIndex = 3;
-                  });
+                  Navigator.pushNamed(context, cartScreenRoute);
                 },
                 icon: SvgPicture.asset(
                   "assets/icons/Bag.svg",
@@ -93,8 +101,10 @@ class _EntryPointState extends State<EntryPoint> {
                   right: 8,
                   top: 8,
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: const BoxDecoration(
                       color: errorColor,
                       borderRadius: BorderRadius.all(Radius.circular(999)),
@@ -122,61 +132,117 @@ class _EntryPointState extends State<EntryPoint> {
             child: child,
           );
         },
-        child: _pages[_currentIndex],
+        child: pages[_currentIndex],
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.only(top: defaultPadding / 2),
-        color: Theme.of(context).brightness == Brightness.light
-            ? Colors.white
-            : const Color(0xFF101015),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            if (index != _currentIndex) {
-              setState(() {
-                _currentIndex = index;
-              });
-            }
-          },
-          backgroundColor: Theme.of(context).brightness == Brightness.light
-              ? Colors.white
-              : const Color(0xFF101015),
-          type: BottomNavigationBarType.fixed,
-          selectedFontSize: 12,
-          selectedItemColor: primaryColor,
-          unselectedItemColor: Colors.transparent,
-          items: [
-            BottomNavigationBarItem(
-              icon: svgIcon("assets/icons/Shop.svg"),
-              activeIcon: svgIcon("assets/icons/Shop.svg", color: primaryColor),
-              label: "Shop",
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(
+          defaultPadding,
+          defaultPadding / 2,
+          defaultPadding,
+          defaultPadding / 2,
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xCC0F1116),
+            borderRadius: const BorderRadius.all(Radius.circular(28)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+          ),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.all(Radius.circular(28)),
+            child: NavigationBarTheme(
+              data: NavigationBarThemeData(
+                backgroundColor: Colors.transparent,
+                indicatorColor: const Color(0xFFF1A208),
+                iconTheme: WidgetStateProperty.resolveWith((states) {
+                  final selected = states.contains(WidgetState.selected);
+                  return IconThemeData(
+                    color: selected ? Colors.white : Colors.white70,
+                  );
+                }),
+                labelTextStyle: WidgetStateProperty.resolveWith((states) {
+                  final selected = states.contains(WidgetState.selected);
+                  return TextStyle(
+                    color: selected ? Colors.white : Colors.white70,
+                    fontSize: 12,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  );
+                }),
+              ),
+              child: NavigationBar(
+                selectedIndex: _currentIndex,
+                onDestinationSelected: (index) {
+                  if (index != _currentIndex) {
+                    setState(() {
+                      _currentIndex = index;
+                      if (index == 1) {
+                        _discoverCategoryTitle = null;
+                        _discoverFilterSeed++;
+                      }
+                    });
+                  }
+                },
+                height: 66,
+                labelBehavior:
+                    NavigationDestinationLabelBehavior.alwaysShow,
+                destinations: [
+                  NavigationDestination(
+                    icon: svgIcon(
+                      "assets/icons/Shop.svg",
+                      color: Colors.white70,
+                    ),
+                    selectedIcon: svgIcon(
+                      "assets/icons/Shop.svg",
+                      color: Colors.white,
+                    ),
+                    label: "Shop",
+                  ),
+                  NavigationDestination(
+                    icon: svgIcon(
+                      "assets/icons/Category.svg",
+                      color: Colors.white70,
+                    ),
+                    selectedIcon: svgIcon(
+                      "assets/icons/Category.svg",
+                      color: Colors.white,
+                    ),
+                    label: "Discover",
+                  ),
+                  NavigationDestination(
+                    icon: svgIcon(
+                      "assets/icons/Bookmark.svg",
+                      color: Colors.white70,
+                    ),
+                    selectedIcon: svgIcon(
+                      "assets/icons/Bookmark.svg",
+                      color: Colors.white,
+                    ),
+                    label: "Saved",
+                  ),
+                  NavigationDestination(
+                    icon: svgIcon(
+                      "assets/icons/Profile.svg",
+                      color: Colors.white70,
+                    ),
+                    selectedIcon: svgIcon(
+                      "assets/icons/Profile.svg",
+                      color: Colors.white,
+                    ),
+                    label: "Profile",
+                  ),
+                ],
+              ),
             ),
-            BottomNavigationBarItem(
-              icon: svgIcon("assets/icons/Category.svg"),
-              activeIcon:
-                  svgIcon("assets/icons/Category.svg", color: primaryColor),
-              label: "Discover",
-            ),
-            BottomNavigationBarItem(
-              icon: svgIcon("assets/icons/Bookmark.svg"),
-              activeIcon:
-                  svgIcon("assets/icons/Bookmark.svg", color: primaryColor),
-              label: "Saved",
-            ),
-            BottomNavigationBarItem(
-              icon: svgIcon("assets/icons/Bag.svg"),
-              activeIcon: svgIcon("assets/icons/Bag.svg", color: primaryColor),
-              label: "Cart",
-            ),
-            BottomNavigationBarItem(
-              icon: svgIcon("assets/icons/Profile.svg"),
-              activeIcon:
-                  svgIcon("assets/icons/Profile.svg", color: primaryColor),
-              label: "Profile",
-            ),
-          ],
+          ),
         ),
       ),
     );
+  }
+
+  void _openDiscover({String? categoryTitle}) {
+    setState(() {
+      _currentIndex = 1;
+      _discoverCategoryTitle = categoryTitle;
+      _discoverFilterSeed++;
+    });
   }
 }

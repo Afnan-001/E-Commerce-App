@@ -6,17 +6,17 @@ import 'package:shop/providers/admin_provider.dart';
 import 'package:shop/providers/cart_provider.dart';
 import 'package:shop/providers/order_provider.dart';
 import 'package:shop/providers/product_provider.dart';
+import 'package:shop/providers/theme_provider.dart';
 import 'package:shop/repositories/admin_repository.dart';
 import 'package:shop/repositories/auth_repository.dart';
+import 'package:shop/repositories/category_repository.dart';
 import 'package:shop/repositories/order_repository.dart';
 import 'package:shop/repositories/product_repository.dart';
+import 'package:shop/repositories/product_review_repository.dart';
 import 'package:shop/repositories/user_data_repository.dart';
 
 class AppScope extends StatelessWidget {
-  const AppScope({
-    super.key,
-    required this.child,
-  });
+  const AppScope({super.key, required this.child});
 
   final Widget child;
 
@@ -24,17 +24,15 @@ class AppScope extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        Provider<AuthRepository>(
-          create: (_) => FirebaseAuthRepository(),
+        Provider<AuthRepository>(create: (_) => FirebaseAuthRepository()),
+        Provider<ProductRepository>(create: (_) => FirebaseProductRepository()),
+        Provider<CategoryRepository>(
+          create: (_) => FirebaseCategoryRepository(),
         ),
-        Provider<ProductRepository>(
-          create: (_) => FirebaseProductRepository(),
-        ),
-        Provider<AdminRepository>(
-          create: (_) => FirestoreAdminRepository(),
-        ),
-        Provider<OrderRepository>(
-          create: (_) => FirestoreOrderRepository(),
+        Provider<AdminRepository>(create: (_) => FirestoreAdminRepository()),
+        Provider<OrderRepository>(create: (_) => FirestoreOrderRepository()),
+        Provider<ProductReviewRepository>(
+          create: (_) => FirestoreProductReviewRepository(),
         ),
         Provider<UserDataRepository>(
           create: (_) => FirestoreUserDataRepository(),
@@ -46,6 +44,7 @@ class AppScope extends StatelessWidget {
         ChangeNotifierProvider<ProductProvider>(
           create: (context) => ProductProvider(
             productRepository: context.read<ProductRepository>(),
+            categoryRepository: context.read<CategoryRepository>(),
             userDataRepository: context.read<UserDataRepository>(),
           )..loadInitialData(),
         ),
@@ -55,14 +54,15 @@ class AppScope extends StatelessWidget {
           ),
         ),
         ChangeNotifierProvider<OrderProvider>(
-          create: (context) => OrderProvider(
-            orderRepository: context.read<OrderRepository>(),
-          ),
+          create: (context) =>
+              OrderProvider(orderRepository: context.read<OrderRepository>()),
         ),
         ChangeNotifierProvider<AdminProvider>(
-          create: (context) => AdminProvider(
-            adminRepository: context.read<AdminRepository>(),
-          ),
+          create: (context) =>
+              AdminProvider(adminRepository: context.read<AdminRepository>()),
+        ),
+        ChangeNotifierProvider<ThemeProvider>(
+          create: (_) => ThemeProvider()..loadPreference(),
         ),
       ],
       child: child,

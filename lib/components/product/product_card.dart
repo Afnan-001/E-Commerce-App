@@ -26,6 +26,14 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final secondaryText = Theme.of(
+      context,
+    ).textTheme.bodyMedium?.color?.withValues(alpha: 0.8);
+    final iconColor = Theme.of(
+      context,
+    ).textTheme.bodyMedium?.color?.withValues(alpha: 0.9);
+
     return OutlinedButton(
       onPressed: press,
       style: OutlinedButton.styleFrom(
@@ -65,7 +73,9 @@ class ProductCard extends StatelessWidget {
                           width: 30,
                           height: 30,
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.95),
+                            color: isDark
+                                ? const Color(0xFF262B36).withValues(alpha: 0.96)
+                                : Colors.white.withValues(alpha: 0.95),
                             borderRadius: const BorderRadius.all(
                               Radius.circular(999),
                             ),
@@ -73,7 +83,9 @@ class ProductCard extends StatelessWidget {
                           child: Icon(
                             isSaved ? Icons.bookmark : Icons.bookmark_border,
                             size: 17,
-                            color: isSaved ? primaryColor : blackColor80,
+                            color: isSaved
+                                ? primaryColor
+                                : (iconColor ?? blackColor80),
                           ),
                         ),
                       ),
@@ -121,7 +133,7 @@ class ProductCard extends StatelessWidget {
                         .bodyMedium!
                         .copyWith(
                           fontSize: 10,
-                          color: blackColor60,
+                          color: secondaryText,
                           letterSpacing: 0.2,
                         ),
                   ),
@@ -151,7 +163,7 @@ class ProductCard extends StatelessWidget {
                             Text(
                               "Rs ${price.toStringAsFixed(0)}",
                               style: TextStyle(
-                                color: blackColor60,
+                                color: secondaryText,
                                 fontSize: 11,
                                 decoration: TextDecoration.lineThrough,
                               ),

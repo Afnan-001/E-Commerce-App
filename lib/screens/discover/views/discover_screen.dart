@@ -8,37 +8,72 @@ import 'package:shop/route/route_constants.dart';
 import 'package:shop/screens/search/views/components/search_form.dart';
 
 class DiscoverScreen extends StatefulWidget {
-  const DiscoverScreen({super.key});
+  const DiscoverScreen({
+    super.key,
+    this.initialCategoryTitle,
+    this.filterSeed = 0,
+  });
+
+  final String? initialCategoryTitle;
+  final int filterSeed;
 
   @override
   State<DiscoverScreen> createState() => _DiscoverScreenState();
 }
 
 class _DiscoverScreenState extends State<DiscoverScreen> {
-  String? _selectedCategoryId;
+  String? _selectedCategoryTitle;
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedCategoryTitle = widget.initialCategoryTitle;
+  }
+
+  @override
+  void didUpdateWidget(covariant DiscoverScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.filterSeed != widget.filterSeed) {
+      setState(() {
+        _selectedCategoryTitle = widget.initialCategoryTitle;
+        _searchQuery = '';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final productProvider = context.watch<ProductProvider>();
     final categories = productProvider.discoverCategories;
-    final selectedCategoryTitle = categories
-        .where((item) => item.id == _selectedCategoryId)
-        .map((item) => item.title)
-        .fold<String?>(null, (previous, element) => previous ?? element);
-    final products = _selectedCategoryId == null
+    final categoryProducts = _selectedCategoryTitle == null
         ? productProvider.catalogProducts
         : productProvider.catalogProducts
-            .where((item) => item.categoryId == _selectedCategoryId)
-            .toList();
+              .where(
+                (item) =>
+                    item.category.trim().toLowerCase() ==
+                    _selectedCategoryTitle!.trim().toLowerCase(),
+              )
+              .toList();
+    final products = productProvider.searchInCatalog(
+      _searchQuery,
+      source: categoryProducts,
+    );
 
     return Scaffold(
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            const SliverToBoxAdapter(
+            SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.all(defaultPadding),
-                child: SearchForm(),
+                child: SearchForm(
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = (value ?? '').trim();
+                    });
+                  },
+                ),
               ),
             ),
             SliverToBoxAdapter(
@@ -65,28 +100,31 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               SliverToBoxAdapter(
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: defaultPadding),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: defaultPadding,
+                  ),
                   child: Row(
                     children: [
                       _DiscoverChip(
                         label: 'All',
-                        isActive: _selectedCategoryId == null,
+                        isActive: _selectedCategoryTitle == null,
                         onTap: () {
                           setState(() {
-                            _selectedCategoryId = null;
+                            _selectedCategoryTitle = null;
                           });
                         },
                       ),
                       ...categories.map(
                         (category) => Padding(
-                          padding:
-                              const EdgeInsets.only(left: defaultPadding / 2),
+                          padding: const EdgeInsets.only(
+                            left: defaultPadding / 2,
+                          ),
                           child: _DiscoverChip(
                             label: category.title,
-                            isActive: _selectedCategoryId == category.id,
+                            isActive: _selectedCategoryTitle == category.title,
                             onTap: () {
                               setState(() {
-                                _selectedCategoryId = category.id;
+                                _selectedCategoryTitle = category.title;
                               });
                             },
                           ),
@@ -103,9 +141,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _selectedCategoryId == null
+                      _selectedCategoryTitle == null
                           ? 'All pet products'
-                          : selectedCategoryTitle ?? 'Category products',
+                          : _selectedCategoryTitle!,
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                     const SizedBox(height: defaultPadding / 4),
@@ -117,11 +155,14 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               ),
             ),
             if (products.isEmpty)
-              const SliverToBoxAdapter(
+              SliverToBoxAdapter(
                 child: SectionEmptyState(
-                  title: 'No products in this category',
-                  message:
-                      'Admin-added products will appear here as soon as they match this category.',
+                  title: _searchQuery.isEmpty
+                      ? 'No products in this category'
+                      : 'No matching products',
+                  message: _searchQuery.isEmpty
+                      ? 'Admin-added products will appear here as soon as they match this category.'
+                      : 'Try a different product name, brand, or category keyword.',
                 ),
               )
             else
@@ -139,31 +180,28 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     crossAxisSpacing: defaultPadding,
                     childAspectRatio: 0.66,
                   ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final product = products[index];
-                      return ProductCard(
-                        image: product.image,
-                        brandName: product.brandName,
-                        title: product.title,
-                        price: product.price,
-                        priceAfetDiscount: product.priceAfetDiscount,
-                        dicountpercent: product.dicountpercent,
-                        isSaved: productProvider.isBookmarked(product.id),
-                        onToggleSaved: () {
-                          context.read<ProductProvider>().toggleBookmark(product);
-                        },
-                        press: () {
-                          Navigator.pushNamed(
-                            context,
-                            productDetailsScreenRoute,
-                            arguments: product,
-                          );
-                        },
-                      );
-                    },
-                    childCount: products.length,
-                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final product = products[index];
+                    return ProductCard(
+                      image: product.image,
+                      brandName: product.brandName,
+                      title: product.title,
+                      price: product.price,
+                      priceAfetDiscount: product.priceAfetDiscount,
+                      dicountpercent: product.dicountpercent,
+                      isSaved: productProvider.isBookmarked(product.id),
+                      onToggleSaved: () {
+                        context.read<ProductProvider>().toggleBookmark(product);
+                      },
+                      press: () {
+                        Navigator.pushNamed(
+                          context,
+                          productDetailsScreenRoute,
+                          arguments: product,
+                        );
+                      },
+                    );
+                  }, childCount: products.length),
                 ),
               ),
           ],
@@ -198,8 +236,9 @@ class _DiscoverChip extends StatelessWidget {
           color: isActive ? primaryColor : Colors.transparent,
           borderRadius: const BorderRadius.all(Radius.circular(999)),
           border: Border.all(
-            color:
-                isActive ? Colors.transparent : Theme.of(context).dividerColor,
+            color: isActive
+                ? Colors.transparent
+                : Theme.of(context).dividerColor,
           ),
         ),
         child: Text(

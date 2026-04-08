@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shop/core/services/cloudinary_service.dart';
 import 'package:shop/models/category_model.dart';
+import 'package:shop/models/home_banner_model.dart';
 import 'package:shop/models/order_model.dart';
 import 'package:shop/models/product_model.dart';
 import 'package:shop/repositories/order_repository.dart';
@@ -17,15 +18,17 @@ abstract class AdminRepository {
   Future<void> deleteProduct(String productId);
   Future<void> updateOrderStatus(String orderId, OrderStatus status);
   Future<String> uploadProductImage(XFile file);
+  Future<HomeBannerModel?> getHomeBanner();
+  Future<void> saveHomeBanner(HomeBannerModel banner);
 }
 
 class FirestoreAdminRepository implements AdminRepository {
   FirestoreAdminRepository({
     FirebaseFirestore? firestore,
     CloudinaryService? cloudinaryService,
-  })  : _firestore = firestore,
-        _cloudinaryService = cloudinaryService ?? const CloudinaryService(),
-        _orderRepository = FirestoreOrderRepository(firestore: firestore);
+  }) : _firestore = firestore,
+       _cloudinaryService = cloudinaryService ?? const CloudinaryService(),
+       _orderRepository = FirestoreOrderRepository(firestore: firestore);
 
   final FirebaseFirestore? _firestore;
   final CloudinaryService _cloudinaryService;
@@ -52,10 +55,11 @@ class FirestoreAdminRepository implements AdminRepository {
     if (!_isReady) return const <CategoryModel>[];
 
     final snapshot = await _db.collection('categories').get();
-    final categories = snapshot.docs
-        .map((doc) => CategoryModel.fromMap(doc.id, doc.data()))
-        .toList()
-      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    final categories =
+        snapshot.docs
+            .map((doc) => CategoryModel.fromMap(doc.id, doc.data()))
+            .toList()
+          ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
     return categories;
   }
 
@@ -70,10 +74,13 @@ class FirestoreAdminRepository implements AdminRepository {
 
     final snapshot = await _db.collection('products').get();
 
-    final products = snapshot.docs
-        .map((doc) => ProductModel.fromMap(doc.id, doc.data()))
-        .toList()
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final products =
+        snapshot.docs
+            .map((doc) => ProductModel.fromMap(doc.id, doc.data()))
+            .toList()
+          ..sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
 
     return products;
   }
@@ -126,6 +133,26 @@ class FirestoreAdminRepository implements AdminRepository {
   @override
   Future<String> uploadProductImage(XFile file) {
     return _cloudinaryService.uploadProductImage(file);
+  }
+
+  @override
+  Future<HomeBannerModel?> getHomeBanner() async {
+    if (!_isReady) return null;
+    final doc = await _db.collection('banners').doc('home_main').get();
+    if (!doc.exists) {
+      return null;
+    }
+    return HomeBannerModel.fromMap(doc.id, doc.data() ?? <String, dynamic>{});
+  }
+
+  @override
+  Future<void> saveHomeBanner(HomeBannerModel banner) async {
+    _ensureReady();
+    final payload = banner.copyWith(id: 'home_main', updatedAt: DateTime.now());
+    await _db
+        .collection('banners')
+        .doc('home_main')
+        .set(payload.toMap(), SetOptions(merge: true));
   }
 
   void _ensureReady() {

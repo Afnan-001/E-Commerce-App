@@ -60,7 +60,9 @@ class AdminDashboardScreen extends StatelessWidget {
 
     final productByCategory = <String, int>{};
     for (final product in adminProvider.products) {
-      final key = product.category.trim().isEmpty ? 'Unassigned' : product.category;
+      final key = product.category.trim().isEmpty
+          ? 'Unassigned'
+          : product.category;
       productByCategory[key] = (productByCategory[key] ?? 0) + 1;
     }
 
@@ -122,7 +124,9 @@ class AdminDashboardScreen extends StatelessWidget {
                       ),
                       _StatCard(
                         label: 'Cloudinary',
-                        value: CloudinaryConfig.isConfigured ? 'Ready' : 'Setup',
+                        value: CloudinaryConfig.isConfigured
+                            ? 'Ready'
+                            : 'Setup',
                         helper: 'Shared shop uploads',
                         icon: Icons.cloud_upload_outlined,
                         accent: const Color(0xFF7A4BB7),
@@ -172,7 +176,8 @@ class AdminDashboardScreen extends StatelessWidget {
                     subtitle: 'Products by category across the whole shop',
                     child: chartEntries.isEmpty
                         ? const _EmptyChartMessage(
-                            message: 'Add products and category bars will appear here.',
+                            message:
+                                'Add products and category bars will appear here.',
                           )
                         : Column(
                             children: chartEntries
@@ -184,7 +189,9 @@ class AdminDashboardScreen extends StatelessWidget {
                                     child: _HorizontalBar(
                                       label: entry.key,
                                       value: entry.value,
-                                      total: totalProducts == 0 ? 1 : totalProducts,
+                                      total: totalProducts == 0
+                                          ? 1
+                                          : totalProducts,
                                     ),
                                   ),
                                 )
@@ -194,7 +201,8 @@ class AdminDashboardScreen extends StatelessWidget {
                   const SizedBox(height: defaultPadding),
                   _SectionCard(
                     title: 'Inventory mix',
-                    subtitle: 'Track visible vs hidden products for the shared shop',
+                    subtitle:
+                        'Track visible vs hidden products for the shared shop',
                     child: Column(
                       children: [
                         _InventoryRow(
@@ -247,7 +255,10 @@ class AdminDashboardScreen extends StatelessWidget {
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () {
-                            Navigator.pushNamed(context, adminProductsScreenRoute);
+                            Navigator.pushNamed(
+                              context,
+                              adminProductsScreenRoute,
+                            );
                           },
                           icon: const Icon(Icons.inventory_2_outlined),
                           label: const Text('Products'),
@@ -257,7 +268,10 @@ class AdminDashboardScreen extends StatelessWidget {
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () {
-                            Navigator.pushNamed(context, adminOrdersScreenRoute);
+                            Navigator.pushNamed(
+                              context,
+                              adminOrdersScreenRoute,
+                            );
                           },
                           icon: const Icon(Icons.receipt_long_outlined),
                           label: const Text('Orders'),
@@ -272,6 +286,14 @@ class AdminDashboardScreen extends StatelessWidget {
                     },
                     icon: const Icon(Icons.category_outlined),
                     label: const Text('Manage categories'),
+                  ),
+                  const SizedBox(height: defaultPadding / 2),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pushNamed(context, adminHomeBannerScreenRoute);
+                    },
+                    icon: const Icon(Icons.view_carousel_outlined),
+                    label: const Text('Manage home banner'),
                   ),
                 ],
               ),
@@ -298,11 +320,7 @@ class _HeroHeader extends StatelessWidget {
       decoration: const BoxDecoration(
         borderRadius: BorderRadius.all(Radius.circular(24)),
         gradient: LinearGradient(
-          colors: [
-            Color(0xFF1B4332),
-            Color(0xFF2D6A4F),
-            Color(0xFF40916C),
-          ],
+          colors: [Color(0xFF1B4332), Color(0xFF2D6A4F), Color(0xFF40916C)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -313,9 +331,9 @@ class _HeroHeader extends StatelessWidget {
           Text(
             'Single shop control room',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 8),
           const Text(
@@ -354,10 +372,7 @@ class _HeroHeader extends StatelessWidget {
 }
 
 class _HeroMetric extends StatelessWidget {
-  const _HeroMetric({
-    required this.label,
-    required this.value,
-  });
+  const _HeroMetric({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -383,10 +398,7 @@ class _HeroMetric extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           const SizedBox.shrink(),
-          Text(
-            label,
-            style: const TextStyle(color: Colors.white70),
-          ),
+          Text(label, style: const TextStyle(color: Colors.white70)),
         ],
       ),
     );
@@ -439,21 +451,18 @@ class _StatCard extends StatelessWidget {
           const Spacer(),
           Text(
             value,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 4),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
+          Text(label, style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 2),
           Text(
             helper,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: blackColor60,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: blackColor60),
           ),
         ],
       ),
@@ -493,16 +502,16 @@ class _SectionCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: blackColor60,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: blackColor60),
           ),
           const SizedBox(height: defaultPadding),
           child,
@@ -547,9 +556,9 @@ class _RingChart extends StatelessWidget {
             children: [
               Text(
                 '$total',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
               ),
               const Text('orders'),
             ],
@@ -561,9 +570,7 @@ class _RingChart extends StatelessWidget {
 }
 
 class _RingPainter extends CustomPainter {
-  _RingPainter({
-    required this.progress,
-  });
+  _RingPainter({required this.progress});
 
   final double progress;
 
@@ -601,8 +608,13 @@ class _RingPainter extends CustomPainter {
     final pendingAngle = (1 - progress) * 2 * math.pi;
 
     if (completedAngle > 0.02) {
-      canvas.drawArc(rect.deflate(strokeWidth / 2), startAngle, completedAngle,
-          false, completedPaint);
+      canvas.drawArc(
+        rect.deflate(strokeWidth / 2),
+        startAngle,
+        completedAngle,
+        false,
+        completedPaint,
+      );
     }
 
     if (pendingAngle > 0.02) {
@@ -649,9 +661,9 @@ class _LegendTile extends StatelessWidget {
         Expanded(child: Text(label)),
         Text(
           value,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
         ),
       ],
     );
@@ -678,16 +690,13 @@ class _HorizontalBar extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Text(
-                label,
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
+              child: Text(label, style: Theme.of(context).textTheme.titleSmall),
             ),
             Text(
               '$value',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -739,9 +748,9 @@ class _InventoryRow extends StatelessWidget {
           Expanded(child: Text(label)),
           Text(
             '$value',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
           ),
         ],
       ),
@@ -783,9 +792,9 @@ class _StatusTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 4),
                 Text(message),
@@ -799,9 +808,7 @@ class _StatusTile extends StatelessWidget {
 }
 
 class _EmptyChartMessage extends StatelessWidget {
-  const _EmptyChartMessage({
-    required this.message,
-  });
+  const _EmptyChartMessage({required this.message});
 
   final String message;
 

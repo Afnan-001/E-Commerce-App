@@ -7,6 +7,7 @@ import 'package:shop/providers/auth_provider.dart';
 import 'package:shop/providers/cart_provider.dart';
 import 'package:shop/providers/order_provider.dart';
 import 'package:shop/providers/product_provider.dart';
+import 'package:shop/providers/theme_provider.dart';
 import 'package:shop/route/screen_export.dart';
 import 'package:shop/route/router.dart' as router;
 import 'package:shop/theme/app_theme.dart';
@@ -17,17 +18,18 @@ Future<void> main() async {
   runApp(const AppScope(child: MyApp()));
 }
 
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'PawCare Store',
-      theme: AppTheme.lightTheme(context),
-      themeMode: ThemeMode.light,
+      title: 'PetsWorld',
+      theme: AppTheme.lightTheme(),
+      darkTheme: AppTheme.darkTheme(),
+      themeMode: themeProvider.themeMode,
       onGenerateRoute: router.generateRoute,
       home: const AppLaunchGate(),
     );
@@ -90,11 +92,7 @@ class _SessionSyncGateState extends State<_SessionSyncGate> {
     final authProvider = context.watch<AuthProvider>();
 
     if (authProvider.isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (authProvider.isAuthenticated) {

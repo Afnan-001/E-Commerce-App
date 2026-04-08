@@ -16,6 +16,7 @@ import 'components/notify_me_card.dart';
 import 'components/product_images.dart';
 import 'components/product_info.dart';
 import 'components/product_list_tile.dart';
+import 'components/product_reviews_section.dart';
 import 'product_buy_now_screen.dart';
 
 class ProductDetailsScreen extends StatelessWidget {
@@ -95,7 +96,8 @@ class ProductDetailsScreen extends StatelessWidget {
                     colorFilter: ColorFilter.mode(
                       isBookmarked
                           ? primaryColor
-                          : Theme.of(context).textTheme.bodyLarge!.color!,
+                          : (Theme.of(context).textTheme.bodyLarge?.color ??
+                              blackColor80),
                       BlendMode.srcIn,
                     ),
                   ),
@@ -188,13 +190,21 @@ class ProductDetailsScreen extends StatelessWidget {
                 );
               },
             ),
+            SliverPadding(
+              padding: const EdgeInsets.only(top: defaultPadding),
+              sliver: SliverToBoxAdapter(
+                child: ProductReviewsSection(
+                  productId: currentProduct.id,
+                ),
+              ),
+            ),
             if (relatedProducts.isNotEmpty) ...[
               SliverPadding(
                 padding: const EdgeInsets.all(defaultPadding),
                 sliver: SliverToBoxAdapter(
                   child: Text(
                     "You may also need",
-                    style: Theme.of(context).textTheme.titleSmall!,
+                    style: Theme.of(context).textTheme.titleSmall,
                   ),
                 ),
               ),

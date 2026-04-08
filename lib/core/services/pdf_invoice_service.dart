@@ -14,11 +14,8 @@ class PdfInvoiceService {
         margin: const pw.EdgeInsets.all(24),
         build: (context) => [
           pw.Text(
-            'PawCare Invoice',
-            style: pw.TextStyle(
-              fontSize: 24,
-              fontWeight: pw.FontWeight.bold,
-            ),
+            'PetsWorld Invoice',
+            style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
           ),
           pw.SizedBox(height: 8),
           pw.Text('Order ID: ${order.id}'),
@@ -26,10 +23,7 @@ class PdfInvoiceService {
           pw.SizedBox(height: 16),
           pw.Text(
             'Customer Details',
-            style: pw.TextStyle(
-              fontSize: 16,
-              fontWeight: pw.FontWeight.bold,
-            ),
+            style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
           ),
           pw.SizedBox(height: 8),
           pw.Text(order.customerName),
@@ -47,21 +41,21 @@ class PdfInvoiceService {
             children: [
               pw.TableRow(
                 decoration: const pw.BoxDecoration(color: PdfColors.grey200),
-                children: _tableCells(
-                  <String>['Item', 'Qty', 'Price', 'Total'],
-                  isHeader: true,
-                ),
+                children: _tableCells(<String>[
+                  'Item',
+                  'Qty',
+                  'Price',
+                  'Total',
+                ], isHeader: true),
               ),
               ...order.items.map(
                 (item) => pw.TableRow(
-                  children: _tableCells(
-                    <String>[
-                      item.name,
-                      item.quantity.toString(),
-                      'Rs ${item.unitPrice.toStringAsFixed(0)}',
-                      'Rs ${item.lineTotal.toStringAsFixed(0)}',
-                    ],
-                  ),
+                  children: _tableCells(<String>[
+                    item.name,
+                    item.quantity.toString(),
+                    'Rs ${item.unitPrice.toStringAsFixed(0)}',
+                    'Rs ${item.lineTotal.toStringAsFixed(0)}',
+                  ]),
                 ),
               ),
             ],
@@ -73,7 +67,9 @@ class PdfInvoiceService {
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
                 pw.Text('Subtotal: Rs ${order.subtotal.toStringAsFixed(0)}'),
-                pw.Text('Delivery: Rs ${order.deliveryCharge.toStringAsFixed(0)}'),
+                pw.Text(
+                  'Delivery: Rs ${order.deliveryCharge.toStringAsFixed(0)}',
+                ),
                 pw.Text(
                   'Total: Rs ${order.totalPrice.toStringAsFixed(0)}',
                   style: pw.TextStyle(
@@ -101,7 +97,9 @@ class PdfInvoiceService {
             child: pw.Text(
               value,
               style: pw.TextStyle(
-                fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
+                fontWeight: isHeader
+                    ? pw.FontWeight.bold
+                    : pw.FontWeight.normal,
               ),
             ),
           ),

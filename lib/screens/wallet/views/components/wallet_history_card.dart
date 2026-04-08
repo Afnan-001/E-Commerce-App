@@ -22,8 +22,9 @@ class WalletHistoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius:
-            const BorderRadius.all(Radius.circular(defaultBorderRadious)),
+        borderRadius: const BorderRadius.all(
+          Radius.circular(defaultBorderRadious),
+        ),
         border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
@@ -45,18 +46,18 @@ class WalletHistoryCard extends StatelessWidget {
               child: Text(
                 date,
                 style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).textTheme.bodyMedium!.color),
+                  fontSize: 12,
+                  color: Theme.of(context).textTheme.bodyMedium!.color,
+                ),
               ),
             ),
             trailing: Text(
               isReturn
-                  ? "+ \$${amount.toStringAsFixed(2)}"
-                  : "- \$${amount.toStringAsFixed(2)}",
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall!
-                  .copyWith(color: isReturn ? successColor : errorColor),
+                  ? "+ Rs ${amount.toStringAsFixed(2)}"
+                  : "- Rs ${amount.toStringAsFixed(2)}",
+              style: Theme.of(context).textTheme.titleSmall!.copyWith(
+                color: isReturn ? successColor : errorColor,
+              ),
             ),
           ),
           const Divider(height: 1),
@@ -65,9 +66,10 @@ class WalletHistoryCard extends StatelessWidget {
             products.length,
             (index) => Padding(
               padding: const EdgeInsets.only(
-                  bottom: defaultPadding,
-                  left: defaultPadding,
-                  right: defaultPadding),
+                bottom: defaultPadding,
+                left: defaultPadding,
+                right: defaultPadding,
+              ),
               child: SecondaryProductCard(
                 image: products[index].image,
                 brandName: products[index].brandName,

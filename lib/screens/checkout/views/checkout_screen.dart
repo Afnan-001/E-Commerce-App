@@ -52,9 +52,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final total = cartProvider.subtotal + deliveryFee;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Checkout'),
-      ),
+      appBar: AppBar(title: const Text('Checkout')),
       body: cartProvider.items.isEmpty
           ? const Center(
               child: Padding(
@@ -80,7 +78,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     TextFormField(
                       controller: _nameController,
                       decoration: const InputDecoration(labelText: 'Full name'),
-                      validator: (value) => value == null || value.trim().isEmpty
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
                           ? 'Name is required'
                           : null,
                     ),
@@ -88,18 +87,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     TextFormField(
                       controller: _phoneController,
                       keyboardType: TextInputType.phone,
-                      decoration: const InputDecoration(labelText: 'Phone number'),
-                      validator: (value) => value == null || value.trim().length < 10
+                      decoration: const InputDecoration(
+                        labelText: 'Phone number',
+                      ),
+                      validator: (value) =>
+                          value == null || value.trim().length < 10
                           ? 'Enter a valid phone number'
                           : null,
                     ),
                     const SizedBox(height: defaultPadding),
                     TextFormField(
                       controller: _addressController,
-                      decoration: const InputDecoration(labelText: 'Delivery address'),
+                      decoration: const InputDecoration(
+                        labelText: 'Delivery address',
+                      ),
                       minLines: 3,
                       maxLines: 4,
-                      validator: (value) => value == null || value.trim().length < 10
+                      validator: (value) =>
+                          value == null || value.trim().length < 10
                           ? 'Enter a complete address'
                           : null,
                     ),
@@ -111,11 +116,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     const SizedBox(height: defaultPadding),
                     ...cartProvider.items.map(
                       (item) => Padding(
-                        padding: const EdgeInsets.only(bottom: defaultPadding / 2),
+                        padding: const EdgeInsets.only(
+                          bottom: defaultPadding / 2,
+                        ),
                         child: Row(
                           children: [
                             Expanded(
-                              child: Text('${item.product.name} x${item.quantity}'),
+                              child: Text(
+                                '${item.product.name} x${item.quantity}',
+                              ),
                             ),
                             Text('Rs ${item.totalPrice.toStringAsFixed(0)}'),
                           ],
@@ -155,9 +164,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       onPressed: orderProvider.isLoading
                           ? null
                           : () async {
-                              final scaffoldMessenger =
-                                  ScaffoldMessenger.of(context);
-                              final orderNotifier = context.read<OrderProvider>();
+                              final scaffoldMessenger = ScaffoldMessenger.of(
+                                context,
+                              );
+                              final orderNotifier = context
+                                  .read<OrderProvider>();
                               final cartNotifier = context.read<CartProvider>();
                               final navigator = Navigator.of(context);
 
@@ -169,7 +180,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               if (currentUser == null) {
                                 scaffoldMessenger.showSnackBar(
                                   const SnackBar(
-                                    content: Text('Please log in before placing an order.'),
+                                    content: Text(
+                                      'Please log in before placing an order.',
+                                    ),
                                   ),
                                 );
                                 return;
@@ -189,14 +202,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 totalPrice: total,
                               );
 
-                              final result = await orderNotifier.placeOrder(order);
+                              final result = await orderNotifier.placeOrder(
+                                order,
+                              );
                               if (!mounted || result == null) {
                                 return;
                               }
 
                               await Printing.layoutPdf(
                                 onLayout: (format) async => result.invoiceBytes,
-                                name: 'pawcare_invoice_${result.order.id}.pdf',
+                                name:
+                                    'petsworld_invoice_${result.order.id}.pdf',
                               );
 
                               if (!mounted) {
@@ -225,7 +241,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               );
                             },
                       child: Text(
-                        orderProvider.isLoading ? 'Placing order...' : 'Place COD order',
+                        orderProvider.isLoading
+                            ? 'Placing order...'
+                            : 'Place COD order',
                       ),
                     ),
                   ],

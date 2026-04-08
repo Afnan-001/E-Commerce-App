@@ -1,14 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shop/models/category_model.dart';
+import 'package:shop/models/home_banner_model.dart';
 import 'package:shop/models/order_model.dart';
 import 'package:shop/models/product_model.dart';
 import 'package:shop/repositories/admin_repository.dart';
 
 class AdminProvider extends ChangeNotifier {
-  AdminProvider({
-    required AdminRepository adminRepository,
-  }) : _adminRepository = adminRepository;
+  AdminProvider({required AdminRepository adminRepository})
+    : _adminRepository = adminRepository;
 
   final AdminRepository _adminRepository;
 
@@ -19,6 +19,7 @@ class AdminProvider extends ChangeNotifier {
   List<ProductModel> _products = const <ProductModel>[];
   List<OrderModel> _orders = const <OrderModel>[];
   List<CategoryModel> _categories = const <CategoryModel>[];
+  HomeBannerModel _homeBanner = HomeBannerModel.defaultBanner();
 
   bool get isLoading => _isLoading;
   bool get isSaving => _isSaving;
@@ -27,6 +28,7 @@ class AdminProvider extends ChangeNotifier {
   List<ProductModel> get products => _products;
   List<OrderModel> get orders => _orders;
   List<CategoryModel> get categories => _categories;
+  HomeBannerModel get homeBanner => _homeBanner;
 
   Future<void> loadAdminData() async {
     _isLoading = true;
@@ -38,11 +40,14 @@ class AdminProvider extends ChangeNotifier {
         _adminRepository.getCategories(),
         _adminRepository.getProducts(),
         _adminRepository.getOrders(),
+        _adminRepository.getHomeBanner(),
       ]);
 
       _categories = results[0] as List<CategoryModel>;
       _products = results[1] as List<ProductModel>;
       _orders = results[2] as List<OrderModel>;
+      final loadedBanner = results[3] as HomeBannerModel?;
+      _homeBanner = loadedBanner ?? HomeBannerModel.defaultBanner();
       _hasLoadedData = true;
     } catch (error) {
       _errorMessage = error.toString();
@@ -147,6 +152,24 @@ class AdminProvider extends ChangeNotifier {
       await loadAdminData();
     } catch (error) {
       _errorMessage = error.toString();
+    } finally {
+      _isSaving = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> saveHomeBanner(HomeBannerModel banner) async {
+    _isSaving = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _adminRepository.saveHomeBanner(banner);
+      _homeBanner = banner.copyWith(id: 'home_main', updatedAt: DateTime.now());
+      return true;
+    } catch (error) {
+      _errorMessage = error.toString();
+      return false;
     } finally {
       _isSaving = false;
       notifyListeners();

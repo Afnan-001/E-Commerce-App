@@ -26,12 +26,13 @@ class ReviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final safeReviewCount = numOfReviews <= 0 ? 1 : numOfReviews;
+    final bodyColor = Theme.of(context).textTheme.bodyLarge?.color ?? blackColor80;
     return Container(
       padding: const EdgeInsets.all(defaultPadding),
       width: double.infinity,
       decoration: BoxDecoration(
-        color:
-            Theme.of(context).textTheme.bodyLarge!.color!.withValues(alpha: 0.035),
+        color: bodyColor.withValues(alpha: 0.035),
         borderRadius:
             const BorderRadius.all(Radius.circular(defaultBorderRadious)),
       ),
@@ -44,9 +45,9 @@ class ReviewCard extends StatelessWidget {
                 Text.rich(
                   TextSpan(
                     text: "$rating ",
-                    style: Theme.of(context)
-                        .textTheme
-                        .headlineSmall!
+                    style: (Theme.of(context).textTheme.headlineSmall ??
+                            Theme.of(context).textTheme.titleLarge ??
+                            const TextStyle(fontSize: 24))
                         .copyWith(fontWeight: FontWeight.w500),
                     children: [
                       TextSpan(
@@ -81,11 +82,11 @@ class ReviewCard extends StatelessWidget {
           Expanded(
             child: Column(
               children: [
-                RateBar(star: 5, value: numOfFiveStar / numOfReviews),
-                RateBar(star: 4, value: numOfFourStar / numOfReviews),
-                RateBar(star: 3, value: numOfThreeStar / numOfReviews),
-                RateBar(star: 2, value: numOfTwoStar / numOfReviews),
-                RateBar(star: 1, value: numOfOneStar / numOfReviews),
+                RateBar(star: 5, value: numOfFiveStar / safeReviewCount),
+                RateBar(star: 4, value: numOfFourStar / safeReviewCount),
+                RateBar(star: 3, value: numOfThreeStar / safeReviewCount),
+                RateBar(star: 2, value: numOfTwoStar / safeReviewCount),
+                RateBar(star: 1, value: numOfOneStar / safeReviewCount),
               ],
             ),
           ),
@@ -115,8 +116,11 @@ class RateBar extends StatelessWidget {
             width: 40,
             child: Text(
               "$star Star",
-              style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                  color: Theme.of(context).textTheme.bodyMedium!.color),
+              style: (Theme.of(context).textTheme.labelSmall ??
+                      Theme.of(context).textTheme.bodySmall)
+                  ?.copyWith(
+                color: Theme.of(context).textTheme.bodyMedium?.color ?? blackColor80,
+              ),
             ),
           ),
           const SizedBox(width: defaultPadding / 2),
@@ -128,10 +132,8 @@ class RateBar extends StatelessWidget {
               child: LinearProgressIndicator(
                 minHeight: 6,
                 color: warningColor,
-                backgroundColor: Theme.of(context)
-                    .textTheme
-                    .bodyLarge!
-                    .color!
+                backgroundColor: (Theme.of(context).textTheme.bodyLarge?.color ??
+                        blackColor80)
                     .withValues(alpha: 0.05),
                 value: value,
               ),

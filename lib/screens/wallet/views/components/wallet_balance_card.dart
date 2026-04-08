@@ -35,18 +35,18 @@ class WalletBalanceCard extends StatelessWidget {
                   const Text(
                     "Your current balance",
                     style: TextStyle(
-                        color: whileColor80,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 12),
+                      color: whileColor80,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 12,
+                    ),
                   ),
                   const SizedBox(height: defaultPadding / 2),
                   Text(
-                    "\$${balance.toStringAsFixed(2)}",
-                    style: Theme.of(context)
-                        .textTheme
-                        .headlineSmall!
-                        .copyWith(color: Colors.white),
-                  )
+                    "Rs ${balance.toStringAsFixed(2)}",
+                    style: Theme.of(
+                      context,
+                    ).textTheme.headlineSmall!.copyWith(color: Colors.white),
+                  ),
                 ],
               ),
             ),
@@ -63,7 +63,7 @@ class WalletBalanceCard extends StatelessWidget {
               ),
             ),
             child: const Text("+ Charge Balance"),
-          )
+          ),
         ],
       ),
     );
