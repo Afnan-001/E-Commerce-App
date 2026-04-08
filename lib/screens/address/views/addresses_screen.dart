@@ -18,9 +18,7 @@ class AddressesScreen extends StatelessWidget {
     final addressProvider = context.watch<AddressProvider>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Saved addresses'),
-      ),
+      appBar: AppBar(title: const Text('Saved addresses')),
       body: !authProvider.isAuthenticated
           ? Center(
               child: Padding(
@@ -44,34 +42,36 @@ class AddressesScreen extends StatelessWidget {
               ),
             )
           : addressProvider.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : addressProvider.addresses.isEmpty
-                  ? _EmptyAddressView(
-                      onAdd: () => _openAddressForm(context),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: () => context.read<AddressProvider>().loadAddresses(),
-                      child: ListView.separated(
-                        padding: const EdgeInsets.all(defaultPadding),
-                        itemCount: addressProvider.addresses.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: defaultPadding),
-                        itemBuilder: (context, index) {
-                          final address = addressProvider.addresses[index];
-                          return _AddressCard(
-                            address: address,
-                            onEdit: () => _openAddressForm(
-                              context,
-                              initialAddress: address,
-                            ),
-                            onDelete: () => _confirmDelete(context, address.id),
-                            onSetDefault: address.isDefault
-                                ? null
-                                : () => _setDefaultAddress(context, address.id),
-                          );
-                        },
-                      ),
-                    ),
+          ? const Center(child: CircularProgressIndicator())
+          : addressProvider.errorMessage != null &&
+                addressProvider.addresses.isEmpty
+          ? _AddressErrorView(
+              message: addressProvider.errorMessage!,
+              onRetry: () => context.read<AddressProvider>().loadAddresses(),
+            )
+          : addressProvider.addresses.isEmpty
+          ? _EmptyAddressView(onAdd: () => _openAddressForm(context))
+          : RefreshIndicator(
+              onRefresh: () => context.read<AddressProvider>().loadAddresses(),
+              child: ListView.separated(
+                padding: const EdgeInsets.all(defaultPadding),
+                itemCount: addressProvider.addresses.length,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: defaultPadding),
+                itemBuilder: (context, index) {
+                  final address = addressProvider.addresses[index];
+                  return _AddressCard(
+                    address: address,
+                    onEdit: () =>
+                        _openAddressForm(context, initialAddress: address),
+                    onDelete: () => _confirmDelete(context, address.id),
+                    onSetDefault: address.isDefault
+                        ? null
+                        : () => _setDefaultAddress(context, address.id),
+                  );
+                },
+              ),
+            ),
       floatingActionButton: authProvider.isAuthenticated
           ? FloatingActionButton.extended(
               onPressed: () => _openAddressForm(context),
@@ -114,20 +114,21 @@ class AddressesScreen extends StatelessWidget {
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Unable to save address right now.'),
-        ),
+        const SnackBar(content: Text('Unable to save address right now.')),
       );
     }
   }
 
-  Future<void> _setDefaultAddress(BuildContext context, String addressId) async {
+  Future<void> _setDefaultAddress(
+    BuildContext context,
+    String addressId,
+  ) async {
     try {
       await context.read<AddressProvider>().setDefaultAddress(addressId);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Default address updated.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Default address updated.')));
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -137,7 +138,8 @@ class AddressesScreen extends StatelessWidget {
   }
 
   Future<void> _confirmDelete(BuildContext context, String addressId) async {
-    final shouldDelete = await showDialog<bool>(
+    final shouldDelete =
+        await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Delete address?'),
@@ -175,6 +177,40 @@ class AddressesScreen extends StatelessWidget {
   }
 }
 
+class _AddressErrorView extends StatelessWidget {
+  const _AddressErrorView({required this.message, required this.onRetry});
+
+  final String message;
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(defaultPadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 48),
+            const SizedBox(height: defaultPadding),
+            Text(
+              'Could not load saved addresses.',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: defaultPadding / 2),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: defaultPadding),
+            ElevatedButton(
+              onPressed: () => onRetry(),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _AddressCard extends StatelessWidget {
   const _AddressCard({
     required this.address,
@@ -209,7 +245,9 @@ class _AddressCard extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: const BorderRadius.all(
                     Radius.circular(defaultBorderRadious),
                   ),
@@ -238,14 +276,8 @@ class _AddressCard extends StatelessWidget {
           Wrap(
             spacing: defaultPadding / 2,
             children: [
-              OutlinedButton(
-                onPressed: onEdit,
-                child: const Text('Edit'),
-              ),
-              OutlinedButton(
-                onPressed: onDelete,
-                child: const Text('Delete'),
-              ),
+              OutlinedButton(onPressed: onEdit, child: const Text('Edit')),
+              OutlinedButton(onPressed: onDelete, child: const Text('Delete')),
               OutlinedButton(
                 onPressed: onSetDefault,
                 child: const Text('Set default'),
@@ -259,9 +291,7 @@ class _AddressCard extends StatelessWidget {
 }
 
 class _EmptyAddressView extends StatelessWidget {
-  const _EmptyAddressView({
-    required this.onAdd,
-  });
+  const _EmptyAddressView({required this.onAdd});
 
   final VoidCallback onAdd;
 
@@ -289,10 +319,7 @@ class _EmptyAddressView extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: defaultPadding),
-            ElevatedButton(
-              onPressed: onAdd,
-              child: const Text('Add address'),
-            ),
+            ElevatedButton(onPressed: onAdd, child: const Text('Add address')),
           ],
         ),
       ),

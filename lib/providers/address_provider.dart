@@ -8,8 +8,8 @@ class AddressProvider extends ChangeNotifier {
   AddressProvider({
     required AddressRepository addressRepository,
     required AuthProvider authProvider,
-  })  : _addressRepository = addressRepository,
-        _authProvider = authProvider {
+  }) : _addressRepository = addressRepository,
+       _authProvider = authProvider {
     _activeUserId = _authProvider.currentUser?.uid;
     _authProvider.addListener(_onAuthChanged);
     if (_activeUserId != null) {
@@ -26,13 +26,16 @@ class AddressProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
-  List<AddressModel> get addresses => List<AddressModel>.unmodifiable(_addresses);
+  List<AddressModel> get addresses =>
+      List<AddressModel>.unmodifiable(_addresses);
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
   AddressModel? get selectedAddress {
     if (_selectedAddressId != null) {
-      final selected = _addresses.where((item) => item.id == _selectedAddressId);
+      final selected = _addresses.where(
+        (item) => item.id == _selectedAddressId,
+      );
       if (selected.isNotEmpty) {
         return selected.first;
       }
@@ -73,8 +76,7 @@ class AddressProvider extends ChangeNotifier {
         _selectedAddressId = (_addresses.firstWhere(
           (item) => item.isDefault,
           orElse: () => _addresses.first,
-        ))
-            .id;
+        )).id;
       }
     } catch (error) {
       _errorMessage = error.toString();
@@ -134,7 +136,8 @@ class AddressProvider extends ChangeNotifier {
     notifyListeners();
 
     final addressToDelete = _addresses.where((item) => item.id == addressId);
-    final wasDefault = addressToDelete.isNotEmpty && addressToDelete.first.isDefault;
+    final wasDefault =
+        addressToDelete.isNotEmpty && addressToDelete.first.isDefault;
 
     try {
       await _addressRepository.deleteAddress(userId, addressId);
@@ -192,8 +195,10 @@ class AddressProvider extends ChangeNotifier {
         return a.isDefault ? -1 : 1;
       }
 
-      final aDate = a.updatedAt ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final bDate = b.updatedAt ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final aDate =
+          a.updatedAt ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bDate =
+          b.updatedAt ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
       return bDate.compareTo(aDate);
     });
   }

@@ -12,9 +12,8 @@ abstract class AddressRepository {
 }
 
 class FirestoreAddressRepository implements AddressRepository {
-  FirestoreAddressRepository({
-    FirebaseFirestore? firestore,
-  }) : _firestore = firestore;
+  FirestoreAddressRepository({FirebaseFirestore? firestore})
+    : _firestore = firestore;
 
   final FirebaseFirestore? _firestore;
 
@@ -56,7 +55,9 @@ class FirestoreAddressRepository implements AddressRepository {
   Future<void> updateAddress(String userId, AddressModel address) async {
     _ensureReady();
 
-    await _addressesRef(userId).doc(address.id).set(
+    await _addressesRef(userId)
+        .doc(address.id)
+        .set(
           address.copyWith(updatedAt: DateTime.now()).toMap(),
           SetOptions(merge: true),
         );
@@ -79,14 +80,10 @@ class FirestoreAddressRepository implements AddressRepository {
 
     for (final doc in snapshot.docs) {
       final shouldBeDefault = doc.id == addressId;
-      batch.set(
-        doc.reference,
-        {
-          'isDefault': shouldBeDefault,
-          'updatedAt': DateTime.now().toIso8601String(),
-        },
-        SetOptions(merge: true),
-      );
+      batch.set(doc.reference, {
+        'isDefault': shouldBeDefault,
+        'updatedAt': DateTime.now().toIso8601String(),
+      }, SetOptions(merge: true));
     }
 
     await batch.commit();

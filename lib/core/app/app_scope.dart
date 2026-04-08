@@ -14,10 +14,7 @@ import 'package:shop/repositories/category_repository.dart';
 import 'package:shop/repositories/product_repository.dart';
 
 class AppScope extends StatelessWidget {
-  const AppScope({
-    super.key,
-    required this.child,
-  });
+  const AppScope({super.key, required this.child});
 
   final Widget child;
 
@@ -25,18 +22,12 @@ class AppScope extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        Provider<AuthRepository>(
-          create: (_) => FirebaseAuthRepository(),
-        ),
-        Provider<ProductRepository>(
-          create: (_) => FirebaseProductRepository(),
-        ),
+        Provider<AuthRepository>(create: (_) => FirebaseAuthRepository()),
+        Provider<ProductRepository>(create: (_) => FirebaseProductRepository()),
         Provider<CategoryRepository>(
           create: (_) => FirebaseCategoryRepository(),
         ),
-        Provider<AdminRepository>(
-          create: (_) => FirestoreAdminRepository(),
-        ),
+        Provider<AdminRepository>(create: (_) => FirestoreAdminRepository()),
         Provider<AddressRepository>(
           create: (_) => FirestoreAddressRepository(),
         ),
@@ -56,16 +47,12 @@ class AppScope extends StatelessWidget {
             categoryRepository: context.read<CategoryRepository>(),
           )..loadInitialData(),
         ),
-        ChangeNotifierProvider<CartProvider>(
-          create: (_) => CartProvider(),
-        ),
-        ChangeNotifierProvider<OrderProvider>(
-          create: (_) => OrderProvider(),
-        ),
+        ChangeNotifierProvider<CartProvider>(create: (_) => CartProvider()),
+        ChangeNotifierProvider<OrderProvider>(create: (_) => OrderProvider()),
         ChangeNotifierProvider<AdminProvider>(
-          create: (context) => AdminProvider(
-            adminRepository: context.read<AdminRepository>(),
-          )..loadAdminData(),
+          create: (context) =>
+              AdminProvider(adminRepository: context.read<AdminRepository>())
+                ..loadAdminData(),
         ),
       ],
       child: child,

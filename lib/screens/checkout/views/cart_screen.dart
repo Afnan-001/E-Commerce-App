@@ -17,9 +17,7 @@ class CartScreen extends StatelessWidget {
     final total = cartProvider.subtotal + deliveryFee;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Cart (${cartProvider.totalItems})'),
-      ),
+      appBar: AppBar(title: Text('Cart (${cartProvider.totalItems})')),
       body: items.isEmpty
           ? Center(
               child: Padding(
@@ -73,7 +71,9 @@ class CartScreen extends StatelessWidget {
                       return Container(
                         padding: const EdgeInsets.all(defaultPadding),
                         decoration: BoxDecoration(
-                          border: Border.all(color: Theme.of(context).dividerColor),
+                          border: Border.all(
+                            color: Theme.of(context).dividerColor,
+                          ),
                           borderRadius: const BorderRadius.all(
                             Radius.circular(defaultBorderRadious),
                           ),
@@ -100,7 +100,9 @@ class CartScreen extends StatelessWidget {
                                 children: [
                                   Text(
                                     item.product.name,
-                                    style: Theme.of(context).textTheme.titleSmall,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.titleSmall,
                                   ),
                                   const SizedBox(height: defaultPadding / 4),
                                   Text(item.product.brandName),
@@ -231,10 +233,7 @@ class _PriceRow extends StatelessWidget {
 }
 
 class _QuantityButton extends StatelessWidget {
-  const _QuantityButton({
-    required this.icon,
-    required this.onTap,
-  });
+  const _QuantityButton({required this.icon, required this.onTap});
 
   final IconData icon;
   final VoidCallback onTap;

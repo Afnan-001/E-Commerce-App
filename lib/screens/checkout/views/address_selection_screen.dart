@@ -57,130 +57,132 @@ class AddressSelectionScreen extends StatelessWidget {
       ),
       body: addressProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
+          : addressProvider.errorMessage != null &&
+                addressProvider.addresses.isEmpty
+          ? _AddressLoadErrorState(
+              message: addressProvider.errorMessage!,
+              onRetry: () => context.read<AddressProvider>().loadAddresses(),
+            )
           : addressProvider.addresses.isEmpty
-              ? _EmptyAddressState(onAdd: () => _openAddressForm(context))
-              : Column(
-                  children: [
-                    Expanded(
-                      child: ListView.separated(
-                        padding: const EdgeInsets.all(defaultPadding),
-                        itemCount: addressProvider.addresses.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: defaultPadding),
-                        itemBuilder: (context, index) {
-                          final item = addressProvider.addresses[index];
-                          final isSelected = item.id == selected?.id;
-                          return InkWell(
-                            onTap: () {
-                              context
-                                  .read<AddressProvider>()
-                                  .selectAddressForCheckout(item.id);
-                            },
+          ? _EmptyAddressState(onAdd: () => _openAddressForm(context))
+          : Column(
+              children: [
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(defaultPadding),
+                    itemCount: addressProvider.addresses.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: defaultPadding),
+                    itemBuilder: (context, index) {
+                      final item = addressProvider.addresses[index];
+                      final isSelected = item.id == selected?.id;
+                      return InkWell(
+                        onTap: () {
+                          context
+                              .read<AddressProvider>()
+                              .selectAddressForCheckout(item.id);
+                        },
+                        borderRadius: const BorderRadius.all(
+                          Radius.circular(defaultBorderRadious),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.all(defaultPadding),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: isSelected
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).dividerColor,
+                              width: isSelected ? 1.5 : 1,
+                            ),
                             borderRadius: const BorderRadius.all(
                               Radius.circular(defaultBorderRadious),
                             ),
-                            child: Container(
-                              padding: const EdgeInsets.all(defaultPadding),
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: isSelected
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(context).dividerColor,
-                                  width: isSelected ? 1.5 : 1,
-                                ),
-                                borderRadius: const BorderRadius.all(
-                                  Radius.circular(defaultBorderRadious),
-                                ),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  GestureDetector(
-                                    onTap: () {
-                                      context
-                                          .read<AddressProvider>()
-                                          .selectAddressForCheckout(item.id);
-                                    },
-                                    child: Container(
-                                      width: 22,
-                                      height: 22,
-                                      margin: const EdgeInsets.only(top: 4),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: isSelected
-                                              ? Theme.of(context)
-                                                  .colorScheme
-                                                  .primary
-                                              : Theme.of(context).dividerColor,
-                                          width: 2,
-                                        ),
-                                      ),
-                                      child: isSelected
-                                          ? Center(
-                                              child: Container(
-                                                width: 10,
-                                                height: 10,
-                                                decoration: BoxDecoration(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .primary,
-                                                  shape: BoxShape.circle,
-                                                ),
-                                              ),
-                                            )
-                                          : null,
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  context
+                                      .read<AddressProvider>()
+                                      .selectAddressForCheckout(item.id);
+                                },
+                                child: Container(
+                                  width: 22,
+                                  height: 22,
+                                  margin: const EdgeInsets.only(top: 4),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
+                                          : Theme.of(context).dividerColor,
+                                      width: 2,
                                     ),
                                   ),
-                                  const SizedBox(width: defaultPadding / 2),
-                                  Expanded(
-                                    child: _AddressSummary(address: item),
-                                  ),
-                                ],
+                                  child: isSelected
+                                      ? Center(
+                                          child: Container(
+                                            width: 10,
+                                            height: 10,
+                                            decoration: BoxDecoration(
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.primary,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                        )
+                                      : null,
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(defaultPadding),
-                      child: Column(
-                        children: [
-                          OutlinedButton(
-                            onPressed: () {
-                              Navigator.pushNamed(context, addressesScreenRoute);
-                            },
-                            child: const Text('Manage addresses'),
+                              const SizedBox(width: defaultPadding / 2),
+                              Expanded(child: _AddressSummary(address: item)),
+                            ],
                           ),
-                          const SizedBox(height: defaultPadding / 2),
-                          ElevatedButton(
-                            onPressed: selected == null
-                                ? null
-                                : () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'Order will be delivered to ${selected.shortAddress}. Order placement API is the next step.',
-                                        ),
-                                      ),
-                                    );
-                                  },
-                            child: const Text('Place order'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
+                Padding(
+                  padding: const EdgeInsets.all(defaultPadding),
+                  child: Column(
+                    children: [
+                      OutlinedButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, addressesScreenRoute);
+                        },
+                        child: const Text('Manage addresses'),
+                      ),
+                      const SizedBox(height: defaultPadding / 2),
+                      ElevatedButton(
+                        onPressed: selected == null
+                            ? null
+                            : () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Order will be delivered to ${selected.shortAddress}. Order placement API is the next step.',
+                                    ),
+                                  ),
+                                );
+                              },
+                        child: const Text('Place order'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
     );
   }
 
   Future<void> _openAddressForm(BuildContext context) async {
     final formResult = await Navigator.of(context).push<AddressModel>(
-      MaterialPageRoute(
-        builder: (_) => const AddressFormScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const AddressFormScreen()),
     );
 
     if (formResult == null || !context.mounted) return;
@@ -201,9 +203,7 @@ class AddressSelectionScreen extends StatelessWidget {
 }
 
 class _AddressSummary extends StatelessWidget {
-  const _AddressSummary({
-    required this.address,
-  });
+  const _AddressSummary({required this.address});
 
   final AddressModel address;
 
@@ -220,7 +220,9 @@ class _AddressSummary extends StatelessWidget {
                 vertical: 4,
               ),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.1),
                 borderRadius: const BorderRadius.all(
                   Radius.circular(defaultBorderRadious),
                 ),
@@ -249,9 +251,7 @@ class _AddressSummary extends StatelessWidget {
 }
 
 class _EmptyAddressState extends StatelessWidget {
-  const _EmptyAddressState({
-    required this.onAdd,
-  });
+  const _EmptyAddressState({required this.onAdd});
 
   final VoidCallback onAdd;
 
@@ -279,9 +279,40 @@ class _EmptyAddressState extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: defaultPadding),
+            ElevatedButton(onPressed: onAdd, child: const Text('Add address')),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AddressLoadErrorState extends StatelessWidget {
+  const _AddressLoadErrorState({required this.message, required this.onRetry});
+
+  final String message;
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(defaultPadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 48),
+            const SizedBox(height: defaultPadding),
+            Text(
+              'Could not load saved addresses.',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: defaultPadding / 2),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: defaultPadding),
             ElevatedButton(
-              onPressed: onAdd,
-              child: const Text('Add address'),
+              onPressed: () => onRetry(),
+              child: const Text('Retry'),
             ),
           ],
         ),

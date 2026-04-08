@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 @immutable
@@ -8,6 +9,7 @@ class AddressModel {
     required this.phoneNumber,
     required this.addressLine1,
     this.addressLine2,
+    required this.district,
     required this.city,
     required this.state,
     required this.pincode,
@@ -23,6 +25,7 @@ class AddressModel {
   final String phoneNumber;
   final String addressLine1;
   final String? addressLine2;
+  final String district;
   final String city;
   final String state;
   final String pincode;
@@ -38,6 +41,7 @@ class AddressModel {
     final parts = <String>[
       addressLine1,
       if (addressLine2?.trim().isNotEmpty == true) addressLine2!.trim(),
+      if (district.trim().isNotEmpty) district.trim(),
       city,
       state,
       pincode,
@@ -53,6 +57,7 @@ class AddressModel {
     String? phoneNumber,
     String? addressLine1,
     String? addressLine2,
+    String? district,
     String? city,
     String? state,
     String? pincode,
@@ -68,6 +73,7 @@ class AddressModel {
       phoneNumber: phoneNumber ?? this.phoneNumber,
       addressLine1: addressLine1 ?? this.addressLine1,
       addressLine2: addressLine2 ?? this.addressLine2,
+      district: district ?? this.district,
       city: city ?? this.city,
       state: state ?? this.state,
       pincode: pincode ?? this.pincode,
@@ -80,21 +86,33 @@ class AddressModel {
   }
 
   factory AddressModel.fromMap(String id, Map<String, dynamic> data) {
+    final city = data['city'] as String? ?? '';
+    final district = data['district'] as String? ?? city;
+
     return AddressModel(
       id: id,
       fullName: data['fullName'] as String? ?? '',
       phoneNumber: data['phoneNumber'] as String? ?? '',
       addressLine1: data['addressLine1'] as String? ?? '',
       addressLine2: data['addressLine2'] as String?,
-      city: data['city'] as String? ?? '',
+      district: district,
+      city: city,
       state: data['state'] as String? ?? '',
       pincode: data['pincode'] as String? ?? '',
       landmark: data['landmark'] as String?,
       label: data['label'] as String? ?? 'Home',
       isDefault: data['isDefault'] as bool? ?? false,
-      createdAt: DateTime.tryParse(data['createdAt'] as String? ?? ''),
-      updatedAt: DateTime.tryParse(data['updatedAt'] as String? ?? ''),
+      createdAt: _parseDate(data['createdAt']),
+      updatedAt: _parseDate(data['updatedAt']),
     );
+  }
+
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is Timestamp) return value.toDate();
+    if (value is String) return DateTime.tryParse(value);
+    return null;
   }
 
   Map<String, dynamic> toMap() {
@@ -103,6 +121,7 @@ class AddressModel {
       'phoneNumber': phoneNumber,
       'addressLine1': addressLine1,
       'addressLine2': addressLine2,
+      'district': district,
       'city': city,
       'state': state,
       'pincode': pincode,
