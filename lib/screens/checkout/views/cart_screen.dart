@@ -4,6 +4,7 @@ import 'package:shop/components/network_image_with_loader.dart';
 import 'package:shop/constants.dart';
 import 'package:shop/providers/cart_provider.dart';
 import 'package:shop/route/route_constants.dart';
+import 'package:shop/screens/checkout/views/address_selection_screen.dart';
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
@@ -186,11 +187,9 @@ class CartScreen extends StatelessWidget {
                       const SizedBox(height: defaultPadding),
                       ElevatedButton(
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Checkout flow is the next implementation step.',
-                              ),
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const AddressSelectionScreen(),
                             ),
                           );
                         },
