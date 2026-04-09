@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shop/components/home_banner_card.dart';
 import 'package:provider/provider.dart';
 import 'package:shop/constants.dart';
 import 'package:shop/models/home_banner_model.dart';
@@ -20,8 +21,22 @@ class _AdminHomeBannerScreenState extends State<AdminHomeBannerScreen> {
   final _buttonController = TextEditingController();
   final _leftImageController = TextEditingController();
   final _rightImageController = TextEditingController();
+  final _startColorController = TextEditingController();
+  final _endColorController = TextEditingController();
   bool _isActive = true;
   bool _didInit = false;
+
+  static const List<_BannerColorPreset> _presets = <_BannerColorPreset>[
+    _BannerColorPreset(name: 'Ocean', startHex: '#1FA48E', endHex: '#128B7B'),
+    _BannerColorPreset(
+      name: 'Twilight',
+      startHex: '#2A334A',
+      endHex: '#1A2238',
+    ),
+    _BannerColorPreset(name: 'Sunset', startHex: '#FF9F7A', endHex: '#FF5E62'),
+    _BannerColorPreset(name: 'Berry', startHex: '#7B61FF', endHex: '#5140C4'),
+    _BannerColorPreset(name: 'Mint', startHex: '#D9FFF0', endHex: '#B4F2D2'),
+  ];
 
   @override
   void dispose() {
@@ -31,6 +46,8 @@ class _AdminHomeBannerScreenState extends State<AdminHomeBannerScreen> {
     _buttonController.dispose();
     _leftImageController.dispose();
     _rightImageController.dispose();
+    _startColorController.dispose();
+    _endColorController.dispose();
     super.dispose();
   }
 
@@ -45,6 +62,8 @@ class _AdminHomeBannerScreenState extends State<AdminHomeBannerScreen> {
       _buttonController.text = banner.buttonText;
       _leftImageController.text = banner.leftImageUrl;
       _rightImageController.text = banner.rightImageUrl;
+      _startColorController.text = banner.startColorHex ?? '';
+      _endColorController.text = banner.endColorHex ?? '';
       _isActive = banner.isActive;
       _didInit = true;
     }
@@ -54,21 +73,7 @@ class _AdminHomeBannerScreenState extends State<AdminHomeBannerScreen> {
       body: ListView(
         padding: const EdgeInsets.all(defaultPadding),
         children: [
-          _PreviewCard(
-            title: _titleController.text.trim().isEmpty
-                ? 'Pet Winter Offer'
-                : _titleController.text.trim(),
-            highlightText: _highlightController.text.trim().isEmpty
-                ? '25% OFF'
-                : _highlightController.text.trim(),
-            dateText: _dateController.text.trim().isEmpty
-                ? 'Nov 16 - Dec 22'
-                : _dateController.text.trim(),
-            buttonText: _buttonController.text.trim().isEmpty
-                ? 'Shop Now'
-                : _buttonController.text.trim(),
-            isActive: _isActive,
-          ),
+          HomeBannerCard(banner: _previewBanner, onTapShopNow: null),
           const SizedBox(height: defaultPadding),
           Form(
             key: _formKey,
@@ -104,14 +109,69 @@ class _AdminHomeBannerScreenState extends State<AdminHomeBannerScreen> {
                 const SizedBox(height: defaultPadding),
                 _AdminField(
                   controller: _leftImageController,
-                  label: 'Left image URL (optional)',
-                  hint: 'https://...',
+                  label: 'Left image path or URL (optional)',
+                  hint: 'assets/images/home/banner_cat.png or https://...',
+                  onChanged: (_) => setState(() {}),
                 ),
                 const SizedBox(height: defaultPadding),
                 _AdminField(
                   controller: _rightImageController,
-                  label: 'Right image URL (optional)',
-                  hint: 'https://...',
+                  label: 'Right image path or URL (optional)',
+                  hint: 'assets/images/home/banner_dog.png or https://...',
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: defaultPadding),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Banner colors',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+                const SizedBox(height: defaultPadding / 2),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: _presets
+                      .map(
+                        (preset) => _ColorPresetChip(
+                          preset: preset,
+                          isSelected:
+                              _normalizeHex(_startColorController.text) ==
+                                  preset.startHex &&
+                              _normalizeHex(_endColorController.text) ==
+                                  preset.endHex,
+                          onTap: () {
+                            setState(() {
+                              _startColorController.text = preset.startHex;
+                              _endColorController.text = preset.endHex;
+                            });
+                          },
+                        ),
+                      )
+                      .toList(),
+                ),
+                const SizedBox(height: defaultPadding),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _AdminField(
+                        controller: _startColorController,
+                        label: 'Start color hex (optional)',
+                        hint: '#1FA48E',
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ),
+                    const SizedBox(width: defaultPadding),
+                    Expanded(
+                      child: _AdminField(
+                        controller: _endColorController,
+                        label: 'End color hex (optional)',
+                        hint: '#128B7B',
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: defaultPadding / 2),
                 SwitchListTile(
@@ -164,6 +224,8 @@ class _AdminHomeBannerScreenState extends State<AdminHomeBannerScreen> {
         buttonText: _buttonController.text.trim(),
         leftImageUrl: _leftImageController.text.trim(),
         rightImageUrl: _rightImageController.text.trim(),
+        startColorHex: _normalizeHex(_startColorController.text),
+        endColorHex: _normalizeHex(_endColorController.text),
         isActive: _isActive,
       ),
     );
@@ -176,6 +238,34 @@ class _AdminHomeBannerScreenState extends State<AdminHomeBannerScreen> {
         context,
       ).showSnackBar(const SnackBar(content: Text('Home banner saved.')));
     }
+  }
+
+  HomeBannerModel get _previewBanner {
+    return HomeBannerModel(
+      id: 'home_main',
+      title: _titleController.text.trim(),
+      highlightText: _highlightController.text.trim(),
+      dateText: _dateController.text.trim(),
+      buttonText: _buttonController.text.trim(),
+      leftImageUrl: _leftImageController.text.trim(),
+      rightImageUrl: _rightImageController.text.trim(),
+      startColorHex: _normalizeHex(_startColorController.text),
+      endColorHex: _normalizeHex(_endColorController.text),
+      isActive: _isActive,
+    );
+  }
+
+  String? _normalizeHex(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+    final normalized = trimmed.startsWith('#') ? trimmed : '#$trimmed';
+    final hex = normalized.replaceAll('#', '');
+    if (hex.length != 6 && hex.length != 8) {
+      return null;
+    }
+    return '#${hex.toUpperCase()}';
   }
 }
 
@@ -206,72 +296,93 @@ class _AdminField extends StatelessWidget {
                 label == 'Button text')) {
           return 'Required';
         }
+        if (label.contains('color hex')) {
+          final trimmed = (value ?? '').trim();
+          if (trimmed.isEmpty) return null;
+          final normalized = trimmed.startsWith('#')
+              ? trimmed.substring(1)
+              : trimmed;
+          if (normalized.length != 6 && normalized.length != 8) {
+            return 'Use 6 or 8 hex digits';
+          }
+          if (int.tryParse(normalized, radix: 16) == null) {
+            return 'Invalid hex color';
+          }
+        }
         return null;
       },
     );
   }
 }
 
-class _PreviewCard extends StatelessWidget {
-  const _PreviewCard({
-    required this.title,
-    required this.highlightText,
-    required this.dateText,
-    required this.buttonText,
-    required this.isActive,
+class _ColorPresetChip extends StatelessWidget {
+  const _ColorPresetChip({
+    required this.preset,
+    required this.isSelected,
+    required this.onTap,
   });
 
-  final String title;
-  final String highlightText;
-  final String dateText;
-  final String buttonText;
-  final bool isActive;
+  final _BannerColorPreset preset;
+  final bool isSelected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(defaultPadding),
-      decoration: BoxDecoration(
-        borderRadius: const BorderRadius.all(Radius.circular(18)),
-        gradient: LinearGradient(
-          colors: isActive
-              ? const [Color(0xFF1FA48E), Color(0xFF128B7B)]
-              : const [Color(0xFF9E9E9E), Color(0xFF757575)],
+    final borderColor = isSelected
+        ? primaryColor
+        : Theme.of(context).dividerColor;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: const BorderRadius.all(Radius.circular(12)),
+      child: Container(
+        width: 120,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          border: Border.all(color: borderColor, width: isSelected ? 1.5 : 1),
+          borderRadius: const BorderRadius.all(Radius.circular(12)),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 24,
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.all(Radius.circular(8)),
+                gradient: LinearGradient(
+                  colors: [
+                    Color(_hexToColor(preset.startHex)),
+                    Color(_hexToColor(preset.endHex)),
+                  ],
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            highlightText,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
+            const SizedBox(height: 6),
+            Text(
+              preset.name,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
             ),
-          ),
-          Text(dateText, style: const TextStyle(color: Colors.white70)),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: const BoxDecoration(
-              color: Color(0xFFE8F36A),
-              borderRadius: BorderRadius.all(Radius.circular(999)),
-            ),
-            child: Text(
-              buttonText,
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+
+  int _hexToColor(String value) {
+    final cleaned = value.replaceAll('#', '');
+    return int.parse('FF$cleaned', radix: 16);
+  }
+}
+
+class _BannerColorPreset {
+  const _BannerColorPreset({
+    required this.name,
+    required this.startHex,
+    required this.endHex,
+  });
+
+  final String name;
+  final String startHex;
+  final String endHex;
 }

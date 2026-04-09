@@ -70,10 +70,11 @@ class AdminDashboardScreen extends StatelessWidget {
       ..sort((a, b) => b.value.compareTo(a.value));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F5EF),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Admin panel'),
-        backgroundColor: Colors.transparent,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        foregroundColor: Theme.of(context).textTheme.titleMedium?.color,
       ),
       body: RefreshIndicator(
         onRefresh: () => context.read<AdminProvider>().loadAdminData(),
@@ -99,7 +100,7 @@ class AdminDashboardScreen extends StatelessWidget {
                     physics: const NeverScrollableScrollPhysics(),
                     crossAxisSpacing: defaultPadding,
                     mainAxisSpacing: defaultPadding,
-                    childAspectRatio: 1.2,
+                    childAspectRatio: 1.0,
                     children: [
                       _StatCard(
                         label: 'Products',
@@ -422,19 +423,29 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? Colors.white : const Color(0xFF1B1D22);
+    final subtitleColor = isDark
+        ? Colors.white.withValues(alpha: 0.86)
+        : const Color(0xFF505463);
+    final helperColor = isDark
+        ? Colors.white.withValues(alpha: 0.72)
+        : const Color(0xFF727788);
     return Container(
-      padding: const EdgeInsets.all(defaultPadding),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: const BorderRadius.all(Radius.circular(22)),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x12000000),
-            blurRadius: 18,
-            offset: Offset(0, 8),
-          ),
-        ],
+        border: Border.all(color: Theme.of(context).dividerColor),
+        boxShadow: isDark
+            ? const []
+            : const [
+                BoxShadow(
+                  color: Color(0x12000000),
+                  blurRadius: 18,
+                  offset: Offset(0, 8),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -448,21 +459,35 @@ class _StatCard extends StatelessWidget {
             ),
             child: Icon(icon, color: accent),
           ),
-          const Spacer(),
-          Text(
-            value,
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+          const SizedBox(height: 8),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: titleColor,
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+                height: 1.05,
+              ),
+            ),
           ),
-          const SizedBox(height: 4),
-          Text(label, style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              color: subtitleColor,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 2),
           Text(
             helper,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: blackColor60),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: helperColor, fontSize: 12),
           ),
         ],
       ),
@@ -483,36 +508,40 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? Colors.white : const Color(0xFF1B1D22);
+    final subtitleColor = isDark
+        ? Colors.white.withValues(alpha: 0.82)
+        : const Color(0xFF5A5F70);
     return Container(
       padding: const EdgeInsets.all(defaultPadding),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: const BorderRadius.all(Radius.circular(24)),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x10000000),
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          ),
-        ],
+        border: Border.all(color: Theme.of(context).dividerColor),
+        boxShadow: isDark
+            ? const []
+            : const [
+                BoxShadow(
+                  color: Color(0x10000000),
+                  blurRadius: 16,
+                  offset: Offset(0, 8),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            style: TextStyle(
+              color: titleColor,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: blackColor60),
-          ),
+          Text(subtitle, style: TextStyle(color: subtitleColor, fontSize: 16)),
           const SizedBox(height: defaultPadding),
           child,
         ],
@@ -534,6 +563,7 @@ class _RingChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final total = math.max(1, pendingOrders + completedOrders);
     final completedSweep = completedOrders / total;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SizedBox(
       width: 116,
@@ -547,7 +577,7 @@ class _RingChart extends StatelessWidget {
             builder: (context, value, child) {
               return CustomPaint(
                 size: const Size.square(116),
-                painter: _RingPainter(progress: value),
+                painter: _RingPainter(progress: value, isDark: isDark),
               );
             },
           ),
@@ -570,9 +600,10 @@ class _RingChart extends StatelessWidget {
 }
 
 class _RingPainter extends CustomPainter {
-  _RingPainter({required this.progress});
+  _RingPainter({required this.progress, required this.isDark});
 
   final double progress;
+  final bool isDark;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -582,7 +613,7 @@ class _RingPainter extends CustomPainter {
     final radius = (size.width - strokeWidth) / 2;
 
     final basePaint = Paint()
-      ..color = const Color(0xFFECE7DB)
+      ..color = isDark ? const Color(0xFF2A3140) : const Color(0xFFECE7DB)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
@@ -630,7 +661,7 @@ class _RingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _RingPainter oldDelegate) {
-    return oldDelegate.progress != progress;
+    return oldDelegate.progress != progress || oldDelegate.isDark != isDark;
   }
 }
 
@@ -647,6 +678,12 @@ class _LegendTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final valueColor = Theme.of(context).brightness == Brightness.dark
+        ? Colors.white
+        : const Color(0xFF22252E);
+    final labelColor = Theme.of(context).brightness == Brightness.dark
+        ? Colors.white.withValues(alpha: 0.88)
+        : const Color(0xFF4E5465);
     return Row(
       children: [
         Container(
@@ -658,12 +695,12 @@ class _LegendTile extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        Expanded(child: Text(label)),
+        Expanded(
+          child: Text(label, style: TextStyle(color: labelColor)),
+        ),
         Text(
           value,
-          style: Theme.of(
-            context,
-          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          style: TextStyle(color: valueColor, fontWeight: FontWeight.w700),
         ),
       ],
     );
@@ -684,19 +721,22 @@ class _HorizontalBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = total == 0 ? 0.0 : value / total;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF2A2D36);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
             Expanded(
-              child: Text(label, style: Theme.of(context).textTheme.titleSmall),
+              child: Text(
+                label,
+                style: TextStyle(color: textColor, fontWeight: FontWeight.w600),
+              ),
             ),
             Text(
               '$value',
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+              style: TextStyle(color: textColor, fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -706,7 +746,9 @@ class _HorizontalBar extends StatelessWidget {
           child: LinearProgressIndicator(
             value: progress,
             minHeight: 10,
-            backgroundColor: const Color(0xFFECE7DB),
+            backgroundColor: isDark
+                ? const Color(0xFF2A3140)
+                : const Color(0xFFECE7DB),
             valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF3A5E9F)),
           ),
         ),
@@ -728,6 +770,9 @@ class _InventoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = Theme.of(context).brightness == Brightness.dark
+        ? Colors.white
+        : const Color(0xFF2A2D36);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
@@ -745,12 +790,12 @@ class _InventoryRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          Expanded(child: Text(label)),
+          Expanded(
+            child: Text(label, style: TextStyle(color: textColor)),
+          ),
           Text(
             '$value',
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            style: TextStyle(color: textColor, fontWeight: FontWeight.w700),
           ),
         ],
       ),
@@ -772,6 +817,12 @@ class _StatusTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = isHealthy ? const Color(0xFF2D8F59) : errorColor;
+    final titleColor = Theme.of(context).brightness == Brightness.dark
+        ? Colors.white
+        : const Color(0xFF20232B);
+    final messageColor = Theme.of(context).brightness == Brightness.dark
+        ? Colors.white.withValues(alpha: 0.9)
+        : const Color(0xFF4F5565);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -792,12 +843,13 @@ class _StatusTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    color: titleColor,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 4),
-                Text(message),
+                Text(message, style: TextStyle(color: messageColor)),
               ],
             ),
           ),
@@ -814,13 +866,14 @@ class _EmptyChartMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(defaultPadding),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F6F0),
+        color: isDark ? const Color(0xFF1A1E28) : const Color(0xFFF8F6F0),
         borderRadius: const BorderRadius.all(Radius.circular(18)),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Text(message),
     );

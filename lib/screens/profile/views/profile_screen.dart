@@ -128,12 +128,6 @@ class ProfileScreen extends StatelessWidget {
                   iconPath: 'assets/icons/Setting.svg',
                   onTap: () =>
                       Navigator.pushNamed(context, adminDashboardScreenRoute),
-                ),
-                _ActionTile(
-                  title: 'Manage categories',
-                  iconPath: 'assets/icons/Category.svg',
-                  onTap: () =>
-                      Navigator.pushNamed(context, adminCategoriesScreenRoute),
                   isLast: true,
                 ),
               ],

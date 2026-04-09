@@ -13,11 +13,14 @@ abstract class AdminRepository {
   Future<List<ProductModel>> getProducts();
   Future<List<OrderModel>> getOrders();
   Future<void> saveCategory(CategoryModel category);
+  Future<void> upsertCategories(List<CategoryModel> categories);
   Future<void> deleteCategory(String categoryId);
   Future<void> saveProduct(ProductModel product);
   Future<void> deleteProduct(String productId);
   Future<void> updateOrderStatus(String orderId, OrderStatus status);
   Future<String> uploadProductImage(XFile file);
+  Future<String> uploadCategoryImage(XFile file);
+  Future<Map<String, String>> uploadCategoryAssets(List<String> assetPaths);
   Future<HomeBannerModel?> getHomeBanner();
   Future<void> saveHomeBanner(HomeBannerModel banner);
 }
@@ -89,18 +92,20 @@ class FirestoreAdminRepository implements AdminRepository {
   Future<void> saveProduct(ProductModel product) async {
     _ensureReady();
 
-    final docRef = product.id.isEmpty
+    final isNewProduct = product.id.isEmpty;
+    final docRef = isNewProduct
         ? _db.collection('products').doc()
         : _db.collection('products').doc(product.id);
+    final payload = product.copyWith(id: docRef.id).toMap();
 
-    final now = DateTime.now();
-    final payload = product.copyWith(
-      id: docRef.id,
-      updatedAt: now,
-      createdAt: product.createdAt ?? now,
-    );
+    payload['updatedAt'] = FieldValue.serverTimestamp();
+    if (isNewProduct) {
+      payload['createdAt'] = FieldValue.serverTimestamp();
+    } else if (product.createdAt == null) {
+      payload.remove('createdAt');
+    }
 
-    await docRef.set(payload.toMap(), SetOptions(merge: true));
+    await docRef.set(payload, SetOptions(merge: true));
   }
 
   @override
@@ -126,6 +131,31 @@ class FirestoreAdminRepository implements AdminRepository {
   }
 
   @override
+  Future<void> upsertCategories(List<CategoryModel> categories) async {
+    _ensureReady();
+    if (categories.isEmpty) return;
+
+    final batch = _db.batch();
+    for (final category in categories) {
+      final docRef = category.id.isEmpty
+          ? _db.collection('categories').doc()
+          : _db.collection('categories').doc(category.id);
+      final payload = CategoryModel(
+        id: docRef.id,
+        title: category.title,
+        image: category.image,
+        svgSrc: category.svgSrc,
+        parentId: category.parentId,
+        subCategories: category.subCategories,
+        isActive: category.isActive,
+        sortOrder: category.sortOrder,
+      );
+      batch.set(docRef, payload.toMap(), SetOptions(merge: true));
+    }
+    await batch.commit();
+  }
+
+  @override
   Future<void> updateOrderStatus(String orderId, OrderStatus status) async {
     await _orderRepository.updateOrderStatus(orderId, status);
   }
@@ -133,6 +163,25 @@ class FirestoreAdminRepository implements AdminRepository {
   @override
   Future<String> uploadProductImage(XFile file) {
     return _cloudinaryService.uploadProductImage(file);
+  }
+
+  @override
+  Future<String> uploadCategoryImage(XFile file) {
+    return _cloudinaryService.uploadCategoryImage(file);
+  }
+
+  @override
+  Future<Map<String, String>> uploadCategoryAssets(
+    List<String> assetPaths,
+  ) async {
+    final result = <String, String>{};
+    for (final assetPath in assetPaths) {
+      final url = await _cloudinaryService.uploadAssetCategoryImage(assetPath);
+      if (url.trim().isNotEmpty) {
+        result[assetPath] = url.trim();
+      }
+    }
+    return result;
   }
 
   @override

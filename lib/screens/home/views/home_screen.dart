@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
-import 'package:shop/components/network_image_with_loader.dart';
+import 'package:shop/components/home_banner_card.dart';
+import 'package:shop/components/product/product_card.dart';
 import 'package:shop/constants.dart';
-import 'package:shop/models/category_model.dart';
+import 'package:shop/core/widgets/section_empty_state.dart';
 import 'package:shop/models/home_banner_model.dart';
 import 'package:shop/models/product_model.dart';
 import 'package:shop/providers/product_provider.dart';
@@ -15,22 +15,21 @@ class HomeScreen extends StatelessWidget {
   final VoidCallback? onOpenDiscover;
   final ValueChanged<String>? onOpenCategory;
 
-  static const String _bannerCatImage = 'assets/images/home/banner_cat.png';
-  static const String _bannerDogImage = 'assets/images/home/banner_dog.png';
-
   @override
   Widget build(BuildContext context) {
     final productProvider = context.watch<ProductProvider>();
-    final topSelling = productProvider.catalogProducts.take(8).toList();
+    final categories = productProvider.discoverCategories;
+    final flashSaleProducts = productProvider.flashSaleProducts;
+    final bestSellers = productProvider.popularProducts;
+    final newArrivals = productProvider.newArrivals;
+    final allProducts = productProvider.catalogProducts;
+    final banner = productProvider.homeBanner;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final pageBackground = isDark
-        ? const Color(0xFF11131A)
-        : const Color(0xFFF3EFE8);
 
     return Container(
-      color: pageBackground,
+      color: isDark ? const Color(0xFF11131A) : const Color(0xFFF8F3EC),
       child: CustomScrollView(
-        slivers: [
+        slivers: <Widget>[
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
@@ -41,124 +40,203 @@ class HomeScreen extends StatelessWidget {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: <Widget>[
                   const _SearchStrip(),
                   const SizedBox(height: defaultPadding),
-                  _PromoBanner(
-                    banner: productProvider.homeBanner,
-                    onTapShopNow: () {
-                      if (onOpenDiscover != null) {
-                        onOpenDiscover!.call();
-                        return;
-                      }
-                      Navigator.pushNamed(context, discoverScreenRoute);
+                  _HeroBanner(
+                    banner: banner,
+                    onTapShopNow: () => _openDiscover(context),
+                  ),
+                  const SizedBox(height: defaultPadding),
+                  const _TrustBadgesRow(),
+                ],
+              ),
+            ),
+          ),
+          if (categories.isNotEmpty)
+            SliverToBoxAdapter(
+              child: _HomeSection(
+                header: _SectionHeader(
+                  title: 'Shop by Category',
+                  actionText: 'See all',
+                  onTapAction: () => _openDiscover(context),
+                ),
+                child: SizedBox(
+                  height: 48,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: defaultPadding,
+                    ),
+                    scrollDirection: Axis.horizontal,
+                    itemCount: categories.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      final category = categories[index];
+                      return _CategoryChip(
+                        label: category.title,
+                        onTap: () => _openCategory(context, category.title),
+                      );
                     },
                   ),
-                  const SizedBox(height: defaultPadding * 1.2),
-                  _HomeSectionHeader(
-                    title: 'Categories',
-                    actionText: 'See All',
-                    onTapAction: () {
-                      if (onOpenDiscover != null) {
-                        onOpenDiscover!.call();
-                        return;
-                      }
-                      Navigator.pushNamed(context, discoverScreenRoute);
-                    },
+                ),
+              ),
+            ),
+          if (flashSaleProducts.isNotEmpty)
+            SliverToBoxAdapter(
+              child: _HomeSection(
+                header: _SectionHeader(
+                  title: 'Flash Sale',
+                  actionText: 'See all',
+                  titleColor: errorColor,
+                  leading: const Icon(
+                    Icons.flash_on_rounded,
+                    color: errorColor,
                   ),
-                  const SizedBox(height: defaultPadding * 0.75),
-                  _CategoryRow(
-                    categories: productProvider.discoverCategories,
-                    onCategoryTap: (categoryTitle) {
-                      if (onOpenCategory != null) {
-                        onOpenCategory!.call(categoryTitle);
-                        return;
-                      }
-                      Navigator.pushNamed(context, discoverScreenRoute);
-                    },
+                  badge: 'LIMITED TIME',
+                  badgeColor: const Color(0xFFFFECE8),
+                  badgeTextColor: errorColor,
+                  onTapAction: () => _openDiscover(context),
+                ),
+                child: _HorizontalProductList(products: flashSaleProducts),
+              ),
+            ),
+          if (bestSellers.isNotEmpty)
+            SliverToBoxAdapter(
+              child: _HomeSection(
+                header: _SectionHeader(
+                  title: 'Best Sellers',
+                  actionText: 'See all',
+                  titleColor: warningColor,
+                  leading: const Icon(Icons.star_rounded, color: warningColor),
+                  onTapAction: () => _openDiscover(context),
+                ),
+                child: _HorizontalProductList(products: bestSellers),
+              ),
+            ),
+          if (newArrivals.isNotEmpty)
+            SliverToBoxAdapter(
+              child: _HomeSection(
+                header: _SectionHeader(
+                  title: 'New Arrivals',
+                  actionText: 'See all',
+                  leading: const Icon(
+                    Icons.auto_awesome_rounded,
+                    color: Color(0xFFE2893C),
+                  ),
+                  onTapAction: () => _openDiscover(context),
+                ),
+                child: _HorizontalProductList(products: newArrivals),
+              ),
+            ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                defaultPadding,
+                defaultPadding,
+                defaultPadding,
+                defaultPadding / 2,
+              ),
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text(
+                      'All Products',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : const Color(0xFFFFF1EB),
+                      borderRadius: const BorderRadius.all(
+                        Radius.circular(999),
+                      ),
+                    ),
+                    child: Text(
+                      '${allProducts.length} items',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
           ),
-          SliverToBoxAdapter(
-            child: Padding(
+          if (allProducts.isEmpty)
+            const SliverToBoxAdapter(
+              child: SectionEmptyState(
+                title: 'No products yet',
+                message:
+                    'Add products in the admin panel and they will appear here automatically.',
+              ),
+            )
+          else
+            SliverPadding(
               padding: const EdgeInsets.fromLTRB(
                 defaultPadding,
                 0,
                 defaultPadding,
-                defaultPadding * 0.75,
+                defaultPadding,
               ),
-              child: _HomeSectionHeader(
-                title: 'Top Selling',
-                actionText: 'See All',
-                onTapAction: () {
-                  if (onOpenDiscover != null) {
-                    onOpenDiscover!.call();
-                    return;
-                  }
-                  Navigator.pushNamed(context, discoverScreenRoute);
-                },
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: defaultPadding,
+                  crossAxisSpacing: defaultPadding,
+                  childAspectRatio: 0.68,
+                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final product = allProducts[index];
+                  return ProductCard(
+                    image: product.image,
+                    brandName: product.brandName,
+                    title: product.title,
+                    price: product.price,
+                    priceAfetDiscount: product.priceAfetDiscount,
+                    dicountpercent: product.dicountpercent,
+                    isSaved: productProvider.isBookmarked(product.id),
+                    onToggleSaved: () {
+                      context.read<ProductProvider>().toggleBookmark(product);
+                    },
+                    press: () {
+                      Navigator.pushNamed(
+                        context,
+                        productDetailsScreenRoute,
+                        arguments: product,
+                      );
+                    },
+                  );
+                }, childCount: allProducts.length),
               ),
             ),
-          ),
-          if (topSelling.isEmpty)
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: defaultPadding),
-                child: _InlineInfo(
-                  text:
-                      'No products yet. Add products in admin panel to fill Top Selling.',
-                ),
-              ),
-            )
-          else
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: 278,
-                child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: defaultPadding,
-                  ),
-                  scrollDirection: Axis.horizontal,
-                  itemCount: topSelling.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(width: defaultPadding),
-                  itemBuilder: (context, index) {
-                    final product = topSelling[index];
-                    return _TopSellingCard(
-                      product: product,
-                      isSaved: productProvider.isBookmarked(product.id),
-                      onToggleSaved: () async {
-                        final success = await context
-                            .read<ProductProvider>()
-                            .toggleBookmark(product);
-                        if (!context.mounted || success) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              context.read<ProductProvider>().errorMessage ??
-                                  'Could not update saved products.',
-                            ),
-                          ),
-                        );
-                      },
-                      onTap: () {
-                        Navigator.pushNamed(
-                          context,
-                          productDetailsScreenRoute,
-                          arguments: product,
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ),
-          const SliverToBoxAdapter(child: SizedBox(height: defaultPadding)),
         ],
       ),
     );
+  }
+
+  void _openDiscover(BuildContext context) {
+    if (onOpenDiscover != null) {
+      onOpenDiscover!.call();
+      return;
+    }
+    Navigator.pushNamed(context, discoverScreenRoute);
+  }
+
+  void _openCategory(BuildContext context, String categoryTitle) {
+    if (onOpenCategory != null) {
+      onOpenCategory!.call(categoryTitle);
+      return;
+    }
+    Navigator.pushNamed(context, discoverScreenRoute);
   }
 }
 
@@ -169,7 +247,7 @@ class _SearchStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
-      children: [
+      children: <Widget>[
         Expanded(
           child: InkWell(
             borderRadius: const BorderRadius.all(Radius.circular(999)),
@@ -189,7 +267,7 @@ class _SearchStrip extends StatelessWidget {
                 ),
               ),
               child: Row(
-                children: [
+                children: <Widget>[
                   Icon(
                     Icons.search_rounded,
                     size: 20,
@@ -212,313 +290,122 @@ class _SearchStrip extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        _HeaderIconButton(
-          icon: Icons.tune_rounded,
-          onTap: null,
-        ),
+        const _HeaderIconButton(icon: Icons.favorite_border_rounded),
         const SizedBox(width: 8),
-        const _HeaderIconButton(
-          icon: Icons.notifications_none_rounded,
-          onTap: null,
-        ),
+        const _HeaderIconButton(icon: Icons.shopping_bag_outlined),
       ],
     );
   }
 }
 
 class _HeaderIconButton extends StatelessWidget {
-  const _HeaderIconButton({required this.icon, required this.onTap});
+  const _HeaderIconButton({required this.icon});
 
   final IconData icon;
-  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return InkWell(
-      borderRadius: const BorderRadius.all(Radius.circular(999)),
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1A1E28) : Colors.white,
-          border: Border.all(
-            color: isDark ? const Color(0xFF2B3040) : const Color(0xFFE4E4E4),
-          ),
-          borderRadius: const BorderRadius.all(Radius.circular(999)),
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1E28) : Colors.white,
+        border: Border.all(
+          color: isDark ? const Color(0xFF2B3040) : const Color(0xFFE4E4E4),
         ),
-        child: Icon(icon, size: 20),
+        borderRadius: const BorderRadius.all(Radius.circular(999)),
       ),
+      child: Icon(icon, size: 20),
     );
   }
 }
 
-class _PromoBanner extends StatelessWidget {
-  const _PromoBanner({required this.banner, required this.onTapShopNow});
+class _HeroBanner extends StatelessWidget {
+  const _HeroBanner({required this.banner, required this.onTapShopNow});
 
   final HomeBannerModel banner;
   final VoidCallback onTapShopNow;
 
   @override
   Widget build(BuildContext context) {
-    final ctaText = banner.buttonText.trim().isEmpty
-        ? 'Shop Now'
-        : banner.buttonText.trim();
-    return Container(
-      height: 170,
-      decoration: const BoxDecoration(
-        borderRadius: BorderRadius.all(Radius.circular(20)),
-        gradient: LinearGradient(
-          colors: [Color(0xFFF4A000), Color(0xFFDC8600)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            left: -8,
-            bottom: -12,
-            child: _BannerAnimalImage(
-              imageUrl: banner.leftImageUrl,
-              fallbackAssetPath: HomeScreen._bannerCatImage,
-              fallbackIcon: Icons.pets_outlined,
-            ),
-          ),
-          Positioned(
-            right: -8,
-            bottom: -12,
-            child: _BannerAnimalImage(
-              imageUrl: banner.rightImageUrl,
-              fallbackAssetPath: HomeScreen._bannerDogImage,
-              fallbackIcon: Icons.pets_rounded,
-            ),
-          ),
-          Positioned.fill(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 114,
-                vertical: 18,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    banner.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    banner.highlightText,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Text(
-                    banner.dateText,
-                    style: const TextStyle(color: Colors.white70),
-                  ),
-                  const Spacer(),
-                  InkWell(
-                    borderRadius: const BorderRadius.all(Radius.circular(999)),
-                    onTap: onTapShopNow,
-                    child: Container(
-                      constraints: const BoxConstraints(minWidth: 136),
-                      height: 34,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFFFFF),
-                        borderRadius: BorderRadius.all(Radius.circular(999)),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        ctaText,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13,
-                          color: Color(0xFF6A4300),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    return HomeBannerCard(banner: banner, onTapShopNow: onTapShopNow);
   }
 }
 
-class _BannerAnimalImage extends StatelessWidget {
-  const _BannerAnimalImage({
-    required this.imageUrl,
-    required this.fallbackAssetPath,
-    required this.fallbackIcon,
-  });
+class _TrustBadgesRow extends StatelessWidget {
+  const _TrustBadgesRow();
 
-  final String imageUrl;
-  final String fallbackAssetPath;
-  final IconData fallbackIcon;
+  static const List<({IconData icon, String title})> _items =
+      <({IconData icon, String title})>[
+        (
+          icon: Icons.local_shipping_outlined,
+          title: 'Free delivery over Rs 499',
+        ),
+        (icon: Icons.verified_outlined, title: '100% genuine products'),
+        (icon: Icons.support_agent_rounded, title: '24/7 pet care support'),
+        (icon: Icons.assignment_return_outlined, title: 'Easy 7-day returns'),
+      ];
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 128,
-      height: 134,
-      child: Transform.scale(
-        scale: 1.22,
-        alignment: Alignment.bottomCenter,
-        child: imageUrl.trim().isNotEmpty
-            ? Image.network(
-                imageUrl,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.high,
-                errorBuilder: (context, error, stackTrace) {
-                  return _BannerFallback(fallbackIcon: fallbackIcon);
-                },
-              )
-            : Image.asset(
-                fallbackAssetPath,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.high,
-                errorBuilder: (context, error, stackTrace) {
-                  return _BannerFallback(fallbackIcon: fallbackIcon);
-                },
-              ),
-      ),
-    );
-  }
-}
-
-class _BannerFallback extends StatelessWidget {
-  const _BannerFallback({required this.fallbackIcon});
-
-  final IconData fallbackIcon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.18),
-        borderRadius: const BorderRadius.all(Radius.circular(16)),
-      ),
-      child: Icon(fallbackIcon, color: Colors.white, size: 34),
-    );
-  }
-}
-
-class _HomeSectionHeader extends StatelessWidget {
-  const _HomeSectionHeader({
-    required this.title,
-    required this.actionText,
-    required this.onTapAction,
-  });
-
-  final String title;
-  final String actionText;
-  final VoidCallback onTapAction;
-
-  @override
-  Widget build(BuildContext context) {
-    final titleColor = Theme.of(
-      context,
-    ).textTheme.titleLarge?.color?.withValues(alpha: 0.95);
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: titleColor,
-            ),
-          ),
-        ),
-        TextButton(onPressed: onTapAction, child: Text(actionText)),
-      ],
-    );
-  }
-}
-
-class _CategoryRow extends StatelessWidget {
-  const _CategoryRow({required this.categories, required this.onCategoryTap});
-
-  final List<CategoryModel> categories;
-  final ValueChanged<String> onCategoryTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final data = categories.take(4).toList();
-    if (data.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return SizedBox(
-      height: 106,
+      height: 104,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: data.length,
-        separatorBuilder: (context, index) =>
-            const SizedBox(width: defaultPadding / 2),
+        itemCount: _items.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
-          final item = data[index];
-          return _CategoryCircleItem(
-            item: item,
-            onTap: () => onCategoryTap(item.title),
-          );
+          final item = _items[index];
+          return _TrustBadgeCard(icon: item.icon, title: item.title);
         },
       ),
     );
   }
 }
 
-class _CategoryCircleItem extends StatelessWidget {
-  const _CategoryCircleItem({required this.item, required this.onTap});
+class _TrustBadgeCard extends StatelessWidget {
+  const _TrustBadgeCard({required this.icon, required this.title});
 
-  final CategoryModel item;
-  final VoidCallback onTap;
+  final IconData icon;
+  final String title;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final containerColor = isDark ? const Color(0xFF171A22) : Colors.white;
-    return InkWell(
-      borderRadius: const BorderRadius.all(Radius.circular(18)),
-      onTap: onTap,
-      child: Column(
-        children: [
+    return Container(
+      width: 172,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF171A22) : Colors.white,
+        borderRadius: const BorderRadius.all(Radius.circular(18)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF2B3040) : const Color(0xFFECE2D8),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
           Container(
-            width: 74,
-            height: 74,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              color: containerColor,
+              color: primaryColor.withValues(alpha: 0.12),
               borderRadius: const BorderRadius.all(Radius.circular(999)),
-              border: Border.all(
-                color: isDark ? const Color(0xFF2B3040) : const Color(0xFFE4E4E4),
+            ),
+            child: Icon(icon, color: primaryColor),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                height: 1.3,
               ),
             ),
-            child: _CategoryIcon(
-              title: item.title,
-              iconSource: item.svgSrc ?? item.image,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            item.title,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
         ],
       ),
@@ -526,206 +413,121 @@ class _CategoryCircleItem extends StatelessWidget {
   }
 }
 
-class _CategoryIcon extends StatelessWidget {
-  const _CategoryIcon({required this.title, required this.iconSource});
+class _HomeSection extends StatelessWidget {
+  const _HomeSection({required this.header, required this.child});
 
-  final String title;
-  final String? iconSource;
+  final Widget header;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    final iconColor = Theme.of(
-      context,
-    ).textTheme.bodyMedium?.color?.withValues(alpha: 0.9);
-    final source = (iconSource ?? '').trim();
-    if (source.startsWith('http')) {
-      return ClipOval(child: NetworkImageWithLoader(source, radius: 999));
-    }
-
-    if (source.endsWith('.svg')) {
-      return Padding(
-        padding: const EdgeInsets.all(14),
-        child: SvgPicture.asset(
-          source,
-          colorFilter: ColorFilter.mode(
-            iconColor ?? const Color(0xFF2B6B63),
-            BlendMode.srcIn,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: defaultPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              defaultPadding,
+              0,
+              defaultPadding,
+              defaultPadding * 0.75,
+            ),
+            child: header,
           ),
-          errorBuilder: (context, error, stackTrace) => Icon(
-            _fallbackIconForTitle(title),
-            color: iconColor ?? const Color(0xFF2B6B63),
-          ),
-        ),
-      );
-    }
-
-    if (source.isNotEmpty) {
-      return ClipOval(
-        child: Image.asset(
-          source,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => Icon(
-            _fallbackIconForTitle(title),
-            color: iconColor ?? const Color(0xFF2B6B63),
-          ),
-        ),
-      );
-    }
-
-    return Icon(
-      _fallbackIconForTitle(title),
-      color: iconColor ?? const Color(0xFF2B6B63),
+          child,
+        ],
+      ),
     );
-  }
-
-  IconData _fallbackIconForTitle(String value) {
-    final key = value.toLowerCase();
-    if (key.contains('cat')) return Icons.pets_outlined;
-    if (key.contains('dog')) return Icons.pets_rounded;
-    if (key.contains('bird')) return Icons.flutter_dash_rounded;
-    if (key.contains('fish')) return Icons.set_meal_rounded;
-    if (key.contains('groom')) return Icons.content_cut_rounded;
-    if (key.contains('access')) return Icons.shopping_bag_outlined;
-    return Icons.pets;
   }
 }
 
-class _TopSellingCard extends StatelessWidget {
-  const _TopSellingCard({
-    required this.product,
-    required this.isSaved,
-    required this.onToggleSaved,
-    required this.onTap,
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.title,
+    required this.actionText,
+    required this.onTapAction,
+    this.leading,
+    this.badge,
+    this.titleColor,
+    this.badgeColor,
+    this.badgeTextColor,
   });
 
-  final ProductModel product;
-  final bool isSaved;
-  final VoidCallback onToggleSaved;
+  final String title;
+  final String actionText;
+  final VoidCallback onTapAction;
+  final Widget? leading;
+  final String? badge;
+  final Color? titleColor;
+  final Color? badgeColor;
+  final Color? badgeTextColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: <Widget>[
+        if (leading != null) ...<Widget>[leading!, const SizedBox(width: 8)],
+        Flexible(
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: titleColor,
+            ),
+          ),
+        ),
+        if (badge != null) ...<Widget>[
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: badgeColor ?? primaryColor.withValues(alpha: 0.1),
+              borderRadius: const BorderRadius.all(Radius.circular(999)),
+            ),
+            child: Text(
+              badge!,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: badgeTextColor ?? primaryColor,
+              ),
+            ),
+          ),
+        ],
+        const Spacer(),
+        TextButton(onPressed: onTapAction, child: Text(actionText)),
+      ],
+    );
+  }
+}
+
+class _CategoryChip extends StatelessWidget {
+  const _CategoryChip({required this.label, required this.onTap});
+
+  final String label;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final secondaryText = Theme.of(
-      context,
-    ).textTheme.bodyMedium?.color?.withValues(alpha: 0.78);
-    final iconColor = Theme.of(
-      context,
-    ).textTheme.bodyMedium?.color?.withValues(alpha: 0.88);
-    return SizedBox(
-      width: 188,
-      child: Material(
-        color: isDark ? const Color(0xFF171A22) : Colors.white,
-        borderRadius: const BorderRadius.all(Radius.circular(16)),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: const BorderRadius.all(Radius.circular(16)),
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.all(Radius.circular(16)),
-              border: Border.all(
-                color: isDark ? const Color(0xFF2B3040) : const Color(0xFFE7E7E7),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: ClipRRect(
-                          borderRadius: const BorderRadius.all(
-                            Radius.circular(12),
-                          ),
-                          child: NetworkImageWithLoader(product.imageUrl),
-                        ),
-                      ),
-                      Positioned(
-                        right: 6,
-                        top: 6,
-                        child: InkWell(
-                          onTap: onToggleSaved,
-                          borderRadius: const BorderRadius.all(
-                            Radius.circular(999),
-                          ),
-                          child: Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF262B36).withValues(alpha: 0.96)
-                                  : Colors.white.withValues(alpha: 0.95),
-                              borderRadius: const BorderRadius.all(
-                                Radius.circular(999),
-                              ),
-                            ),
-                          child: Icon(
-                            isSaved ? Icons.bookmark : Icons.bookmark_border,
-                            size: 16,
-                            color: isSaved
-                                ? primaryColor
-                                : (iconColor ?? blackColor80),
-                          ),
-                        ),
-                      ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  product.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                if (product.salePrice != null &&
-                    product.salePrice! < product.price)
-                  Row(
-                    children: [
-                      Text(
-                        'Rs ${product.salePrice!.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          color: Color(0xFF1F8E7A),
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                        Text(
-                          'Rs ${product.price.toStringAsFixed(0)}',
-                          style: TextStyle(
-                            color: secondaryText,
-                            fontSize: 12,
-                            decoration: TextDecoration.lineThrough,
-                          ),
-                      ),
-                    ],
-                  )
-                else
-                  Text(
-                    'Rs ${product.price.toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      color: Color(0xFF1F8E7A),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                    ),
-                  ),
-                const SizedBox(height: 2),
-                Text(
-                  product.brandName.isEmpty ? 'PetsWorld' : product.brandName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, color: secondaryText),
-                ),
-              ],
-            ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: const BorderRadius.all(Radius.circular(999)),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1A1E28) : Colors.white,
+          borderRadius: const BorderRadius.all(Radius.circular(999)),
+          border: Border.all(
+            color: isDark ? const Color(0xFF2B3040) : const Color(0xFFE9DFD4),
+          ),
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white : const Color(0xFF303544),
           ),
         ),
       ),
@@ -733,24 +535,47 @@ class _TopSellingCard extends StatelessWidget {
   }
 }
 
-class _InlineInfo extends StatelessWidget {
-  const _InlineInfo({required this.text});
+class _HorizontalProductList extends StatelessWidget {
+  const _HorizontalProductList({required this.products});
 
-  final String text;
+  final List<ProductModel> products;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.all(defaultPadding),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF171A22) : Colors.white,
-        borderRadius: const BorderRadius.all(Radius.circular(14)),
-        border: Border.all(
-          color: isDark ? const Color(0xFF2B3040) : const Color(0xFFE6E6E6),
-        ),
+    final productProvider = context.watch<ProductProvider>();
+    return SizedBox(
+      height: 255,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: defaultPadding),
+        scrollDirection: Axis.horizontal,
+        itemCount: products.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final product = products[index];
+          return SizedBox(
+            width: 150,
+            child: ProductCard(
+              image: product.image,
+              brandName: product.brandName,
+              title: product.title,
+              price: product.price,
+              priceAfetDiscount: product.priceAfetDiscount,
+              dicountpercent: product.dicountpercent,
+              isSaved: productProvider.isBookmarked(product.id),
+              onToggleSaved: () {
+                context.read<ProductProvider>().toggleBookmark(product);
+              },
+              press: () {
+                Navigator.pushNamed(
+                  context,
+                  productDetailsScreenRoute,
+                  arguments: product,
+                );
+              },
+            ),
+          );
+        },
       ),
-      child: Text(text),
     );
   }
 }

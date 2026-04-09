@@ -40,10 +40,37 @@ class ProductProvider extends ChangeNotifier {
   List<ProductModel> get catalogProducts => _catalogProducts;
   List<ProductModel> get featuredProducts => _featuredProducts;
   HomeBannerModel get homeBanner => _homeBanner;
-  List<ProductModel> get popularProducts => _featuredProducts;
-  List<ProductModel> get flashSaleProducts => _featuredProducts;
-  List<ProductModel> get bestSellerProducts => _featuredProducts;
-  List<ProductModel> get mostPopularProducts => _featuredProducts;
+  List<ProductModel> get popularProducts =>
+      _catalogProducts.where((product) => product.isPopular).toList();
+  List<ProductModel> get flashSaleProducts => _catalogProducts
+      .where(
+        (product) =>
+            (product.dicountpercent ?? 0) > 0 ||
+            (product.salePrice != null && product.salePrice! < product.price),
+      )
+      .toList();
+  List<ProductModel> get bestSellerProducts => popularProducts;
+  List<ProductModel> get mostPopularProducts => popularProducts;
+  List<ProductModel> get newArrivals {
+    final indexedProducts = _catalogProducts.indexed.toList();
+    indexedProducts.sort((a, b) {
+      final aDate = a.$2.createdAt;
+      final bDate = b.$2.createdAt;
+      if (aDate == null && bDate == null) {
+        return a.$1.compareTo(b.$1);
+      }
+      if (aDate == null) {
+        return 1;
+      }
+      if (bDate == null) {
+        return -1;
+      }
+      return bDate.compareTo(aDate);
+    });
+
+    return indexedProducts.map((entry) => entry.$2).take(6).toList();
+  }
+
   List<ProductModel> get bookmarkedProducts => _catalogProducts
       .where((product) => _bookmarkedProductIds.contains(product.id))
       .toList();

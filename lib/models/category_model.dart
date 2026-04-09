@@ -35,13 +35,18 @@ class CategoryModel {
   }
 
   Map<String, dynamic> toMap() {
-    return <String, dynamic>{
+    final map = <String, dynamic>{
       'title': title,
-      'image': image,
-      'svgSrc': svgSrc,
       'parentId': parentId,
       'isActive': isActive,
       'sortOrder': sortOrder,
     };
+    if ((image ?? '').trim().isNotEmpty) {
+      map['image'] = image!.trim();
+    }
+    if ((svgSrc ?? '').trim().isNotEmpty) {
+      map['svgSrc'] = svgSrc!.trim();
+    }
+    return map;
   }
 }

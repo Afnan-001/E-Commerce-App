@@ -26,6 +26,52 @@ class AdminCategoriesScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Manage categories'),
+        actions: [
+          TextButton.icon(
+            onPressed: adminProvider.isSaving
+                ? null
+                : () async {
+                    final admin = context.read<AdminProvider>();
+                    final product = context.read<ProductProvider>();
+                    final updatedCount = await admin
+                        .uploadBundledCategoryImagesAndAttach();
+                    if (!context.mounted) return;
+                    await product.loadInitialData();
+                    if (!context.mounted) return;
+                    final message = updatedCount > 0
+                        ? 'Uploaded and mapped images for $updatedCount categories.'
+                        : 'No category assets found or no category matches yet.';
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(message)));
+                  },
+            icon: const Icon(Icons.cloud_upload_outlined),
+            label: const Text('Upload Icons'),
+          ),
+          TextButton.icon(
+            onPressed: adminProvider.isSaving
+                ? null
+                : () async {
+                    final admin = context.read<AdminProvider>();
+                    final product = context.read<ProductProvider>();
+                    final ok = await admin.syncDiscoverCategoryStructure();
+                    if (!context.mounted) return;
+                    if (ok) {
+                      await product.loadInitialData();
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'PawCare discover category structure synced to Firestore.',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+            icon: const Icon(Icons.sync),
+            label: const Text('Sync Discover'),
+          ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: () async {
@@ -71,8 +117,12 @@ class AdminCategoriesScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: defaultPadding / 4),
                         Text(
-                          'Sort: ${category.sortOrder} | ${category.isActive ? 'Active' : 'Hidden'}',
+                          'Sort: ${category.sortOrder} | ${category.isActive ? 'Active' : 'Hidden'} | Parent: ${category.parentId ?? 'None'}',
                         ),
+                        if ((category.image ?? '').isNotEmpty) ...[
+                          const SizedBox(height: defaultPadding / 4),
+                          Text('Image: ${category.image}'),
+                        ],
                         if ((category.svgSrc ?? '').isNotEmpty) ...[
                           const SizedBox(height: defaultPadding / 4),
                           Text('Icon: ${category.svgSrc}'),
@@ -102,8 +152,9 @@ class AdminCategoriesScreen extends StatelessWidget {
                                           context: context,
                                           builder: (dialogContext) {
                                             return AlertDialog(
-                                              title:
-                                                  const Text('Delete category?'),
+                                              title: const Text(
+                                                'Delete category?',
+                                              ),
                                               content: Text(
                                                 'Remove ${category.title} from the catalog?',
                                               ),
@@ -131,12 +182,15 @@ class AdminCategoriesScreen extends StatelessWidget {
                                           },
                                         );
 
-                                        if (shouldDelete == true && context.mounted) {
-                                          final admin =
-                                              context.read<AdminProvider>();
-                                          final product =
-                                              context.read<ProductProvider>();
-                                          await admin.deleteCategory(category.id);
+                                        if (shouldDelete == true &&
+                                            context.mounted) {
+                                          final admin = context
+                                              .read<AdminProvider>();
+                                          final product = context
+                                              .read<ProductProvider>();
+                                          await admin.deleteCategory(
+                                            category.id,
+                                          );
                                           if (context.mounted) {
                                             await product.loadInitialData();
                                           }

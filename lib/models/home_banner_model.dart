@@ -11,6 +11,8 @@ class HomeBannerModel {
     required this.buttonText,
     required this.leftImageUrl,
     required this.rightImageUrl,
+    this.startColorHex,
+    this.endColorHex,
     this.isActive = true,
     this.updatedAt,
   });
@@ -22,6 +24,8 @@ class HomeBannerModel {
   final String buttonText;
   final String leftImageUrl;
   final String rightImageUrl;
+  final String? startColorHex;
+  final String? endColorHex;
   final bool isActive;
   final DateTime? updatedAt;
 
@@ -33,6 +37,8 @@ class HomeBannerModel {
     String? buttonText,
     String? leftImageUrl,
     String? rightImageUrl,
+    String? startColorHex,
+    String? endColorHex,
     bool? isActive,
     DateTime? updatedAt,
   }) {
@@ -44,6 +50,8 @@ class HomeBannerModel {
       buttonText: buttonText ?? this.buttonText,
       leftImageUrl: leftImageUrl ?? this.leftImageUrl,
       rightImageUrl: rightImageUrl ?? this.rightImageUrl,
+      startColorHex: startColorHex ?? this.startColorHex,
+      endColorHex: endColorHex ?? this.endColorHex,
       isActive: isActive ?? this.isActive,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -58,6 +66,8 @@ class HomeBannerModel {
       buttonText: data['buttonText'] as String? ?? 'Shop Now',
       leftImageUrl: data['leftImageUrl'] as String? ?? '',
       rightImageUrl: data['rightImageUrl'] as String? ?? '',
+      startColorHex: data['startColorHex'] as String?,
+      endColorHex: data['endColorHex'] as String?,
       isActive: data['isActive'] as bool? ?? true,
       updatedAt: _dateTimeFromValue(data['updatedAt']),
     );
@@ -71,6 +81,8 @@ class HomeBannerModel {
       'buttonText': buttonText,
       'leftImageUrl': leftImageUrl,
       'rightImageUrl': rightImageUrl,
+      'startColorHex': startColorHex,
+      'endColorHex': endColorHex,
       'isActive': isActive,
       'updatedAt': updatedAt?.toIso8601String(),
     };
@@ -85,6 +97,8 @@ class HomeBannerModel {
       buttonText: 'Shop Now',
       leftImageUrl: '',
       rightImageUrl: '',
+      startColorHex: null,
+      endColorHex: null,
       isActive: true,
     );
   }

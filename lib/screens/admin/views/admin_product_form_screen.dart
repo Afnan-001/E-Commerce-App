@@ -11,10 +11,7 @@ import 'package:shop/providers/product_provider.dart';
 import 'package:shop/route/route_constants.dart';
 
 class AdminProductFormScreen extends StatefulWidget {
-  const AdminProductFormScreen({
-    super.key,
-    this.product,
-  });
+  const AdminProductFormScreen({super.key, this.product});
 
   final ProductModel? product;
 
@@ -35,9 +32,12 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
   late final TextEditingController _stockController;
 
   String? _imageUrl;
-  String? _selectedCategoryId;
+  String? _selectedMajorCategoryId;
+  String? _selectedSubCategoryId;
   bool _isFeatured = false;
+  bool _isPopular = false;
   bool _isActive = true;
+  bool _useCustomCategory = false;
 
   @override
   void initState() {
@@ -45,10 +45,12 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
     final product = widget.product;
     _nameController = TextEditingController(text: product?.name ?? '');
     _brandController = TextEditingController(text: product?.brandName ?? '');
-    _descriptionController =
-        TextEditingController(text: product?.description ?? '');
-    _categoryNameController =
-        TextEditingController(text: product?.categoryName ?? '');
+    _descriptionController = TextEditingController(
+      text: product?.description ?? '',
+    );
+    _categoryNameController = TextEditingController(
+      text: product?.categoryName ?? '',
+    );
     _priceController = TextEditingController(
       text: product != null ? product.price.toStringAsFixed(0) : '',
     );
@@ -59,11 +61,10 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
       text: product != null ? product.stockQuantity.toString() : '0',
     );
     _imageUrl = product?.imageUrl;
-    _selectedCategoryId = product?.categoryId.isNotEmpty == true
-        ? product!.categoryId
-        : null;
     _isFeatured = product?.isFeatured ?? false;
+    _isPopular = product?.isPopular ?? false;
     _isActive = product?.isActive ?? true;
+    _useCustomCategory = false;
   }
 
   @override
@@ -99,6 +100,25 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
     final authProvider = context.watch<AuthProvider>();
     final adminProvider = context.watch<AdminProvider>();
     final categories = adminProvider.categories;
+    final majorCategories = categories
+        .where((item) => item.parentId == null)
+        .toList();
+    final categoryById = <String, CategoryModel>{
+      for (final category in categories) category.id: category,
+    };
+    if (!_useCustomCategory &&
+        majorCategories.isNotEmpty &&
+        _selectedMajorCategoryId == null) {
+      _initializeCategorySelection(
+        majorCategories: majorCategories,
+        categories: categories,
+      );
+      _applyCategorySelectionToController(
+        categoryById,
+        _selectedMajorCategoryId,
+        _selectedSubCategoryId,
+      );
+    }
 
     if (authProvider.isAdmin &&
         categories.isEmpty &&
@@ -151,15 +171,18 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
               OutlinedButton(
                 onPressed: adminProvider.isSaving ? null : _pickAndUploadImage,
                 child: Text(
-                  adminProvider.isSaving ? 'Uploading...' : 'Upload from gallery',
+                  adminProvider.isSaving
+                      ? 'Uploading...'
+                      : 'Upload from gallery',
                 ),
               ),
               const SizedBox(height: defaultPadding),
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: 'Product name'),
-                validator: (value) =>
-                    value == null || value.trim().isEmpty ? 'Name is required' : null,
+                validator: (value) => value == null || value.trim().isEmpty
+                    ? 'Name is required'
+                    : null,
               ),
               const SizedBox(height: defaultPadding),
               TextFormField(
@@ -170,35 +193,139 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
                     : null,
               ),
               const SizedBox(height: defaultPadding),
-              if (categories.isNotEmpty)
-                DropdownButtonFormField<String>(
-                  initialValue:
-                      categories.any((item) => item.id == _selectedCategoryId)
-                      ? _selectedCategoryId
-                      : null,
-                  decoration: const InputDecoration(labelText: 'Category'),
-                  items: categories
-                      .map(
-                        (category) => DropdownMenuItem<String>(
-                          value: category.id,
-                          child: Text(category.title),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    final category = categories.firstWhere(
-                      (item) => item.id == value,
-                      orElse: () => const CategoryModel(id: '', title: ''),
-                    );
-                    setState(() {
-                      _selectedCategoryId = value;
-                      _categoryNameController.text = category.title;
-                    });
-                  },
-                  validator: (value) =>
-                      value == null || value.isEmpty ? 'Choose a category' : null,
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Category',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _useCustomCategory = !_useCustomCategory;
+                        if (!_useCustomCategory && majorCategories.isNotEmpty) {
+                          _selectedMajorCategoryId ??= majorCategories.first.id;
+                          final subOptions = categories
+                              .where(
+                                (item) =>
+                                    item.parentId == _selectedMajorCategoryId,
+                              )
+                              .toList();
+                          _selectedSubCategoryId = subOptions.isEmpty
+                              ? null
+                              : (_selectedSubCategoryId != null &&
+                                    subOptions.any(
+                                      (item) =>
+                                          item.id == _selectedSubCategoryId,
+                                    ))
+                              ? _selectedSubCategoryId
+                              : subOptions.first.id;
+                          _applyCategorySelectionToController(
+                            categoryById,
+                            _selectedMajorCategoryId,
+                            _selectedSubCategoryId,
+                          );
+                        }
+                      });
+                    },
+                    child: Text(
+                      _useCustomCategory ? 'Use dropdown' : 'Use custom text',
+                    ),
+                  ),
+                ],
+              ),
+              if (!_useCustomCategory && majorCategories.isNotEmpty)
+                Column(
+                  children: [
+                    DropdownButtonFormField<String>(
+                      initialValue:
+                          majorCategories.any(
+                            (item) => item.id == _selectedMajorCategoryId,
+                          )
+                          ? _selectedMajorCategoryId
+                          : null,
+                      decoration: const InputDecoration(
+                        labelText: 'Major category',
+                      ),
+                      items: majorCategories
+                          .map(
+                            (category) => DropdownMenuItem<String>(
+                              value: category.id,
+                              child: Text(category.title),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        final subOptions = categories
+                            .where((item) => item.parentId == value)
+                            .toList();
+                        setState(() {
+                          _selectedMajorCategoryId = value;
+                          _selectedSubCategoryId = subOptions.isEmpty
+                              ? null
+                              : subOptions.first.id;
+                          _applyCategorySelectionToController(
+                            categoryById,
+                            _selectedMajorCategoryId,
+                            _selectedSubCategoryId,
+                          );
+                        });
+                      },
+                    ),
+                    const SizedBox(height: defaultPadding / 2),
+                    DropdownButtonFormField<String>(
+                      initialValue:
+                          _subCategoryOptions(
+                            categories,
+                            _selectedMajorCategoryId,
+                          ).any((item) => item.id == _selectedSubCategoryId)
+                          ? _selectedSubCategoryId
+                          : null,
+                      decoration: const InputDecoration(
+                        labelText: 'Sub category',
+                      ),
+                      items:
+                          _subCategoryOptions(
+                                categories,
+                                _selectedMajorCategoryId,
+                              )
+                              .map(
+                                (category) => DropdownMenuItem<String>(
+                                  value: category.id,
+                                  child: Text(category.title),
+                                ),
+                              )
+                              .toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedSubCategoryId = value;
+                          _applyCategorySelectionToController(
+                            categoryById,
+                            _selectedMajorCategoryId,
+                            _selectedSubCategoryId,
+                          );
+                        });
+                      },
+                    ),
+                  ],
                 )
               else
+                TextFormField(
+                  controller: _categoryNameController,
+                  decoration: InputDecoration(
+                    labelText: categories.isEmpty
+                        ? 'Category name (manual)'
+                        : 'Category name (custom)',
+                    hintText: 'Example: Dog Food (All)',
+                  ),
+                  validator: (value) => value == null || value.trim().isEmpty
+                      ? 'Category is required'
+                      : null,
+                ),
+              if (categories.isEmpty) ...[
+                const SizedBox(height: defaultPadding / 2),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(defaultPadding),
@@ -212,12 +339,12 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'No categories available',
+                        'No categories available in Firestore',
                         style: Theme.of(context).textTheme.titleSmall,
                       ),
                       const SizedBox(height: defaultPadding / 2),
                       const Text(
-                        'Add categories from the admin panel first, then return here to choose one from the dropdown.',
+                        'You can still type a category manually, or sync/add categories from the admin panel.',
                       ),
                       const SizedBox(height: defaultPadding),
                       OutlinedButton(
@@ -232,6 +359,7 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
                     ],
                   ),
                 ),
+              ],
               const SizedBox(height: defaultPadding),
               TextFormField(
                 controller: _descriptionController,
@@ -262,8 +390,9 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
                   Expanded(
                     child: TextFormField(
                       controller: _salePriceController,
-                      decoration:
-                          const InputDecoration(labelText: 'Sale price (optional)'),
+                      decoration: const InputDecoration(
+                        labelText: 'Sale price (optional)',
+                      ),
                       keyboardType: TextInputType.number,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) return null;
@@ -304,6 +433,16 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
+                value: _isPopular,
+                title: const Text('Mark as Best Seller'),
+                onChanged: (value) {
+                  setState(() {
+                    _isPopular = value;
+                  });
+                },
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
                 value: _isActive,
                 title: const Text('Show product in catalog'),
                 onChanged: (value) {
@@ -337,28 +476,34 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
                           );
                           return;
                         }
-                        if (_selectedCategoryId == null ||
-                            _categoryNameController.text.trim().isEmpty) {
+                        if (_categoryNameController.text.trim().isEmpty) {
                           messenger.showSnackBar(
                             const SnackBar(
                               content: Text(
-                                'Add and select a category before saving the product.',
+                                'Provide a category before saving the product.',
                               ),
                             ),
                           );
                           return;
                         }
 
-                        final categoryName = _categoryNameController.text.trim();
-                        final price = double.parse(_priceController.text.trim());
+                        final categoryName = _resolvedCategoryName(
+                          categoryById: categoryById,
+                          selectedMajorCategoryId: _selectedMajorCategoryId,
+                          selectedSubCategoryId: _selectedSubCategoryId,
+                          fallback: _categoryNameController.text.trim(),
+                        );
+                        final price = double.parse(
+                          _priceController.text.trim(),
+                        );
                         final salePriceText = _salePriceController.text.trim();
                         final salePrice = salePriceText.isEmpty
                             ? null
                             : double.parse(salePriceText);
                         final discountPercent =
                             salePrice != null && price > salePrice
-                                ? (((price - salePrice) / price) * 100).round()
-                                : null;
+                            ? (((price - salePrice) / price) * 100).round()
+                            : null;
 
                         final product = ProductModel(
                           id: widget.product?.id ?? '',
@@ -370,15 +515,17 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
                           salePrice: salePrice,
                           discountPercent: discountPercent,
                           imageUrl: _imageUrl!.trim(),
-                          stockQuantity: int.parse(_stockController.text.trim()),
+                          stockQuantity: int.parse(
+                            _stockController.text.trim(),
+                          ),
                           isActive: _isActive,
                           isFeatured: _isFeatured,
+                          isPopular: _isPopular,
                           createdAt: widget.product?.createdAt,
-                          updatedAt: DateTime.now(),
+                          updatedAt: widget.product?.updatedAt,
                         );
 
-                        final success =
-                            await admin.saveProduct(product);
+                        final success = await admin.saveProduct(product);
                         if (!mounted || !success) return;
                         await productProvider.loadInitialData();
                         if (!mounted) return;
@@ -393,5 +540,92 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
         ),
       ),
     );
+  }
+
+  List<CategoryModel> _subCategoryOptions(
+    List<CategoryModel> categories,
+    String? majorId,
+  ) {
+    if (majorId == null || majorId.isEmpty) return const <CategoryModel>[];
+    return categories.where((item) => item.parentId == majorId).toList();
+  }
+
+  void _initializeCategorySelection({
+    required List<CategoryModel> majorCategories,
+    required List<CategoryModel> categories,
+  }) {
+    final existing = _categoryNameController.text.trim();
+    final parts = existing
+        .split('>')
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList();
+
+    if (parts.isNotEmpty) {
+      CategoryModel? major;
+      for (final item in majorCategories) {
+        if (item.title.toLowerCase() == parts.first.toLowerCase()) {
+          major = item;
+          break;
+        }
+      }
+      if (major != null) {
+        _selectedMajorCategoryId = major.id;
+      }
+    }
+
+    _selectedMajorCategoryId ??= majorCategories.first.id;
+    final subOptions = _subCategoryOptions(
+      categories,
+      _selectedMajorCategoryId,
+    );
+    if (parts.length >= 2) {
+      CategoryModel? sub;
+      for (final item in subOptions) {
+        if (item.title.toLowerCase() == parts[1].toLowerCase()) {
+          sub = item;
+          break;
+        }
+      }
+      if (sub != null) {
+        _selectedSubCategoryId = sub.id;
+        return;
+      }
+    }
+    _selectedSubCategoryId = subOptions.isEmpty ? null : subOptions.first.id;
+  }
+
+  void _applyCategorySelectionToController(
+    Map<String, CategoryModel> byId,
+    String? majorId,
+    String? subId,
+  ) {
+    final major = majorId == null ? null : byId[majorId];
+    final sub = subId == null ? null : byId[subId];
+    if (major == null) return;
+    _categoryNameController.text = sub == null
+        ? major.title
+        : '${major.title} > ${sub.title}';
+  }
+
+  String _resolvedCategoryName({
+    required Map<String, CategoryModel> categoryById,
+    required String? selectedMajorCategoryId,
+    required String? selectedSubCategoryId,
+    required String fallback,
+  }) {
+    if (_useCustomCategory) {
+      return fallback;
+    }
+    final major = selectedMajorCategoryId == null
+        ? null
+        : categoryById[selectedMajorCategoryId];
+    final sub = selectedSubCategoryId == null
+        ? null
+        : categoryById[selectedSubCategoryId];
+    if (major == null) {
+      return fallback;
+    }
+    return sub == null ? major.title : '${major.title} > ${sub.title}';
   }
 }

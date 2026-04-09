@@ -16,6 +16,7 @@ class ProductModel {
     this.stockQuantity = 0,
     this.isActive = true,
     this.isFeatured = false,
+    this.isPopular = false,
     this.createdAt,
     this.updatedAt,
   });
@@ -32,6 +33,7 @@ class ProductModel {
   final int stockQuantity;
   final bool isActive;
   final bool isFeatured;
+  final bool isPopular;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -56,6 +58,7 @@ class ProductModel {
     int? stockQuantity,
     bool? isActive,
     bool? isFeatured,
+    bool? isPopular,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -72,6 +75,7 @@ class ProductModel {
       stockQuantity: stockQuantity ?? this.stockQuantity,
       isActive: isActive ?? this.isActive,
       isFeatured: isFeatured ?? this.isFeatured,
+      isPopular: isPopular ?? this.isPopular,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -83,19 +87,20 @@ class ProductModel {
     return ProductModel(
       id: id,
       name: data['name'] as String? ?? '',
-      category: data['category'] as String? ??
-          data['categoryName'] as String? ??
-          '',
+      category:
+          data['category'] as String? ?? data['categoryName'] as String? ?? '',
       brandName: data['brandName'] as String? ?? '',
       description: data['description'] as String? ?? '',
       price: basePrice,
       salePrice: parsedSalePrice,
-      discountPercent: data['discountPercent'] as int? ??
+      discountPercent:
+          data['discountPercent'] as int? ??
           _discountFromPrices(basePrice, parsedSalePrice),
       imageUrl: data['imageUrl'] as String? ?? '',
       stockQuantity: data['stockQuantity'] as int? ?? 0,
       isActive: data['isActive'] as bool? ?? true,
       isFeatured: data['isFeatured'] as bool? ?? false,
+      isPopular: data['isPopular'] as bool? ?? false,
       createdAt: _dateTimeFromValue(data['createdAt']),
       updatedAt: _dateTimeFromValue(data['updatedAt']),
     );
@@ -114,8 +119,9 @@ class ProductModel {
       'stockQuantity': stockQuantity,
       'isActive': isActive,
       'isFeatured': isFeatured,
-      'createdAt': createdAt?.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
+      'isPopular': isPopular,
+      'createdAt': createdAt == null ? null : Timestamp.fromDate(createdAt!),
+      'updatedAt': updatedAt == null ? null : Timestamp.fromDate(updatedAt!),
     };
   }
 

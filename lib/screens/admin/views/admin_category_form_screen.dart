@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:shop/components/network_image_with_loader.dart';
 import 'package:provider/provider.dart';
 import 'package:shop/constants.dart';
 import 'package:shop/models/category_model.dart';
@@ -7,42 +9,42 @@ import 'package:shop/providers/auth_provider.dart';
 import 'package:shop/providers/product_provider.dart';
 
 class AdminCategoryFormScreen extends StatefulWidget {
-  const AdminCategoryFormScreen({
-    super.key,
-    this.category,
-  });
+  const AdminCategoryFormScreen({super.key, this.category});
 
   final CategoryModel? category;
 
   @override
-  State<AdminCategoryFormScreen> createState() => _AdminCategoryFormScreenState();
+  State<AdminCategoryFormScreen> createState() =>
+      _AdminCategoryFormScreenState();
 }
 
 class _AdminCategoryFormScreenState extends State<AdminCategoryFormScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final ImagePicker _picker = ImagePicker();
   late final TextEditingController _titleController;
-  late final TextEditingController _svgController;
+  late final TextEditingController _imageController;
   late final TextEditingController _sortOrderController;
   bool _isActive = true;
+  String? _selectedParentId;
+  bool _isUploadingImage = false;
 
   @override
   void initState() {
     super.initState();
     final category = widget.category;
     _titleController = TextEditingController(text: category?.title ?? '');
-    _svgController = TextEditingController(
-      text: category?.svgSrc ?? 'assets/icons/Category.svg',
-    );
+    _imageController = TextEditingController(text: category?.image ?? '');
     _sortOrderController = TextEditingController(
       text: category?.sortOrder.toString() ?? '0',
     );
     _isActive = category?.isActive ?? true;
+    _selectedParentId = category?.parentId;
   }
 
   @override
   void dispose() {
     _titleController.dispose();
-    _svgController.dispose();
+    _imageController.dispose();
     _sortOrderController.dispose();
     super.dispose();
   }
@@ -55,10 +57,39 @@ class _AdminCategoryFormScreenState extends State<AdminCategoryFormScreen> {
         .replaceAll(RegExp(r'^_+|_+$'), '');
   }
 
+  Future<void> _pickAndUploadImage() async {
+    final file = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 90,
+    );
+    if (file == null || !mounted) return;
+
+    setState(() {
+      _isUploadingImage = true;
+    });
+
+    final imageUrl = await context.read<AdminProvider>().uploadCategoryImage(
+      file,
+    );
+    if (!mounted) return;
+
+    setState(() {
+      _isUploadingImage = false;
+      if ((imageUrl ?? '').trim().isNotEmpty) {
+        _imageController.text = imageUrl!.trim();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final adminProvider = context.watch<AdminProvider>();
+    final parentOptions =
+        adminProvider.categories
+            .where((c) => c.parentId == null && c.id != widget.category?.id)
+            .toList()
+          ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
     if (!authProvider.isAdmin) {
       return Scaffold(
@@ -87,15 +118,76 @@ class _AdminCategoryFormScreenState extends State<AdminCategoryFormScreen> {
                     : null,
               ),
               const SizedBox(height: defaultPadding),
-              TextFormField(
-                controller: _svgController,
+              DropdownButtonFormField<String?>(
+                initialValue: _selectedParentId,
                 decoration: const InputDecoration(
-                  labelText: 'Icon asset path',
-                  hintText: 'assets/icons/Category.svg',
+                  labelText: 'Major category',
+                  hintText: 'No parent = major category (Dogs/Cats)',
                 ),
-                validator: (value) => value == null || value.trim().isEmpty
-                    ? 'Icon path is required'
-                    : null,
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('No parent (major category)'),
+                  ),
+                  ...parentOptions.map(
+                    (parent) => DropdownMenuItem<String?>(
+                      value: parent.id,
+                      child: Text(parent.title),
+                    ),
+                  ),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedParentId = value;
+                  });
+                },
+              ),
+              const SizedBox(height: defaultPadding),
+              TextFormField(
+                controller: _imageController,
+                decoration: const InputDecoration(
+                  labelText: 'Category image URL (Cloudinary or asset path)',
+                  hintText: 'https://res.cloudinary.com/...',
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: defaultPadding / 2),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: adminProvider.isSaving || _isUploadingImage
+                      ? null
+                      : _pickAndUploadImage,
+                  icon: _isUploadingImage
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.upload_rounded),
+                  label: Text(
+                    _isUploadingImage
+                        ? 'Uploading to Cloudinary...'
+                        : 'Select image and upload to Cloudinary',
+                  ),
+                ),
+              ),
+              const SizedBox(height: defaultPadding / 2),
+              Container(
+                height: 96,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.all(
+                    Radius.circular(defaultBorderRadious),
+                  ),
+                  border: Border.all(color: Theme.of(context).dividerColor),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: NetworkImageWithLoader(
+                  _imageController.text.trim(),
+                  fit: BoxFit.cover,
+                  radius: defaultBorderRadious,
+                ),
               ),
               const SizedBox(height: defaultPadding),
               TextFormField(
@@ -141,11 +233,21 @@ class _AdminCategoryFormScreenState extends State<AdminCategoryFormScreen> {
                         if (!_formKey.currentState!.validate()) return;
 
                         final category = CategoryModel(
-                          id: widget.category?.id ?? _slugify(_titleController.text),
+                          id:
+                              widget.category?.id ??
+                              _slugify(_titleController.text),
                           title: _titleController.text.trim(),
-                          svgSrc: _svgController.text.trim(),
+                          image: _imageController.text.trim().isEmpty
+                              ? null
+                              : _imageController.text.trim(),
+                          svgSrc: _imageController.text.trim().isEmpty
+                              ? null
+                              : _imageController.text.trim(),
+                          parentId: _selectedParentId,
                           isActive: _isActive,
-                          sortOrder: int.parse(_sortOrderController.text.trim()),
+                          sortOrder: int.parse(
+                            _sortOrderController.text.trim(),
+                          ),
                         );
 
                         final success = await admin.saveCategory(category);
