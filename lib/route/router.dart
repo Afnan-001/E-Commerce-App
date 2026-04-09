@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shop/entry_point.dart';
 import 'package:shop/models/category_model.dart';
+import 'package:shop/models/order_model.dart';
 import 'package:shop/models/product_model.dart';
 import 'package:shop/route/screen_export.dart';
 
@@ -152,6 +153,13 @@ Route<dynamic> generateRoute(RouteSettings settings) {
       return MaterialPageRoute(builder: (context) => const CartScreen());
     case checkoutScreenRoute:
       return MaterialPageRoute(builder: (context) => const CheckoutScreen());
+    case orderSuccessScreenRoute:
+      return MaterialPageRoute(
+        builder: (context) {
+          final order = settings.arguments as OrderModel;
+          return OrderSuccessScreen(order: order);
+        },
+      );
     default:
       return MaterialPageRoute(builder: (context) => const OnBordingScreen());
   }

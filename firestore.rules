@@ -24,6 +24,10 @@ service cloud.firestore {
       match /savedItems/{itemId} {
         allow read, write: if isOwner(userId) || isAdmin();
       }
+
+      match /addresses/{addressId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
     }
 
     match /products/{productId} {
@@ -48,7 +52,6 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
-
     match /orders/{orderId} {
       allow create: if isSignedIn() &&
         request.resource.data.userId == request.auth.uid;

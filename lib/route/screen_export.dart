@@ -23,6 +23,7 @@ export '/screens/checkout/views/cart_screen.dart';
 export '/screens/checkout/views/checkout_screen.dart';
 
 export '/screens/order/views/orders_screen.dart';
+export '/screens/order/views/order_success_screen.dart';
 export '/screens/preferences/views/preferences_screen.dart';
 export '/screens/wallet/views/empty_wallet_screen.dart';
 export '/screens/wallet/views/wallet_screen.dart';

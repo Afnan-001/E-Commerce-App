@@ -1,15 +1,15 @@
 import 'package:flutter/foundation.dart';
 
+import 'package:shop/core/services/pdf_invoice_service.dart';
 import 'package:shop/models/order_model.dart';
 import 'package:shop/repositories/order_repository.dart';
-import 'package:shop/core/services/pdf_invoice_service.dart';
 
 class OrderProvider extends ChangeNotifier {
   OrderProvider({
     required OrderRepository orderRepository,
     PdfInvoiceService? pdfInvoiceService,
-  })  : _orderRepository = orderRepository,
-        _pdfInvoiceService = pdfInvoiceService ?? PdfInvoiceService();
+  }) : _orderRepository = orderRepository,
+       _pdfInvoiceService = pdfInvoiceService ?? PdfInvoiceService();
 
   final OrderRepository _orderRepository;
   final PdfInvoiceService _pdfInvoiceService;
@@ -21,13 +21,32 @@ class OrderProvider extends ChangeNotifier {
 
   List<OrderModel> get orders => List<OrderModel>.unmodifiable(_orders);
   List<OrderModel> get pendingOrders => _orders
-      .where((order) => order.orderStatus == OrderStatus.pending)
+      .where(
+        (order) =>
+            order.orderStatus == OrderStatus.placed ||
+            order.orderStatus == OrderStatus.confirmed ||
+            order.orderStatus == OrderStatus.shipped,
+      )
       .toList();
   List<OrderModel> get completedOrders => _orders
-      .where((order) => order.orderStatus == OrderStatus.completed)
+      .where(
+        (order) =>
+            order.orderStatus == OrderStatus.delivered ||
+            order.orderStatus == OrderStatus.cancelled,
+      )
       .toList();
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+
+  void addOrder(OrderModel order) {
+    final index = _orders.indexWhere((current) => current.id == order.id);
+    if (index == -1) {
+      _orders.insert(0, order);
+    } else {
+      _orders[index] = order;
+    }
+    notifyListeners();
+  }
 
   Future<void> syncForUser(String? userId) async {
     if (_userId == userId) {
@@ -103,10 +122,7 @@ class OrderProvider extends ChangeNotifier {
 }
 
 class OrderPlacementResult {
-  const OrderPlacementResult({
-    required this.order,
-    required this.invoiceBytes,
-  });
+  const OrderPlacementResult({required this.order, required this.invoiceBytes});
 
   final OrderModel order;
   final Uint8List invoiceBytes;

@@ -6,26 +6,29 @@ import 'package:shop/models/cart_item_model.dart';
 class OrderItemModel {
   const OrderItemModel({
     required this.productId,
-    required this.name,
+    required this.productName,
     required this.imageUrl,
-    required this.unitPrice,
+    required this.productPrice,
     required this.quantity,
   });
 
   final String productId;
-  final String name;
+  final String productName;
   final String imageUrl;
-  final double unitPrice;
+  final double productPrice;
   final int quantity;
 
-  double get lineTotal => unitPrice * quantity;
+  String get name => productName;
+  double get unitPrice => productPrice;
+
+  double get lineTotal => productPrice * quantity;
 
   factory OrderItemModel.fromCartItem(CartItemModel item) {
     return OrderItemModel(
       productId: item.product.id,
-      name: item.product.name,
+      productName: item.product.name,
       imageUrl: item.product.imageUrl,
-      unitPrice: item.unitPrice,
+      productPrice: item.unitPrice,
       quantity: item.quantity,
     );
   }
@@ -33,9 +36,13 @@ class OrderItemModel {
   factory OrderItemModel.fromMap(Map<String, dynamic> data) {
     return OrderItemModel(
       productId: data['productId'] as String? ?? '',
-      name: data['name'] as String? ?? '',
+      productName:
+          data['productName'] as String? ?? data['name'] as String? ?? '',
       imageUrl: data['imageUrl'] as String? ?? '',
-      unitPrice: (data['unitPrice'] as num?)?.toDouble() ?? 0,
+      productPrice:
+          (data['productPrice'] as num?)?.toDouble() ??
+          (data['unitPrice'] as num?)?.toDouble() ??
+          0,
       quantity: data['quantity'] as int? ?? 0,
     );
   }
@@ -43,10 +50,12 @@ class OrderItemModel {
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'productId': productId,
-      'name': name,
+      'productName': productName,
       'imageUrl': imageUrl,
-      'unitPrice': unitPrice,
+      'productPrice': productPrice,
       'quantity': quantity,
+      'name': productName,
+      'unitPrice': productPrice,
     };
   }
 }

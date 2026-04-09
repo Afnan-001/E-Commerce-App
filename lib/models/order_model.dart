@@ -1,132 +1,192 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
+import 'package:shop/models/order_delivery_address_model.dart';
+import 'package:shop/models/order_enums.dart';
 import 'package:shop/models/order_item_model.dart';
+import 'package:shop/models/order_payment_model.dart';
+import 'package:shop/models/order_pricing_model.dart';
 
-enum OrderStatus { pending, completed }
+export 'order_enums.dart';
 
 @immutable
 class OrderModel {
   const OrderModel({
-    required this.id,
+    required this.orderId,
     required this.userId,
-    required this.customerName,
-    required this.phoneNumber,
-    required this.address,
+    required this.userName,
+    required this.userEmail,
+    required this.userPhone,
+    required this.deliveryAddress,
     required this.items,
-    required this.subtotal,
-    required this.deliveryCharge,
-    required this.totalPrice,
-    this.paymentStatus = 'COD',
-    this.orderStatus = OrderStatus.pending,
+    required this.pricing,
+    required this.payment,
+    this.orderStatus = OrderStatus.placed,
     this.createdAt,
+    this.updatedAt,
   });
 
-  final String id;
+  final String orderId;
   final String userId;
-  final String customerName;
-  final String phoneNumber;
-  final String address;
+  final String userName;
+  final String userEmail;
+  final String userPhone;
+  final OrderDeliveryAddressModel deliveryAddress;
   final List<OrderItemModel> items;
-  final double subtotal;
-  final double deliveryCharge;
-  final double totalPrice;
-  final String paymentStatus;
+  final OrderPricingModel pricing;
+  final OrderPaymentModel payment;
   final OrderStatus orderStatus;
   final DateTime? createdAt;
+  final DateTime? updatedAt;
 
-  double get total => totalPrice;
+  String get id => orderId;
+  String get customerName => userName;
+  String get phoneNumber => userPhone;
+  String get address => deliveryAddress.fullAddress;
+  double get subtotal => pricing.subtotal;
+  double get deliveryCharge => pricing.deliveryCharge;
+  double get total => pricing.totalAmount;
+  double get totalPrice => pricing.totalAmount;
+  PaymentMethod get paymentMethod => payment.paymentMethod;
+  PaymentStatus get paymentStatus => payment.paymentStatus;
 
   OrderModel copyWith({
-    String? id,
+    String? orderId,
     String? userId,
-    String? customerName,
-    String? phoneNumber,
-    String? address,
+    String? userName,
+    String? userEmail,
+    String? userPhone,
+    OrderDeliveryAddressModel? deliveryAddress,
     List<OrderItemModel>? items,
-    double? subtotal,
-    double? deliveryCharge,
-    double? totalPrice,
-    String? paymentStatus,
+    OrderPricingModel? pricing,
+    OrderPaymentModel? payment,
     OrderStatus? orderStatus,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return OrderModel(
-      id: id ?? this.id,
+      orderId: orderId ?? this.orderId,
       userId: userId ?? this.userId,
-      customerName: customerName ?? this.customerName,
-      phoneNumber: phoneNumber ?? this.phoneNumber,
-      address: address ?? this.address,
+      userName: userName ?? this.userName,
+      userEmail: userEmail ?? this.userEmail,
+      userPhone: userPhone ?? this.userPhone,
+      deliveryAddress: deliveryAddress ?? this.deliveryAddress,
       items: items ?? this.items,
-      subtotal: subtotal ?? this.subtotal,
-      deliveryCharge: deliveryCharge ?? this.deliveryCharge,
-      totalPrice: totalPrice ?? this.totalPrice,
-      paymentStatus: paymentStatus ?? this.paymentStatus,
+      pricing: pricing ?? this.pricing,
+      payment: payment ?? this.payment,
       orderStatus: orderStatus ?? this.orderStatus,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
   factory OrderModel.fromMap(String id, Map<String, dynamic> data) {
+    final deliveryAddressData = data['deliveryAddress'];
+    final pricingData = data['pricing'];
+    final paymentData = data['payment'];
+
     final items = (data['items'] as List<dynamic>? ?? const <dynamic>[])
         .whereType<Map<String, dynamic>>()
         .map(OrderItemModel.fromMap)
         .toList();
 
     return OrderModel(
-      id: id,
+      orderId: data['orderId'] as String? ?? id,
       userId: data['userId'] as String? ?? '',
-      customerName: data['customerName'] as String? ?? '',
-      phoneNumber: data['phoneNumber'] as String? ?? '',
-      address: data['address'] as String? ?? '',
+      userName:
+          data['userName'] as String? ?? data['customerName'] as String? ?? '',
+      userEmail: data['userEmail'] as String? ?? '',
+      userPhone:
+          data['userPhone'] as String? ?? data['phoneNumber'] as String? ?? '',
+      deliveryAddress: deliveryAddressData is Map<String, dynamic>
+          ? OrderDeliveryAddressModel.fromMap(deliveryAddressData)
+          : OrderDeliveryAddressModel(
+              fullName: data['customerName'] as String? ?? '',
+              phone: data['phoneNumber'] as String? ?? '',
+              addressLine1: data['address'] as String? ?? '',
+              city: '',
+              state: '',
+              pincode: '',
+            ),
       items: items,
-      subtotal: (data['subtotal'] as num?)?.toDouble() ?? 0,
-      deliveryCharge: (data['deliveryCharge'] as num?)?.toDouble() ?? 0,
-      totalPrice: (data['totalPrice'] as num?)?.toDouble() ??
-          (data['total'] as num?)?.toDouble() ??
-          0,
-      paymentStatus: data['paymentStatus'] as String? ?? 'COD',
-      orderStatus: _orderStatusFromString(
-        data['orderStatus'] as String?,
-      ),
-      createdAt: _dateTimeFromValue(data['timestamp']) ??
-          _dateTimeFromValue(data['createdAt']),
+      pricing: pricingData is Map<String, dynamic>
+          ? OrderPricingModel.fromMap(pricingData)
+          : OrderPricingModel(
+              subtotal: (data['subtotal'] as num?)?.toDouble() ?? 0,
+              deliveryCharge: (data['deliveryCharge'] as num?)?.toDouble() ?? 0,
+              discount: (data['discount'] as num?)?.toDouble() ?? 0,
+              totalAmount:
+                  (data['totalAmount'] as num?)?.toDouble() ??
+                  (data['total'] as num?)?.toDouble() ??
+                  0,
+            ),
+      payment: paymentData is Map<String, dynamic>
+          ? OrderPaymentModel.fromMap(paymentData)
+          : OrderPaymentModel(
+              paymentMethod: _paymentMethodFromString(
+                data['paymentMethod'] as String?,
+              ),
+              paymentStatus: _paymentStatusFromString(
+                data['paymentStatus'] as String?,
+              ),
+            ),
+      orderStatus: _orderStatusFromString(data['orderStatus'] as String?),
+      createdAt: _parseDate(data['createdAt']),
+      updatedAt: _parseDate(data['updatedAt']),
     );
   }
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
+      'orderId': orderId,
       'userId': userId,
-      'customerName': customerName,
-      'phoneNumber': phoneNumber,
-      'address': address,
+      'userName': userName,
+      'userEmail': userEmail,
+      'userPhone': userPhone,
+      'deliveryAddress': deliveryAddress.toMap(),
       'items': items.map((item) => item.toMap()).toList(),
-      'subtotal': subtotal,
-      'deliveryCharge': deliveryCharge,
-      'totalPrice': totalPrice,
-      'paymentStatus': paymentStatus,
+      'pricing': pricing.toMap(),
+      'payment': payment.toMap(),
       'orderStatus': orderStatus.name,
-      'timestamp': createdAt,
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+      'customerName': userName,
+      'phoneNumber': userPhone,
+      'address': deliveryAddress.fullAddress,
+      'subtotal': pricing.subtotal,
+      'deliveryCharge': pricing.deliveryCharge,
+      'discount': pricing.discount,
+      'total': pricing.totalAmount,
+      'paymentMethod': payment.paymentMethod.name,
+      'paymentStatus': payment.paymentStatus.name,
     };
   }
 
-  static OrderStatus _orderStatusFromString(String? value) {
-    return OrderStatus.values.firstWhere(
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is Timestamp) return value.toDate();
+    if (value is String) return DateTime.tryParse(value);
+    return null;
+  }
+
+  static PaymentMethod _paymentMethodFromString(String? value) {
+    if (value == 'razorpay') return PaymentMethod.razorpay;
+    return PaymentMethod.cod;
+  }
+
+  static PaymentStatus _paymentStatusFromString(String? value) {
+    return PaymentStatus.values.firstWhere(
       (status) => status.name == value,
-      orElse: () => OrderStatus.pending,
+      orElse: () => PaymentStatus.pending,
     );
   }
 
-  static DateTime? _dateTimeFromValue(dynamic value) {
-    if (value is Timestamp) {
-      return value.toDate();
-    }
-    if (value is DateTime) {
-      return value;
-    }
-    if (value is String && value.isNotEmpty) {
-      return DateTime.tryParse(value);
-    }
-    return null;
+  static OrderStatus _orderStatusFromString(String? value) {
+    if (value == 'packed') return OrderStatus.confirmed;
+    return OrderStatus.values.firstWhere(
+      (status) => status.name == value,
+      orElse: () => OrderStatus.placed,
+    );
   }
 }

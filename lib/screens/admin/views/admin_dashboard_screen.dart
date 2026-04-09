@@ -41,10 +41,19 @@ class AdminDashboardScreen extends StatelessWidget {
     final totalProducts = adminProvider.products.length;
     final totalOrders = adminProvider.orders.length;
     final pendingOrders = adminProvider.orders
-        .where((order) => order.orderStatus == OrderStatus.pending)
+        .where(
+          (order) =>
+              order.orderStatus == OrderStatus.placed ||
+              order.orderStatus == OrderStatus.confirmed ||
+              order.orderStatus == OrderStatus.shipped,
+        )
         .length;
     final completedOrders = adminProvider.orders
-        .where((order) => order.orderStatus == OrderStatus.completed)
+        .where(
+          (order) =>
+              order.orderStatus == OrderStatus.delivered ||
+              order.orderStatus == OrderStatus.cancelled,
+        )
         .length;
     final activeProducts = adminProvider.products
         .where((product) => product.isActive)
