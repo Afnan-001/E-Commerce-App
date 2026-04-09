@@ -345,12 +345,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         },
         onExternalWallet: (response) {
           if (!mounted) return;
+          final walletName = response is Map
+              ? (response['walletName'] ?? 'Unknown')
+              : 'Unknown';
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'External wallet selected: ${response.walletName ?? 'Unknown'}',
-              ),
-            ),
+            SnackBar(content: Text('External wallet selected: $walletName')),
           );
         },
       );
@@ -408,6 +407,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final orderRepository = context.read<OrderRepository>();
     final orderProvider = context.read<OrderProvider>();
     final cartProvider = context.read<CartProvider>();
+    final navigator = Navigator.of(context);
 
     await orderRepository.saveOrder(order);
     orderProvider.addOrder(order);
@@ -419,7 +419,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       _isProcessing = false;
     });
 
-    Navigator.of(context).pushReplacement(
+    navigator.pushReplacement(
       MaterialPageRoute(builder: (_) => OrderSuccessScreen(order: order)),
     );
   }

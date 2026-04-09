@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -22,23 +23,36 @@ class RazorpayCheckoutService {
       );
     }
 
-    final response = await http.post(
-      Uri.parse(razorpayOrderCreationUrl),
-      headers: const <String, String>{'Content-Type': 'application/json'},
-      body: jsonEncode(<String, dynamic>{
-        'amount': amountInPaise,
-        'currency': razorpayCurrency,
-        'receipt': receiptId,
-        'notes': notes ?? <String, dynamic>{},
-      }),
-    );
+    final configuredUri = Uri.parse(razorpayOrderCreationUrl);
+    final requestUri = _normalizeOrderCreationUri(configuredUri);
+
+    http.Response response = await http
+        .post(
+          requestUri,
+          headers: const <String, String>{'Content-Type': 'application/json'},
+          body: jsonEncode(<String, dynamic>{
+            'amount': amountInPaise,
+            'currency': razorpayCurrency,
+            'receipt': receiptId,
+            'notes': notes ?? <String, dynamic>{},
+          }),
+        )
+        .timeout(const Duration(seconds: 15));
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw StateError('Unable to create Razorpay order right now.');
+      throw StateError(
+        'Unable to create Razorpay order right now. '
+        'Status: ${response.statusCode}.',
+      );
     }
 
-    final payload = jsonDecode(response.body) as Map<String, dynamic>;
-    final orderId = payload['orderId'] as String? ?? payload['id'] as String?;
+    final decodedBody = jsonDecode(response.body);
+    if (decodedBody is! Map<String, dynamic>) {
+      throw StateError('Backend returned an invalid Razorpay order response.');
+    }
+
+    final orderId =
+        decodedBody['orderId'] as String? ?? decodedBody['id'] as String?;
 
     if (orderId == null || orderId.isEmpty) {
       throw StateError('Backend did not return a Razorpay order id.');
@@ -55,12 +69,14 @@ class RazorpayCheckoutService {
     required String userPhone,
     required void Function(PaymentSuccessResponse response) onSuccess,
     required void Function(PaymentFailureResponse response) onFailure,
-    required void Function(ExternalWalletResponse response) onExternalWallet,
+    void Function(dynamic response)? onExternalWallet,
   }) {
     _razorpay.clear();
     _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, onSuccess);
     _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, onFailure);
-    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, onExternalWallet);
+    if (onExternalWallet != null) {
+      _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, onExternalWallet);
+    }
 
     final options = <String, dynamic>{
       'key': razorpayKeyId,
@@ -74,9 +90,6 @@ class RazorpayCheckoutService {
         'email': userEmail,
         'name': userName,
       },
-      'external': <String, dynamic>{
-        'wallets': <String>['paytm', 'gpay', 'phonepe'],
-      },
       'theme': <String, dynamic>{'color': '#7B61FF'},
     };
 
@@ -85,5 +98,13 @@ class RazorpayCheckoutService {
 
   void dispose() {
     _razorpay.clear();
+  }
+
+  Uri _normalizeOrderCreationUri(Uri configuredUri) {
+    final normalizedPath = configuredUri.path.trim();
+    if (normalizedPath.isEmpty || normalizedPath == '/') {
+      return configuredUri.replace(path: '/create-order');
+    }
+    return configuredUri;
   }
 }

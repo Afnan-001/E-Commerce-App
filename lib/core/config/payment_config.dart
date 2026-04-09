@@ -1,9 +1,8 @@
-const String razorpayKeyId = 'YOUR_RAZORPAY_KEY_ID';
-
-const String razorpayKeySecret = 'YOUR_RAZORPAY_KEY_SECRET';
+const String razorpayKeyId = 'rzp_test_SbNb9Ak1AfEHen';
 
 /// Replace this placeholder with a secure backend endpoint that creates
 /// Razorpay orders using the secret key server-side.
-const String razorpayOrderCreationUrl = '';
+const String razorpayOrderCreationUrl =
+    'https://petstore-razorpay-backend.onrender.com/create-order';
 
 const String razorpayCurrency = 'INR';
