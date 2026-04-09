@@ -11,6 +11,7 @@ import 'package:shop/repositories/address_repository.dart';
 import 'package:shop/repositories/admin_repository.dart';
 import 'package:shop/repositories/auth_repository.dart';
 import 'package:shop/repositories/category_repository.dart';
+import 'package:shop/repositories/order_repository.dart';
 import 'package:shop/repositories/product_repository.dart';
 
 class AppScope extends StatelessWidget {
@@ -31,6 +32,7 @@ class AppScope extends StatelessWidget {
         Provider<AddressRepository>(
           create: (_) => FirestoreAddressRepository(),
         ),
+        Provider<OrderRepository>(create: (_) => FirestoreOrderRepository()),
         ChangeNotifierProvider<AuthProvider>(
           create: (context) =>
               AuthProvider(context.read<AuthRepository>())..restoreSession(),

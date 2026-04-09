@@ -17,21 +17,7 @@ class OrderProvider extends ChangeNotifier {
     if (index == -1) return;
 
     final currentOrder = _orders[index];
-    _orders[index] = OrderModel(
-      id: currentOrder.id,
-      userId: currentOrder.userId,
-      customerName: currentOrder.customerName,
-      phoneNumber: currentOrder.phoneNumber,
-      address: currentOrder.address,
-      items: currentOrder.items,
-      subtotal: currentOrder.subtotal,
-      deliveryCharge: currentOrder.deliveryCharge,
-      total: currentOrder.total,
-      paymentMethod: currentOrder.paymentMethod,
-      paymentStatus: currentOrder.paymentStatus,
-      orderStatus: status,
-      createdAt: currentOrder.createdAt,
-    );
+    _orders[index] = currentOrder.copyWith(orderStatus: status);
 
     notifyListeners();
   }
