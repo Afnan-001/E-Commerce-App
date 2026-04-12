@@ -28,6 +28,10 @@ abstract class AuthRepository {
     required String smsCode,
     String? preferredName,
   });
+  Future<void> sendEmailVerification({
+    required String email,
+    required String password,
+  });
   Future<void> sendPasswordResetEmail(String email);
   Future<AppUserModel> updateProfile({
     required String name,
@@ -56,8 +60,16 @@ class FirebaseAuthRepository implements AuthRepository {
   Future<AppUserModel?> getCurrentUser() async {
     if (!_isReady) return null;
 
-    final user = _auth.currentUser;
+    var user = _auth.currentUser;
     if (user == null) return null;
+    if (_requiresEmailVerification(user)) {
+      await user.reload();
+      user = _auth.currentUser;
+      if (user == null || !user.emailVerified) {
+        await _auth.signOut();
+        return null;
+      }
+    }
 
     return _loadUserProfile(user);
   }
@@ -74,7 +86,24 @@ class FirebaseAuthRepository implements AuthRepository {
       password: password,
     );
 
-    return _loadUserProfile(credential.user!);
+    var user = credential.user!;
+    if (_requiresEmailVerification(user)) {
+      await user.reload();
+      user = _auth.currentUser ?? user;
+      if (!user.emailVerified) {
+        try {
+          await user.sendEmailVerification();
+        } catch (_) {}
+        await _auth.signOut();
+        throw FirebaseAuthException(
+          code: 'email-not-verified',
+          message:
+              'Your email is not verified yet. A verification email was sent to ${user.email ?? email.trim()}. Please check inbox/spam and try again.',
+        );
+      }
+    }
+
+    return _loadUserProfile(user);
   }
 
   @override
@@ -92,6 +121,7 @@ class FirebaseAuthRepository implements AuthRepository {
 
     final user = credential.user!;
     await user.updateDisplayName(name.trim());
+    await user.sendEmailVerification();
 
     final appUser = AppUserModel(
       uid: user.uid,
@@ -102,6 +132,7 @@ class FirebaseAuthRepository implements AuthRepository {
     );
 
     await _db.collection('users').doc(user.uid).set(appUser.toMap());
+    await _auth.signOut();
     return appUser;
   }
 
@@ -188,6 +219,35 @@ class FirebaseAuthRepository implements AuthRepository {
     }
 
     return _loadUserProfile(user, preferredName: trimmedName);
+  }
+
+  @override
+  Future<void> sendEmailVerification({
+    required String email,
+    required String password,
+  }) async {
+    _ensureReady();
+
+    final credential = await _auth.signInWithEmailAndPassword(
+      email: email.trim(),
+      password: password,
+    );
+    final user = credential.user!;
+
+    try {
+      await user.reload();
+      final refreshedUser = _auth.currentUser ?? user;
+      if (refreshedUser.emailVerified) {
+        throw FirebaseAuthException(
+          code: 'email-already-verified',
+          message: 'This email address is already verified.',
+        );
+      }
+
+      await refreshedUser.sendEmailVerification();
+    } finally {
+      await _auth.signOut();
+    }
   }
 
   @override
@@ -287,6 +347,12 @@ class FirebaseAuthRepository implements AuthRepository {
       return 'Pet Parent ${phone.substring(phone.length - 4)}';
     }
     return 'Pet Parent';
+  }
+
+  bool _requiresEmailVerification(User user) {
+    final hasEmail = (user.email ?? '').trim().isNotEmpty;
+    if (!hasEmail) return false;
+    return user.providerData.any((provider) => provider.providerId == 'password');
   }
 
   void _ensureReady() {

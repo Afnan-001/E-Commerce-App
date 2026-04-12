@@ -60,11 +60,32 @@ class _EntryPointState extends State<EntryPoint> {
         leading: const SizedBox(),
         leadingWidth: 0,
         centerTitle: false,
-        title: Text(
-          "PetsWorld",
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+        title: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: const BorderRadius.all(Radius.circular(12)),
+                border: Border.all(
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.9),
+                ),
+              ),
+              child: Image.asset(
+                'assets/logo/petsworld_logo.png',
+                fit: BoxFit.contain,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              "PetsWorld",
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+            ),
+          ],
         ),
         actions: [
           if (authProvider.isAdmin)

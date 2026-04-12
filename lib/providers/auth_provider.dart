@@ -70,11 +70,12 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _currentUser = await _authRepository.signUp(
+      await _authRepository.signUp(
         name: name,
         email: email,
         password: password,
       );
+      _currentUser = null;
       return true;
     } catch (error) {
       _errorMessage = _mapAuthError(error);
@@ -176,6 +177,29 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<bool> sendEmailVerification({
+    required String email,
+    required String password,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _authRepository.sendEmailVerification(
+        email: email,
+        password: password,
+      );
+      return true;
+    } catch (error) {
+      _errorMessage = _mapAuthError(error);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<bool> sendPasswordResetEmail(String email) async {
     _isLoading = true;
     _errorMessage = null;
@@ -272,6 +296,10 @@ class AuthProvider extends ChangeNotifier {
           return 'Invalid OTP. Please enter the correct 6-digit code.';
         case 'invalid-verification-id':
           return 'Verification expired. Please request OTP again.';
+        case 'email-not-verified':
+          return 'Please verify your email address from your inbox before logging in.';
+        case 'email-already-verified':
+          return 'This email address is already verified. You can log in now.';
         default:
           return error.message ?? 'Authentication failed. Please try again.';
       }

@@ -1,5 +1,6 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import 'package:shop/constants.dart';
 import 'package:shop/models/home_banner_model.dart';
 
 class HomeBannerCard extends StatelessWidget {
@@ -11,225 +12,507 @@ class HomeBannerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final startColor = _resolveColor(
       banner.startColorHex,
-      fallback: isDark ? const Color(0xFF2A334A) : const Color(0xFFFFF1EB),
+      fallback: isDark ? const Color(0xFF0D2137) : const Color(0xFF0A6E5E),
     );
     final endColor = _resolveColor(
       banner.endColorHex,
-      fallback: isDark ? const Color(0xFF1A2238) : const Color(0xFFFFE4D6),
+      fallback: isDark ? const Color(0xFF091828) : const Color(0xFF0D9E82),
     );
 
     final mixedColor = Color.lerp(startColor, endColor, 0.5) ?? startColor;
-    final textBrightness = ThemeData.estimateBrightnessForColor(mixedColor);
-    final titleColor = textBrightness == Brightness.dark
-        ? Colors.white
-        : const Color(0xFF24283A);
-    final subtitleColor = textBrightness == Brightness.dark
-        ? Colors.white.withValues(alpha: 0.82)
-        : const Color(0xFF596073);
-    final buttonColor = textBrightness == Brightness.dark
-        ? Colors.white
-        : const Color(0xFF1E2430);
-    final imagePanelColor = textBrightness == Brightness.dark
-        ? Colors.white.withValues(alpha: 0.12)
-        : Colors.white.withValues(alpha: 0.72);
-    final imagePanelBorderColor = textBrightness == Brightness.dark
-        ? Colors.white.withValues(alpha: 0.22)
-        : Colors.white.withValues(alpha: 0.9);
+    final useLightText =
+        ThemeData.estimateBrightnessForColor(mixedColor) == Brightness.dark;
 
-    final title = banner.title.trim().isEmpty ? 'NEW ARRIVALS' : banner.title;
+    final titleColor = useLightText ? Colors.white : const Color(0xFF0A1F1A);
+    final subtitleColor = useLightText
+        ? Colors.white.withValues(alpha: 0.76)
+        : const Color(0xFF2D4A42);
+    final buttonBg =
+        useLightText ? Colors.white : const Color(0xFF003D2E);
+    final buttonFg =
+        useLightText ? const Color(0xFF0A3D30) : Colors.white;
+
+    final title = banner.title.trim().isEmpty ? 'PetsWorld' : banner.title;
     final highlight = banner.highlightText.trim().isEmpty
-        ? 'Everything your pet loves'
+        ? 'Everything your pet needs'
         : banner.highlightText;
     final dateText = banner.dateText.trim().isEmpty
-        ? 'Fresh picks for meals, playtime, grooming, and daily comfort.'
+        ? 'Fresh arrivals for daily care'
         : banner.dateText;
-    final buttonText = banner.buttonText.trim().isEmpty
-        ? 'Shop now'
-        : banner.buttonText;
+    final buttonText =
+        banner.buttonText.trim().isEmpty ? 'Shop Now' : banner.buttonText;
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        borderRadius: const BorderRadius.all(Radius.circular(24)),
-        gradient: LinearGradient(
-          colors: <Color>[startColor, endColor],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Row(
-        children: <Widget>[
-          _BannerSideImage(
-            source: banner.leftImageUrl,
-            fallbackAssetPath: 'assets/images/home/banner_cat.png',
-            panelColor: imagePanelColor,
-            panelBorderColor: imagePanelBorderColor,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 360;
+        final cardHeight = compact ? 184.0 : 212.0;
+        final horizontalPadding = compact ? 18.0 : 22.0;
+        final verticalPadding = compact ? 18.0 : 22.0;
+        final dogWidth = compact ? 126.0 : 152.0;
+        final dogHeight = compact ? 148.0 : 178.0;
+        final contentMaxWidth = compact ? 170.0 : 210.0;
+
+        return Container(
+          height: cardHeight,
+          decoration: BoxDecoration(
+            borderRadius: const BorderRadius.all(Radius.circular(32)),
+            gradient: LinearGradient(
+              colors: [startColor, endColor],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: mixedColor.withValues(alpha: 0.34),
+                blurRadius: 34,
+                spreadRadius: -4,
+                offset: const Offset(0, 16),
+              ),
+              BoxShadow(
+                color: mixedColor.withValues(alpha: 0.14),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 7,
+          child: ClipRRect(
+            borderRadius: const BorderRadius.all(Radius.circular(32)),
+            child: Stack(
+              clipBehavior: Clip.hardEdge,
+              children: [
+                Positioned.fill(
+                  child: _MeshOverlay(
+                    startColor: startColor,
+                    endColor: endColor,
                   ),
-                  decoration: const BoxDecoration(
-                    color: primaryColor,
-                    borderRadius: BorderRadius.all(Radius.circular(999)),
+                ),
+                Positioned(
+                  top: -36,
+                  right: -24,
+                  child: _SoftOrb(
+                    size: compact ? 150 : 190,
+                    color: Colors.white.withValues(alpha: 0.10),
                   ),
-                  child: Text(
-                    title.toUpperCase(),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.4,
+                ),
+                Positioned(
+                  bottom: -26,
+                  left: compact ? 72 : 94,
+                  child: _SoftOrb(
+                    size: compact ? 88 : 108,
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 1,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.transparent,
+                          Colors.white.withValues(alpha: 0.24),
+                          Colors.transparent,
+                        ],
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  highlight,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    height: 1.15,
-                    color: titleColor,
+                Positioned(
+                  right: compact ? -6 : -2,
+                  bottom: compact ? -2 : -4,
+                  child: _PetImage(
+                    width: dogWidth,
+                    height: dogHeight,
+                    source: banner.rightImageUrl,
+                    fallback: 'assets/images/home/banner_dog.png',
+                    alignment: Alignment.bottomRight,
+                    scale: compact ? 0.95 : 1.0,
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  dateText,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    height: 1.35,
-                    color: subtitleColor,
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    horizontalPadding,
+                    verticalPadding,
+                    horizontalPadding + dogWidth - (compact ? 36 : 44),
+                    verticalPadding,
                   ),
-                ),
-                const SizedBox(height: 12),
-                InkWell(
-                  onTap: onTapShopNow,
-                  borderRadius: const BorderRadius.all(Radius.circular(8)),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Text(
-                      '$buttonText ->',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: buttonColor,
-                      ),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: _BannerContent(
+                      title: title,
+                      highlight: highlight,
+                      dateText: dateText,
+                      buttonText: buttonText,
+                      titleColor: titleColor,
+                      subtitleColor: subtitleColor,
+                      buttonBg: buttonBg,
+                      buttonFg: buttonFg,
+                      onTap: onTapShopNow,
+                      compact: compact,
+                      maxWidth: contentMaxWidth,
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          _BannerSideImage(
-            source: banner.rightImageUrl,
-            fallbackAssetPath: 'assets/images/home/banner_dog.png',
-            panelColor: imagePanelColor,
-            panelBorderColor: imagePanelBorderColor,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   Color _resolveColor(String? hexValue, {required Color fallback}) {
     final value = (hexValue ?? '').trim();
-    if (value.isEmpty) {
-      return fallback;
-    }
-
+    if (value.isEmpty) return fallback;
     var hex = value.toUpperCase().replaceAll('#', '');
-    if (hex.length == 6) {
-      hex = 'FF$hex';
-    }
-    if (hex.length != 8) {
-      return fallback;
-    }
-
+    if (hex.length == 6) hex = 'FF$hex';
+    if (hex.length != 8) return fallback;
     final parsed = int.tryParse(hex, radix: 16);
-    if (parsed == null) {
-      return fallback;
-    }
+    if (parsed == null) return fallback;
     return Color(parsed);
   }
 }
 
-class _BannerSideImage extends StatelessWidget {
-  const _BannerSideImage({
-    required this.source,
-    required this.fallbackAssetPath,
-    required this.panelColor,
-    required this.panelBorderColor,
+class _BannerContent extends StatelessWidget {
+  const _BannerContent({
+    required this.title,
+    required this.highlight,
+    required this.dateText,
+    required this.buttonText,
+    required this.titleColor,
+    required this.subtitleColor,
+    required this.buttonBg,
+    required this.buttonFg,
+    required this.onTap,
+    required this.compact,
+    required this.maxWidth,
   });
 
-  final String source;
-  final String fallbackAssetPath;
-  final Color panelColor;
-  final Color panelBorderColor;
+  final String title;
+  final String highlight;
+  final String dateText;
+  final String buttonText;
+  final Color titleColor;
+  final Color subtitleColor;
+  final Color buttonBg;
+  final Color buttonFg;
+  final VoidCallback? onTap;
+  final bool compact;
+  final double maxWidth;
 
   @override
   Widget build(BuildContext context) {
-    final trimmed = source.trim();
-    return Container(
-      width: 82,
-      height: 130,
-      decoration: BoxDecoration(
-        color: panelColor,
-        borderRadius: const BorderRadius.all(Radius.circular(18)),
-        border: Border.all(color: panelBorderColor),
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _BrandPill(title: title, titleColor: titleColor),
+          SizedBox(height: compact ? 10 : 12),
+          Text(
+            highlight,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: titleColor,
+              fontWeight: FontWeight.w900,
+              fontSize: compact ? 22 : 28,
+              height: 0.96,
+              letterSpacing: -0.9,
+            ),
+          ),
+          SizedBox(height: compact ? 8 : 10),
+          Text(
+            dateText,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: subtitleColor,
+              fontSize: compact ? 13 : 15,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.15,
+              height: 1.12,
+            ),
+          ),
+          SizedBox(height: compact ? 14 : 16),
+          _CTAButton(
+            text: buttonText,
+            background: buttonBg,
+            foreground: buttonFg,
+            onTap: onTap,
+            compact: compact,
+          ),
+        ],
       ),
-      clipBehavior: Clip.antiAlias,
-      child: _buildImage(trimmed),
+    );
+  }
+}
+
+class _BrandPill extends StatelessWidget {
+  const _BrandPill({required this.title, required this.titleColor});
+
+  final String title;
+  final Color titleColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.all(Radius.circular(999)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: const BorderRadius.all(Radius.circular(999)),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.20),
+              width: 1,
+            ),
+          ),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              title.toUpperCase(),
+              maxLines: 1,
+              softWrap: false,
+              style: TextStyle(
+                color: titleColor,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.1,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CTAButton extends StatelessWidget {
+  const _CTAButton({
+    required this.text,
+    required this.background,
+    required this.foreground,
+    required this.onTap,
+    required this.compact,
+  });
+
+  final String text;
+  final Color background;
+  final Color foreground;
+  final VoidCallback? onTap;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: const BorderRadius.all(Radius.circular(999)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: const BorderRadius.all(Radius.circular(999)),
+        splashColor: foreground.withValues(alpha: 0.12),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: background,
+            borderRadius: const BorderRadius.all(Radius.circular(999)),
+            boxShadow: [
+              BoxShadow(
+                color: background.withValues(alpha: 0.32),
+                blurRadius: 14,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 14 : 16,
+              vertical: compact ? 10 : 11,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  text,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: TextStyle(
+                    color: foreground,
+                    fontSize: compact ? 12.5 : 13.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.1,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.arrow_forward_rounded,
+                  size: compact ? 16 : 18,
+                  color: foreground,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PetImage extends StatelessWidget {
+  const _PetImage({
+    required this.width,
+    required this.height,
+    required this.source,
+    required this.fallback,
+    required this.alignment,
+    required this.scale,
+  });
+
+  final double width;
+  final double height;
+  final String source;
+  final String fallback;
+  final Alignment alignment;
+  final double scale;
+
+  @override
+  Widget build(BuildContext context) {
+    final src = source.trim();
+    return SizedBox(
+      width: width,
+      height: height,
+      child: ClipRect(
+        child: Transform.scale(
+          scale: scale,
+          alignment: alignment,
+          child: _buildImage(src),
+        ),
+      ),
     );
   }
 
-  Widget _buildImage(String sourceValue) {
-    if (sourceValue.isEmpty) {
-      return Image.asset(
-        fallbackAssetPath,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _fallbackIcon(context),
-      );
-    }
+  Widget _buildImage(String src) {
+    final fallbackWidget = Image.asset(
+      fallback,
+      fit: BoxFit.contain,
+      alignment: alignment,
+      errorBuilder: (context, error, stackTrace) => const Center(
+        child: Icon(Icons.pets_rounded, size: 32, color: Colors.white),
+      ),
+    );
 
-    if (sourceValue.startsWith('http')) {
+    if (src.isEmpty) return fallbackWidget;
+
+    if (src.startsWith('http')) {
       return Image.network(
-        sourceValue,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => Image.asset(
-          fallbackAssetPath,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => _fallbackIcon(context),
-        ),
+        src,
+        fit: BoxFit.contain,
+        alignment: alignment,
+        errorBuilder: (context, error, stackTrace) => fallbackWidget,
       );
     }
 
     return Image.asset(
-      sourceValue,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) => Image.asset(
-        fallbackAssetPath,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _fallbackIcon(context),
-      ),
+      src,
+      fit: BoxFit.contain,
+      alignment: alignment,
+      errorBuilder: (context, error, stackTrace) => fallbackWidget,
     );
   }
+}
 
-  Widget _fallbackIcon(BuildContext context) {
-    return const Center(
-      child: Icon(Icons.pets_rounded, size: 34, color: primaryColor),
+class _MeshOverlay extends StatelessWidget {
+  const _MeshOverlay({required this.startColor, required this.endColor});
+
+  final Color startColor;
+  final Color endColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(painter: _MeshPainter(startColor, endColor));
+  }
+}
+
+class _MeshPainter extends CustomPainter {
+  _MeshPainter(this.startColor, this.endColor);
+
+  final Color startColor;
+  final Color endColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..style = PaintingStyle.fill;
+
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+    paint.shader = LinearGradient(
+      colors: [
+        Colors.white.withValues(alpha: 0.06),
+        Colors.transparent,
+        Colors.black.withValues(alpha: 0.08),
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ).createShader(rect);
+    canvas.drawRect(rect, paint);
+
+    final glowCenter = Offset(size.width * 0.28, size.height * 0.42);
+    const glowRadius = 90.0;
+    paint.shader = RadialGradient(
+      colors: [
+        Colors.white.withValues(alpha: 0.09),
+        Colors.transparent,
+      ],
+    ).createShader(
+      Rect.fromCircle(center: glowCenter, radius: glowRadius),
+    );
+    canvas.drawCircle(glowCenter, glowRadius, paint);
+
+    paint.shader = LinearGradient(
+      colors: [
+        Colors.transparent,
+        Colors.black.withValues(alpha: 0.12),
+      ],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    ).createShader(rect);
+    canvas.drawRect(rect, paint);
+  }
+
+  @override
+  bool shouldRepaint(_MeshPainter oldDelegate) {
+    return oldDelegate.startColor != startColor ||
+        oldDelegate.endColor != endColor;
+  }
+}
+
+class _SoftOrb extends StatelessWidget {
+  const _SoftOrb({required this.size, required this.color});
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [color, Colors.transparent],
+            stops: const [0.0, 1.0],
+          ),
+        ),
+      ),
     );
   }
 }

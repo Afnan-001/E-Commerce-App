@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shop/constants.dart';
 import 'package:shop/providers/auth_provider.dart';
 import 'package:shop/providers/cart_provider.dart';
 import 'package:shop/providers/order_provider.dart';
@@ -8,6 +7,7 @@ import 'package:shop/providers/product_provider.dart';
 import 'package:shop/route/route_constants.dart';
 
 import 'components/auth_feedback.dart';
+import 'components/auth_shell.dart';
 import 'components/login_form.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -22,6 +22,54 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  Future<void> _resendVerificationEmail(BuildContext context) async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    final auth = context.read<AuthProvider>();
+
+    if (email.isEmpty) {
+      await showAuthErrorDialog(
+        context,
+        message: 'Enter your email address first.',
+      );
+      return;
+    }
+
+    if (password.isEmpty) {
+      await showAuthErrorDialog(
+        context,
+        message: 'Enter your password to resend the verification email.',
+      );
+      return;
+    }
+
+    final success = await auth.sendEmailVerification(
+      email: email,
+      password: password,
+    );
+
+    if (!context.mounted) return;
+
+    if (!success) {
+      await showAuthErrorDialog(
+        context,
+        message:
+            auth.errorMessage ??
+            'Unable to resend the verification email right now.',
+      );
+      auth.clearError();
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Verification email sent to $email. Please check inbox, spam, or promotions.',
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -31,183 +79,288 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final Size size = MediaQuery.of(context).size;
     final authProvider = context.watch<AuthProvider>();
+    final theme = Theme.of(context);
 
-    return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
+    return AuthShell(
+      eyebrow: 'WELCOME BACK',
+      title: 'Sign in to your curated pet care world.',
+      subtitle:
+          'Track orders, manage grooming, and pick up where you left off with a calmer, faster checkout experience.',
+      footer: Center(
+        child: Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Image.asset("assets/images/login_dark.png", fit: BoxFit.cover),
-            Padding(
-              padding: const EdgeInsets.all(defaultPadding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Welcome back to PetsWorld!",
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: defaultPadding / 2),
-                  const Text(
-                    "Sign in to manage grooming bookings, pet orders, and your saved pet care essentials.",
-                  ),
-                  const SizedBox(height: defaultPadding),
-                  LogInForm(
-                    formKey: _formKey,
-                    emailController: _emailController,
-                    passwordController: _passwordController,
-                  ),
-                  const SizedBox(height: defaultPadding),
-                  OutlinedButton.icon(
-                    onPressed: authProvider.isLoading
-                        ? null
-                        : () async {
-                            final auth = context.read<AuthProvider>();
-                            final cartProvider = context.read<CartProvider>();
-                            final productProvider = context
-                                .read<ProductProvider>();
-                            final orderProvider = context.read<OrderProvider>();
-                            final navigator = Navigator.of(context);
-                            final success = await auth.signInWithGoogle();
-                            if (!context.mounted) return;
-                            if (!success) {
-                              final message =
-                                  auth.errorMessage ??
-                                  'Unable to sign in with Google.';
-                              await showAuthErrorDialog(
-                                context,
-                                message: message,
-                              );
-                              auth.clearError();
-                              return;
-                            }
-
-                            final userId = auth.currentUser?.uid;
-                            await cartProvider.syncForUser(userId);
-                            await productProvider.syncUserData(userId);
-                            await orderProvider.syncForUser(userId);
-
-                            if (!context.mounted) return;
-                            navigator.pushNamedAndRemoveUntil(
-                              entryPointScreenRoute,
-                              (route) => false,
-                            );
-                          },
-                    icon: Container(
-                      width: 22,
-                      height: 22,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: const Color(0xFFE0E0E0)),
-                        borderRadius: const BorderRadius.all(
-                          Radius.circular(999),
-                        ),
-                      ),
-                      child: const Text(
-                        'G',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFFDB4437),
-                        ),
-                      ),
-                    ),
-                    label: const Text('Continue with Google'),
-                  ),
-                  const SizedBox(height: defaultPadding / 2),
-                  OutlinedButton.icon(
-                    onPressed: authProvider.isLoading
-                        ? null
-                        : () {
-                            Navigator.pushNamed(
-                              context,
-                              phoneAuthScreenRoute,
-                              arguments: const <String, dynamic>{
-                                'isSignUp': false,
-                              },
-                            );
-                          },
-                    icon: const Icon(Icons.phone_android_outlined),
-                    label: const Text('Continue with phone OTP'),
-                  ),
-                  Align(
-                    child: TextButton(
-                      child: const Text("Forgot password"),
-                      onPressed: () {
-                        Navigator.pushNamed(
-                          context,
-                          passwordRecoveryScreenRoute,
-                        );
-                      },
-                    ),
-                  ),
-                  SizedBox(
-                    height: size.height > 700
-                        ? size.height * 0.1
-                        : defaultPadding,
-                  ),
-                  ElevatedButton(
-                    onPressed: authProvider.isLoading
-                        ? null
-                        : () async {
-                            if (!_formKey.currentState!.validate()) return;
-                            final auth = context.read<AuthProvider>();
-                            final cartProvider = context.read<CartProvider>();
-                            final productProvider = context
-                                .read<ProductProvider>();
-                            final orderProvider = context.read<OrderProvider>();
-                            final navigator = Navigator.of(context);
-                            final success = await auth.signIn(
-                              email: _emailController.text,
-                              password: _passwordController.text,
-                            );
-
-                            if (!context.mounted) return;
-                            if (!success) {
-                              final message =
-                                  auth.errorMessage ??
-                                  'Unable to log in with email and password.';
-                              await showAuthErrorDialog(
-                                context,
-                                message: message,
-                              );
-                              auth.clearError();
-                              return;
-                            }
-
-                            final userId = auth.currentUser?.uid;
-                            await cartProvider.syncForUser(userId);
-                            await productProvider.syncUserData(userId);
-                            await orderProvider.syncForUser(userId);
-
-                            if (!context.mounted) return;
-
-                            navigator.pushNamedAndRemoveUntil(
-                              entryPointScreenRoute,
-                              (route) => false,
-                            );
-                          },
-                    child: Text(
-                      authProvider.isLoading ? "Please wait..." : "Log in",
-                    ),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text("Don't have an account?"),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, signUpScreenRoute);
-                        },
-                        child: const Text("Sign up"),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            Text(
+              "Don't have an account? ",
+              style: theme.textTheme.bodyMedium,
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pushNamed(context, signUpScreenRoute);
+              },
+              child: const Text('Create one'),
             ),
           ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _InfoStrip(
+            icon: Icons.verified_user_outlined,
+            text: 'Email/password accounts require verification before first login.',
+          ),
+          const SizedBox(height: 20),
+          LogInForm(
+            formKey: _formKey,
+            emailController: _emailController,
+            passwordController: _passwordController,
+          ),
+          const SizedBox(height: 18),
+          _buildPrimaryButton(context, authProvider),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(child: Divider(color: theme.dividerColor)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  'or continue with',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+              Expanded(child: Divider(color: theme.dividerColor)),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _AuthActionButton(
+            label: 'Continue with Google',
+            icon: Icons.language_rounded,
+            onPressed: authProvider.isLoading
+                ? null
+                : () => _signInWithGoogle(context),
+          ),
+          const SizedBox(height: 12),
+          _AuthActionButton(
+            label: 'Continue with phone OTP',
+            icon: Icons.sms_outlined,
+            onPressed: authProvider.isLoading
+                ? null
+                : () {
+                    Navigator.pushNamed(
+                      context,
+                      phoneAuthScreenRoute,
+                      arguments: const <String, dynamic>{'isSignUp': false},
+                    );
+                  },
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: authProvider.isLoading
+                  ? null
+                  : () {
+                      Navigator.pushNamed(
+                        context,
+                        passwordRecoveryScreenRoute,
+                      );
+                    },
+              child: const Text('Forgot password?'),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: authProvider.isLoading
+                  ? null
+                  : () => _resendVerificationEmail(context),
+              child: const Text('Resend verification email'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPrimaryButton(BuildContext context, AuthProvider authProvider) {
+    return SizedBox(
+      width: double.infinity,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF18392F), Color(0xFF2A6050), Color(0xFFF1A208)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF18392F).withValues(alpha: 0.25),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: ElevatedButton(
+          onPressed: authProvider.isLoading ? null : () => _signIn(context),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(22),
+            ),
+          ),
+          child: Text(
+            authProvider.isLoading ? 'Please wait...' : 'Log in',
+            style: const TextStyle(
+              color: Colors.white,
+              fontFamily: 'Plus Jakarta',
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _signInWithGoogle(BuildContext context) async {
+    final auth = context.read<AuthProvider>();
+    final cartProvider = context.read<CartProvider>();
+    final productProvider = context.read<ProductProvider>();
+    final orderProvider = context.read<OrderProvider>();
+    final navigator = Navigator.of(context);
+    final success = await auth.signInWithGoogle();
+    if (!context.mounted) return;
+    if (!success) {
+      final message = auth.errorMessage ?? 'Unable to sign in with Google.';
+      await showAuthErrorDialog(context, message: message);
+      auth.clearError();
+      return;
+    }
+
+    final userId = auth.currentUser?.uid;
+    await cartProvider.syncForUser(userId);
+    await productProvider.syncUserData(userId);
+    await orderProvider.syncForUser(userId);
+
+    if (!context.mounted) return;
+    navigator.pushNamedAndRemoveUntil(entryPointScreenRoute, (route) => false);
+  }
+
+  Future<void> _signIn(BuildContext context) async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final auth = context.read<AuthProvider>();
+    final cartProvider = context.read<CartProvider>();
+    final productProvider = context.read<ProductProvider>();
+    final orderProvider = context.read<OrderProvider>();
+    final navigator = Navigator.of(context);
+    final success = await auth.signIn(
+      email: _emailController.text,
+      password: _passwordController.text,
+    );
+
+    if (!context.mounted) return;
+    if (!success) {
+      final message =
+          auth.errorMessage ?? 'Unable to log in with email and password.';
+      await showAuthErrorDialog(context, message: message);
+      auth.clearError();
+      return;
+    }
+
+    final userId = auth.currentUser?.uid;
+    await cartProvider.syncForUser(userId);
+    await productProvider.syncUserData(userId);
+    await orderProvider.syncForUser(userId);
+
+    if (!context.mounted) return;
+    navigator.pushNamedAndRemoveUntil(entryPointScreenRoute, (route) => false);
+  }
+}
+
+class _InfoStrip extends StatelessWidget {
+  const _InfoStrip({
+    required this.icon,
+    required this.text,
+  });
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : const Color(0xFFF8F2E5),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.10)
+              : const Color(0xFFE5D8BF),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: const Color(0xFFB88917)),
+          const SizedBox(width: 10),
+          Expanded(child: Text(text)),
+        ],
+      ),
+    );
+  }
+}
+
+class _AuthActionButton extends StatelessWidget {
+  const _AuthActionButton({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final foregroundColor = isDark ? Colors.white : const Color(0xFF18392F);
+
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+          side: BorderSide(
+            color: isDark
+              ? Colors.white.withValues(alpha: 0.10)
+              : const Color(0xFFD9D0C2),
+          ),
+          backgroundColor: isDark
+              ? Colors.white.withValues(alpha: 0.04)
+              : const Color(0xFFFFFCF7),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+        ),
+        icon: Icon(icon, color: foregroundColor),
+        label: Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta',
+            fontWeight: FontWeight.w600,
+            color: foregroundColor,
+          ),
         ),
       ),
     );

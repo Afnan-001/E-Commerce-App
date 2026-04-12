@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../constants.dart';
 
@@ -19,6 +18,8 @@ class SignUpForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Form(
       key: formKey,
       child: Column(
@@ -32,25 +33,11 @@ class SignUpForm extends StatelessWidget {
               return null;
             },
             textInputAction: TextInputAction.next,
-            decoration: InputDecoration(
+            autofillHints: const [AutofillHints.name],
+            decoration: _buildDecoration(
+              theme,
               hintText: "Full name",
-              prefixIcon: Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: defaultPadding * 0.75),
-                child: SvgPicture.asset(
-                  "assets/icons/Profile.svg",
-                  height: 24,
-                  width: 24,
-                  colorFilter: ColorFilter.mode(
-                    Theme.of(context)
-                        .textTheme
-                        .bodyLarge!
-                        .color!
-                        .withValues(alpha: 0.3),
-                    BlendMode.srcIn,
-                  ),
-                ),
-              ),
+              icon: Icons.person_outline_rounded,
             ),
           ),
           const SizedBox(height: defaultPadding),
@@ -59,25 +46,11 @@ class SignUpForm extends StatelessWidget {
             validator: emaildValidator.call,
             textInputAction: TextInputAction.next,
             keyboardType: TextInputType.emailAddress,
-            decoration: InputDecoration(
+            autofillHints: const [AutofillHints.username, AutofillHints.email],
+            decoration: _buildDecoration(
+              theme,
               hintText: "Email address",
-              prefixIcon: Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: defaultPadding * 0.75),
-                child: SvgPicture.asset(
-                  "assets/icons/Message.svg",
-                  height: 24,
-                  width: 24,
-                  colorFilter: ColorFilter.mode(
-                    Theme.of(context)
-                        .textTheme
-                        .bodyLarge!
-                        .color!
-                        .withValues(alpha: 0.3),
-                    BlendMode.srcIn,
-                  ),
-                ),
-              ),
+              icon: Icons.alternate_email_rounded,
             ),
           ),
           const SizedBox(height: defaultPadding),
@@ -85,28 +58,64 @@ class SignUpForm extends StatelessWidget {
             controller: passwordController,
             validator: passwordValidator.call,
             obscureText: true,
-            decoration: InputDecoration(
+            autofillHints: const [AutofillHints.newPassword],
+            decoration: _buildDecoration(
+              theme,
               hintText: "Password",
-              prefixIcon: Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: defaultPadding * 0.75),
-                child: SvgPicture.asset(
-                  "assets/icons/Lock.svg",
-                  height: 24,
-                  width: 24,
-                  colorFilter: ColorFilter.mode(
-                    Theme.of(context)
-                        .textTheme
-                        .bodyLarge!
-                        .color!
-                        .withValues(alpha: 0.3),
-                    BlendMode.srcIn,
-                  ),
-                ),
-              ),
+              icon: Icons.lock_outline_rounded,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  InputDecoration _buildDecoration(
+    ThemeData theme, {
+    required String hintText,
+    required IconData icon,
+  }) {
+    final isDark = theme.brightness == Brightness.dark;
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.12)
+        : const Color(0xFFD9D0C2);
+
+    return InputDecoration(
+      hintText: hintText,
+      filled: true,
+      fillColor: isDark
+          ? Colors.white.withValues(alpha: 0.05)
+          : const Color(0xFFFFFCF7),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 18,
+        vertical: 18,
+      ),
+      hintStyle: TextStyle(
+        color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.68),
+      ),
+      prefixIcon: Icon(
+        icon,
+        color: const Color(0xFFB88917),
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(22),
+        borderSide: BorderSide(color: borderColor),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(22),
+        borderSide: BorderSide(color: borderColor),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(22),
+        borderSide: const BorderSide(color: Color(0xFF18392F), width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(22),
+        borderSide: const BorderSide(color: errorColor),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(22),
+        borderSide: const BorderSide(color: errorColor, width: 1.5),
       ),
     );
   }

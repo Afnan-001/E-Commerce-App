@@ -73,138 +73,215 @@ class _AdminHomeBannerScreenState extends State<AdminHomeBannerScreen> {
       body: ListView(
         padding: const EdgeInsets.all(defaultPadding),
         children: [
-          HomeBannerCard(banner: _previewBanner, onTapShopNow: null),
-          const SizedBox(height: defaultPadding),
-          Form(
-            key: _formKey,
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: const BorderRadius.all(Radius.circular(28)),
+              border: Border.all(color: Theme.of(context).dividerColor),
+            ),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _AdminField(
-                  controller: _titleController,
-                  label: 'Banner title',
-                  hint: 'Pet Winter Offer',
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: defaultPadding),
-                _AdminField(
-                  controller: _highlightController,
-                  label: 'Highlight text',
-                  hint: '25% OFF',
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: defaultPadding),
-                _AdminField(
-                  controller: _dateController,
-                  label: 'Date text',
-                  hint: 'Nov 16 - Dec 22',
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: defaultPadding),
-                _AdminField(
-                  controller: _buttonController,
-                  label: 'Button text',
-                  hint: 'Shop Now',
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: defaultPadding),
-                _AdminField(
-                  controller: _leftImageController,
-                  label: 'Left image path or URL (optional)',
-                  hint: 'assets/images/home/banner_cat.png or https://...',
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: defaultPadding),
-                _AdminField(
-                  controller: _rightImageController,
-                  label: 'Right image path or URL (optional)',
-                  hint: 'assets/images/home/banner_dog.png or https://...',
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: defaultPadding),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Banner colors',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                ),
-                const SizedBox(height: defaultPadding / 2),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: _presets
-                      .map(
-                        (preset) => _ColorPresetChip(
-                          preset: preset,
-                          isSelected:
-                              _normalizeHex(_startColorController.text) ==
-                                  preset.startHex &&
-                              _normalizeHex(_endColorController.text) ==
-                                  preset.endHex,
-                          onTap: () {
-                            setState(() {
-                              _startColorController.text = preset.startHex;
-                              _endColorController.text = preset.endHex;
-                            });
-                          },
-                        ),
-                      )
-                      .toList(),
-                ),
-                const SizedBox(height: defaultPadding),
                 Row(
                   children: [
-                    Expanded(
-                      child: _AdminField(
-                        controller: _startColorController,
-                        label: 'Start color hex (optional)',
-                        hint: '#1FA48E',
-                        onChanged: (_) => setState(() {}),
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF18392F), Color(0xFFF1A208)],
+                        ),
+                        borderRadius: const BorderRadius.all(
+                          Radius.circular(14),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.auto_awesome_rounded,
+                        color: Colors.white,
                       ),
                     ),
-                    const SizedBox(width: defaultPadding),
+                    const SizedBox(width: 12),
                     Expanded(
-                      child: _AdminField(
-                        controller: _endColorController,
-                        label: 'End color hex (optional)',
-                        hint: '#128B7B',
-                        onChanged: (_) => setState(() {}),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Banner preview',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w800),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'This is how the hero banner appears on the home page.',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: defaultPadding / 2),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Banner active'),
-                  subtitle: const Text(
-                    'Turn off to show fallback default banner',
+                const SizedBox(height: 18),
+                HomeBannerCard(banner: _previewBanner, onTapShopNow: null),
+              ],
+            ),
+          ),
+          const SizedBox(height: defaultPadding),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: const BorderRadius.all(Radius.circular(28)),
+              border: Border.all(color: Theme.of(context).dividerColor),
+            ),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Banner content',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
                   ),
-                  value: _isActive,
-                  onChanged: (value) {
-                    setState(() {
-                      _isActive = value;
-                    });
-                  },
-                ),
-                const SizedBox(height: defaultPadding),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: adminProvider.isSaving ? null : _onSave,
-                    child: Text(
-                      adminProvider.isSaving ? 'Saving...' : 'Save banner',
+                  const SizedBox(height: 6),
+                  Text(
+                    'Use sharper copy, one strong offer line, and optional pet imagery for the best visual balance.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: defaultPadding + 4),
+                  _AdminField(
+                    controller: _titleController,
+                    label: 'Banner title',
+                    hint: 'PetsWorld',
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: defaultPadding),
+                  _AdminField(
+                    controller: _highlightController,
+                    label: 'Highlight text',
+                    hint: 'Premium pet essentials',
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: defaultPadding),
+                  _AdminField(
+                    controller: _dateController,
+                    label: 'Date text',
+                    hint: 'Fresh arrivals for every routine',
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: defaultPadding),
+                  _AdminField(
+                    controller: _buttonController,
+                    label: 'Button text',
+                    hint: 'Shop now',
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: defaultPadding),
+                  _AdminField(
+                    controller: _leftImageController,
+                    label: 'Left image path or URL (optional)',
+                    hint: 'assets/images/home/banner_cat.png or https://...',
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: defaultPadding),
+                  _AdminField(
+                    controller: _rightImageController,
+                    label: 'Right image path or URL (optional)',
+                    hint: 'assets/images/home/banner_dog.png or https://...',
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: defaultPadding + 4),
+                  Text(
+                    'Banner palette',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Pick a preset or fine-tune both gradient stops with custom hex values.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: defaultPadding / 1.2),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: _presets
+                        .map(
+                          (preset) => _ColorPresetChip(
+                            preset: preset,
+                            isSelected:
+                                _normalizeHex(_startColorController.text) ==
+                                    preset.startHex &&
+                                _normalizeHex(_endColorController.text) ==
+                                    preset.endHex,
+                            onTap: () {
+                              setState(() {
+                                _startColorController.text = preset.startHex;
+                                _endColorController.text = preset.endHex;
+                              });
+                            },
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  const SizedBox(height: defaultPadding),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _AdminField(
+                          controller: _startColorController,
+                          label: 'Start color hex (optional)',
+                          hint: '#1FA48E',
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ),
+                      const SizedBox(width: defaultPadding),
+                      Expanded(
+                        child: _AdminField(
+                          controller: _endColorController,
+                          label: 'End color hex (optional)',
+                          hint: '#128B7B',
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: defaultPadding / 2),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Banner active'),
+                    subtitle: const Text(
+                      'Turn off to show fallback default banner',
+                    ),
+                    value: _isActive,
+                    onChanged: (value) {
+                      setState(() {
+                        _isActive = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: defaultPadding),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: adminProvider.isSaving ? null : _onSave,
+                      child: Text(
+                        adminProvider.isSaving ? 'Saving...' : 'Save banner',
+                      ),
                     ),
                   ),
-                ),
-                if (adminProvider.errorMessage != null) ...[
-                  const SizedBox(height: defaultPadding),
-                  Text(
-                    adminProvider.errorMessage!,
-                    style: const TextStyle(color: errorColor),
-                  ),
+                  if (adminProvider.errorMessage != null) ...[
+                    const SizedBox(height: defaultPadding),
+                    Text(
+                      adminProvider.errorMessage!,
+                      style: const TextStyle(color: errorColor),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ],
