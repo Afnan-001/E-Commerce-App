@@ -9,19 +9,37 @@ import 'package:shop/providers/admin_provider.dart';
 import 'package:shop/providers/auth_provider.dart';
 import 'package:shop/route/route_constants.dart';
 
-class AdminDashboardScreen extends StatelessWidget {
+class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
+
+  @override
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+}
+
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  bool _requestedLoad = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_requestedLoad) return;
+    final authProvider = context.read<AuthProvider>();
+    final adminProvider = context.read<AdminProvider>();
+    if (!authProvider.isAdmin || adminProvider.hasLoadedData || adminProvider.isLoading) {
+      return;
+    }
+
+    _requestedLoad = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<AdminProvider>().loadAdminData();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final adminProvider = context.watch<AdminProvider>();
-
-    if (authProvider.isAdmin &&
-        !adminProvider.hasLoadedData &&
-        !adminProvider.isLoading) {
-      Future.microtask(adminProvider.loadAdminData);
-    }
 
     if (!authProvider.isAdmin) {
       return Scaffold(
@@ -62,6 +80,7 @@ class AdminDashboardScreen extends StatelessWidget {
     final featuredProducts = adminProvider.products
         .where((product) => product.isFeatured)
         .length;
+    final activeBanners = adminProvider.homeBanners.where((item) => item.isActive).length;
     final totalRevenue = adminProvider.orders.fold<double>(
       0,
       (sum, order) => sum + order.totalPrice,
@@ -101,6 +120,7 @@ class AdminDashboardScreen extends StatelessWidget {
                     totalOrders: totalOrders,
                     totalRevenue: totalRevenue,
                     pendingOrders: pendingOrders,
+                    activeBanners: activeBanners,
                   ),
                   const SizedBox(height: defaultPadding),
                   GridView.count(
@@ -140,6 +160,13 @@ class AdminDashboardScreen extends StatelessWidget {
                         helper: 'Shared shop uploads',
                         icon: Icons.cloud_upload_outlined,
                         accent: const Color(0xFF7A4BB7),
+                      ),
+                      _StatCard(
+                        label: 'Banners',
+                        value: '$activeBanners',
+                        helper: 'Live in carousel',
+                        icon: Icons.view_carousel_outlined,
+                        accent: const Color(0xFFCC8C2E),
                       ),
                     ],
                   ),
@@ -303,7 +330,7 @@ class AdminDashboardScreen extends StatelessWidget {
                       Navigator.pushNamed(context, adminHomeBannerScreenRoute);
                     },
                     icon: const Icon(Icons.view_carousel_outlined),
-                    label: const Text('Manage home banner'),
+                    label: const Text('Manage home banners'),
                   ),
                 ],
               ),
@@ -317,11 +344,13 @@ class _HeroHeader extends StatelessWidget {
     required this.totalOrders,
     required this.totalRevenue,
     required this.pendingOrders,
+    required this.activeBanners,
   });
 
   final int totalOrders;
   final double totalRevenue;
   final int pendingOrders;
+  final int activeBanners;
 
   @override
   Widget build(BuildContext context) {
@@ -351,26 +380,36 @@ class _HeroHeader extends StatelessWidget {
             style: TextStyle(color: Colors.white70, height: 1.4),
           ),
           const SizedBox(height: defaultPadding),
-          Row(
+          Wrap(
+            spacing: defaultPadding,
+            runSpacing: defaultPadding,
             children: [
-              Expanded(
+              SizedBox(
+                width: 132,
                 child: _HeroMetric(
                   label: 'Revenue',
                   value: 'Rs ${totalRevenue.toStringAsFixed(0)}',
                 ),
               ),
-              const SizedBox(width: defaultPadding),
-              Expanded(
+              SizedBox(
+                width: 132,
                 child: _HeroMetric(
                   label: 'Orders',
                   value: '$totalOrders total',
                 ),
               ),
-              const SizedBox(width: defaultPadding),
-              Expanded(
+              SizedBox(
+                width: 132,
                 child: _HeroMetric(
                   label: 'Pending',
                   value: '$pendingOrders open',
+                ),
+              ),
+              SizedBox(
+                width: 132,
+                child: _HeroMetric(
+                  label: 'Banners',
+                  value: '$activeBanners live',
                 ),
               ),
             ],

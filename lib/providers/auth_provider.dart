@@ -219,8 +219,6 @@ class AuthProvider extends ChangeNotifier {
 
   Future<bool> updateProfile({
     required String name,
-    required String email,
-    required String phoneNumber,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -229,8 +227,6 @@ class AuthProvider extends ChangeNotifier {
     try {
       _currentUser = await _authRepository.updateProfile(
         name: name,
-        email: email,
-        phoneNumber: phoneNumber,
       );
       return true;
     } catch (error) {

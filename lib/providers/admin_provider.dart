@@ -22,7 +22,7 @@ class AdminProvider extends ChangeNotifier {
   List<ProductModel> _products = const <ProductModel>[];
   List<OrderModel> _orders = const <OrderModel>[];
   List<CategoryModel> _categories = const <CategoryModel>[];
-  HomeBannerModel _homeBanner = HomeBannerModel.defaultBanner();
+  List<HomeBannerModel> _homeBanners = const <HomeBannerModel>[];
 
   static const List<_SeedCategory> _discoverCategorySeed = <_SeedCategory>[
     _SeedCategory(id: 'dogs', title: 'Dogs', sortOrder: 0),
@@ -192,7 +192,7 @@ class AdminProvider extends ChangeNotifier {
   List<ProductModel> get products => _products;
   List<OrderModel> get orders => _orders;
   List<CategoryModel> get categories => _categories;
-  HomeBannerModel get homeBanner => _homeBanner;
+  List<HomeBannerModel> get homeBanners => _homeBanners;
 
   Future<void> loadAdminData() async {
     _isLoading = true;
@@ -204,14 +204,14 @@ class AdminProvider extends ChangeNotifier {
         _adminRepository.getCategories(),
         _adminRepository.getProducts(),
         _adminRepository.getOrders(),
-        _adminRepository.getHomeBanner(),
+        _adminRepository.getHomeBanners(),
       ]);
 
       _categories = results[0] as List<CategoryModel>;
       _products = results[1] as List<ProductModel>;
       _orders = results[2] as List<OrderModel>;
-      final loadedBanner = results[3] as HomeBannerModel?;
-      _homeBanner = loadedBanner ?? HomeBannerModel.defaultBanner();
+      final loadedBanners = results[3] as List<HomeBannerModel>;
+      _homeBanners = loadedBanners;
       _hasLoadedData = true;
     } catch (error) {
       _errorMessage = error.toString();
@@ -443,6 +443,22 @@ class AdminProvider extends ChangeNotifier {
     }
   }
 
+  Future<String?> uploadBannerImage(XFile file) async {
+    _isSaving = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      return await _adminRepository.uploadBannerImage(file);
+    } catch (error) {
+      _errorMessage = error.toString();
+      return null;
+    } finally {
+      _isSaving = false;
+      notifyListeners();
+    }
+  }
+
   Future<bool> saveHomeBanner(HomeBannerModel banner) async {
     _isSaving = true;
     _errorMessage = null;
@@ -450,7 +466,25 @@ class AdminProvider extends ChangeNotifier {
 
     try {
       await _adminRepository.saveHomeBanner(banner);
-      _homeBanner = banner.copyWith(id: 'home_main', updatedAt: DateTime.now());
+      await loadAdminData();
+      return true;
+    } catch (error) {
+      _errorMessage = error.toString();
+      return false;
+    } finally {
+      _isSaving = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> deleteHomeBanner(String bannerId) async {
+    _isSaving = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _adminRepository.deleteHomeBanner(bannerId);
+      await loadAdminData();
       return true;
     } catch (error) {
       _errorMessage = error.toString();

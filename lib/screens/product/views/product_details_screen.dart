@@ -46,9 +46,9 @@ class ProductDetailsScreen extends StatelessWidget {
         .where((item) => item.id != currentProduct.id)
         .take(4)
         .toList();
-    final productImages = currentProduct.imageUrl.isEmpty
+    final productImages = currentProduct.galleryImages.isEmpty
         ? const <String>['']
-        : <String>[currentProduct.imageUrl];
+        : currentProduct.galleryImages;
     final displayPrice = currentProduct.salePrice ?? currentProduct.price;
     final isBookmarked =
         context.watch<ProductProvider>().isBookmarked(currentProduct.id);

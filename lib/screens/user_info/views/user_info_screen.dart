@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shop/constants.dart';
 import 'package:shop/providers/auth_provider.dart';
-import 'package:shop/route/route_constants.dart';
 import 'package:shop/screens/auth/views/components/auth_feedback.dart';
 
 class UserInfoScreen extends StatefulWidget {
@@ -165,27 +164,22 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
+                            readOnly: true,
+                            enabled: false,
                             decoration: const InputDecoration(
                               labelText: 'Email',
-                              hintText: 'Enter email (optional)',
+                              hintText: 'Email cannot be changed here',
                             ),
-                            validator: (value) {
-                              final trimmed = (value ?? '').trim();
-                              if (trimmed.isEmpty) return null;
-                              if (!trimmed.contains('@') ||
-                                  !trimmed.contains('.')) {
-                                return 'Enter a valid email address';
-                              }
-                              return null;
-                            },
                           ),
                           const SizedBox(height: defaultPadding),
                           TextFormField(
                             controller: _phoneController,
                             keyboardType: TextInputType.phone,
+                            readOnly: true,
+                            enabled: false,
                             decoration: const InputDecoration(
                               labelText: 'Phone number',
-                              hintText: 'Enter phone number (optional)',
+                              hintText: 'Phone number cannot be changed here',
                             ),
                           ),
                           const SizedBox(height: defaultPadding * 1.2),
@@ -206,8 +200,6 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                                       final success = await authNotifier
                                           .updateProfile(
                                             name: _nameController.text,
-                                            email: _emailController.text,
-                                            phoneNumber: _phoneController.text,
                                           );
                                       if (!context.mounted) return;
                                       if (!success) {
@@ -234,20 +226,6 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                                     ? 'Saving...'
                                     : 'Save profile',
                               ),
-                            ),
-                          ),
-                          const SizedBox(height: defaultPadding / 2),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                              onPressed: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  passwordRecoveryScreenRoute,
-                                );
-                              },
-                              icon: const Icon(Icons.lock_outline_rounded),
-                              label: const Text('Change password'),
                             ),
                           ),
                         ],

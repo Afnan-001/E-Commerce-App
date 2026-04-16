@@ -5,53 +5,43 @@ import 'package:flutter/foundation.dart';
 class HomeBannerModel {
   const HomeBannerModel({
     required this.id,
-    required this.title,
-    required this.highlightText,
-    required this.dateText,
-    required this.buttonText,
-    required this.leftImageUrl,
-    required this.rightImageUrl,
-    this.startColorHex,
-    this.endColorHex,
+    required this.imageUrl,
+    this.title = '',
+    this.subtitle = '',
+    this.actionCategory,
+    this.sortOrder = 0,
     this.isActive = true,
     this.updatedAt,
   });
 
   final String id;
+  final String imageUrl;
   final String title;
-  final String highlightText;
-  final String dateText;
-  final String buttonText;
-  final String leftImageUrl;
-  final String rightImageUrl;
-  final String? startColorHex;
-  final String? endColorHex;
+  final String subtitle;
+  final String? actionCategory;
+  final int sortOrder;
   final bool isActive;
   final DateTime? updatedAt;
 
+  bool get hasImage => imageUrl.trim().isNotEmpty;
+
   HomeBannerModel copyWith({
     String? id,
+    String? imageUrl,
     String? title,
-    String? highlightText,
-    String? dateText,
-    String? buttonText,
-    String? leftImageUrl,
-    String? rightImageUrl,
-    String? startColorHex,
-    String? endColorHex,
+    String? subtitle,
+    String? actionCategory,
+    int? sortOrder,
     bool? isActive,
     DateTime? updatedAt,
   }) {
     return HomeBannerModel(
       id: id ?? this.id,
+      imageUrl: imageUrl ?? this.imageUrl,
       title: title ?? this.title,
-      highlightText: highlightText ?? this.highlightText,
-      dateText: dateText ?? this.dateText,
-      buttonText: buttonText ?? this.buttonText,
-      leftImageUrl: leftImageUrl ?? this.leftImageUrl,
-      rightImageUrl: rightImageUrl ?? this.rightImageUrl,
-      startColorHex: startColorHex ?? this.startColorHex,
-      endColorHex: endColorHex ?? this.endColorHex,
+      subtitle: subtitle ?? this.subtitle,
+      actionCategory: actionCategory ?? this.actionCategory,
+      sortOrder: sortOrder ?? this.sortOrder,
       isActive: isActive ?? this.isActive,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -60,14 +50,17 @@ class HomeBannerModel {
   factory HomeBannerModel.fromMap(String id, Map<String, dynamic> data) {
     return HomeBannerModel(
       id: id,
-      title: data['title'] as String? ?? 'Pet Winter Offer',
-      highlightText: data['highlightText'] as String? ?? '25% OFF',
-      dateText: data['dateText'] as String? ?? 'Nov 16 - Dec 22',
-      buttonText: data['buttonText'] as String? ?? 'Shop Now',
-      leftImageUrl: data['leftImageUrl'] as String? ?? '',
-      rightImageUrl: data['rightImageUrl'] as String? ?? '',
-      startColorHex: data['startColorHex'] as String?,
-      endColorHex: data['endColorHex'] as String?,
+      imageUrl: data['imageUrl'] as String? ??
+          data['bannerImageUrl'] as String? ??
+          data['rightImageUrl'] as String? ??
+          '',
+      title: data['title'] as String? ?? '',
+      subtitle: data['subtitle'] as String? ??
+          data['highlightText'] as String? ??
+          data['dateText'] as String? ??
+          '',
+      actionCategory: data['actionCategory'] as String?,
+      sortOrder: data['sortOrder'] as int? ?? 0,
       isActive: data['isActive'] as bool? ?? true,
       updatedAt: _dateTimeFromValue(data['updatedAt']),
     );
@@ -75,32 +68,14 @@ class HomeBannerModel {
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
+      'imageUrl': imageUrl,
       'title': title,
-      'highlightText': highlightText,
-      'dateText': dateText,
-      'buttonText': buttonText,
-      'leftImageUrl': leftImageUrl,
-      'rightImageUrl': rightImageUrl,
-      'startColorHex': startColorHex,
-      'endColorHex': endColorHex,
+      'subtitle': subtitle,
+      'actionCategory': actionCategory,
+      'sortOrder': sortOrder,
       'isActive': isActive,
-      'updatedAt': updatedAt?.toIso8601String(),
+      'updatedAt': updatedAt == null ? FieldValue.serverTimestamp() : Timestamp.fromDate(updatedAt!),
     };
-  }
-
-  static HomeBannerModel defaultBanner() {
-    return const HomeBannerModel(
-      id: 'home_main',
-      title: 'Pet Winter Offer',
-      highlightText: '25% OFF',
-      dateText: 'Nov 16 - Dec 22',
-      buttonText: 'Shop Now',
-      leftImageUrl: '',
-      rightImageUrl: '',
-      startColorHex: null,
-      endColorHex: null,
-      isActive: true,
-    );
   }
 
   static DateTime? _dateTimeFromValue(dynamic value) {

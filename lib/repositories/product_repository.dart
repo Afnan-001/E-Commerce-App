@@ -6,7 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 abstract class ProductRepository {
   Future<List<ProductModel>> getCatalogProducts({String? category});
   Future<List<ProductModel>> getFeaturedProducts();
-  Future<HomeBannerModel?> getHomeBanner();
+  Future<List<HomeBannerModel>> getHomeBanners();
 }
 
 class FirebaseProductRepository implements ProductRepository {
@@ -65,16 +65,18 @@ class FirebaseProductRepository implements ProductRepository {
   }
 
   @override
-  Future<HomeBannerModel?> getHomeBanner() async {
+  Future<List<HomeBannerModel>> getHomeBanners() async {
     if (Firebase.apps.isEmpty) {
-      return null;
+      return const <HomeBannerModel>[];
     }
 
-    final doc = await _db.collection('banners').doc('home_main').get();
-    if (!doc.exists) {
-      return null;
-    }
+    final snapshot = await _db.collection('banners').get();
+    final banners = snapshot.docs
+        .map((doc) => HomeBannerModel.fromMap(doc.id, doc.data()))
+        .where((banner) => banner.imageUrl.trim().isNotEmpty && banner.isActive)
+        .toList()
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
-    return HomeBannerModel.fromMap(doc.id, doc.data() ?? <String, dynamic>{});
+    return banners;
   }
 }

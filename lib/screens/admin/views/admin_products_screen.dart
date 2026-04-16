@@ -103,6 +103,10 @@ class AdminProductsScreen extends StatelessWidget {
                                   Text(
                                     'Stock: ${product.stockQuantity} | ${product.isActive ? 'Active' : 'Hidden'}',
                                   ),
+                                  const SizedBox(height: defaultPadding / 4),
+                                  Text(
+                                    'Featured: ${product.isFeatured ? 'Yes' : 'No'} | Best Seller: ${product.isPopular ? 'Yes' : 'No'} | New Arrival: ${product.isNewArrival ? 'Yes' : 'No'}',
+                                  ),
                                 ],
                               ),
                             ),

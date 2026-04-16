@@ -20,9 +20,11 @@ abstract class AdminRepository {
   Future<void> updateOrderStatus(String orderId, OrderStatus status);
   Future<String> uploadProductImage(XFile file);
   Future<String> uploadCategoryImage(XFile file);
+  Future<String> uploadBannerImage(XFile file);
   Future<Map<String, String>> uploadCategoryAssets(List<String> assetPaths);
-  Future<HomeBannerModel?> getHomeBanner();
+  Future<List<HomeBannerModel>> getHomeBanners();
   Future<void> saveHomeBanner(HomeBannerModel banner);
+  Future<void> deleteHomeBanner(String bannerId);
 }
 
 class FirestoreAdminRepository implements AdminRepository {
@@ -171,6 +173,11 @@ class FirestoreAdminRepository implements AdminRepository {
   }
 
   @override
+  Future<String> uploadBannerImage(XFile file) {
+    return _cloudinaryService.uploadBannerImage(file);
+  }
+
+  @override
   Future<Map<String, String>> uploadCategoryAssets(
     List<String> assetPaths,
   ) async {
@@ -185,23 +192,32 @@ class FirestoreAdminRepository implements AdminRepository {
   }
 
   @override
-  Future<HomeBannerModel?> getHomeBanner() async {
-    if (!_isReady) return null;
-    final doc = await _db.collection('banners').doc('home_main').get();
-    if (!doc.exists) {
-      return null;
-    }
-    return HomeBannerModel.fromMap(doc.id, doc.data() ?? <String, dynamic>{});
+  Future<List<HomeBannerModel>> getHomeBanners() async {
+    if (!_isReady) return const <HomeBannerModel>[];
+
+    final snapshot = await _db.collection('banners').get();
+    final banners = snapshot.docs
+        .map((doc) => HomeBannerModel.fromMap(doc.id, doc.data()))
+        .where((banner) => banner.imageUrl.trim().isNotEmpty)
+        .toList()
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    return banners;
   }
 
   @override
   Future<void> saveHomeBanner(HomeBannerModel banner) async {
     _ensureReady();
-    final payload = banner.copyWith(id: 'home_main', updatedAt: DateTime.now());
-    await _db
-        .collection('banners')
-        .doc('home_main')
-        .set(payload.toMap(), SetOptions(merge: true));
+    final docRef = banner.id.trim().isEmpty
+        ? _db.collection('banners').doc()
+        : _db.collection('banners').doc(banner.id);
+    final payload = banner.copyWith(id: docRef.id, updatedAt: DateTime.now());
+    await docRef.set(payload.toMap(), SetOptions(merge: true));
+  }
+
+  @override
+  Future<void> deleteHomeBanner(String bannerId) async {
+    _ensureReady();
+    await _db.collection('banners').doc(bannerId).delete();
   }
 
   void _ensureReady() {

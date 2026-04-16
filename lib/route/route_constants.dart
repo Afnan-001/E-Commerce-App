@@ -24,6 +24,7 @@ const String brandScreenRoute = "brand";
 const String discoverWithImageScreenRoute = "discover_with_image";
 const String subDiscoverScreenRoute = "sub_discover";
 const String discoverScreenRoute = "discover";
+const String categoryProductsScreenRoute = "category_products";
 const String onSaleScreenRoute = "on_sale";
 const String kidsScreenRoute = "kids";
 const String searchScreenRoute = "search";

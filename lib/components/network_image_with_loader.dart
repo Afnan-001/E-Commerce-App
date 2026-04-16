@@ -38,6 +38,7 @@ class NetworkImageWithLoader extends StatelessWidget {
         child: Image.asset(
           src,
           fit: fit,
+          filterQuality: FilterQuality.high,
           errorBuilder: (context, error, stackTrace) => Container(
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -57,14 +58,7 @@ class NetworkImageWithLoader extends StatelessWidget {
       child: CachedNetworkImage(
         fit: fit,
         imageUrl: src,
-        imageBuilder: (context, imageProvider) => Container(
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: imageProvider,
-              fit: fit,
-            ),
-          ),
-        ),
+        filterQuality: FilterQuality.high,
         placeholder: (context, url) => const Skeleton(),
         errorWidget: (context, url, error) => const Icon(Icons.error),
       ),

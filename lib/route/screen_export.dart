@@ -14,6 +14,7 @@ export '/screens/admin/views/admin_product_form_screen.dart';
 export '/screens/admin/views/admin_products_screen.dart';
 export '/screens/admin/views/admin_home_banner_screen.dart';
 export '/screens/discover/views/discover_screen.dart';
+export '/screens/discover/views/category_products_screen.dart';
 export '/screens/home/views/home_screen.dart';
 export '/screens/product/views/product_details_screen.dart';
 

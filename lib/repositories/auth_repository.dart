@@ -35,8 +35,6 @@ abstract class AuthRepository {
   Future<void> sendPasswordResetEmail(String email);
   Future<AppUserModel> updateProfile({
     required String name,
-    required String email,
-    required String phoneNumber,
   });
   Future<void> signOut();
 }
@@ -259,8 +257,6 @@ class FirebaseAuthRepository implements AuthRepository {
   @override
   Future<AppUserModel> updateProfile({
     required String name,
-    required String email,
-    required String phoneNumber,
   }) async {
     _ensureReady();
     final user = _auth.currentUser;
@@ -269,15 +265,13 @@ class FirebaseAuthRepository implements AuthRepository {
     }
 
     final trimmedName = name.trim();
-    final trimmedEmail = email.trim();
-    final trimmedPhone = phoneNumber.trim();
 
     await user.updateDisplayName(trimmedName);
     await _db.collection('users').doc(user.uid).set(<String, dynamic>{
       'uid': user.uid,
-      'email': trimmedEmail,
+      'email': user.email ?? '',
       'name': trimmedName,
-      'phoneNumber': trimmedPhone.isEmpty ? null : trimmedPhone,
+      'phoneNumber': user.phoneNumber,
       'updatedAt': DateTime.now().toIso8601String(),
     }, SetOptions(merge: true));
 

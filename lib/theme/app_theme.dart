@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shop/theme/button_theme.dart';
 import 'package:shop/theme/input_decoration_theme.dart';
 
@@ -10,10 +9,14 @@ import 'theme_data.dart';
 class AppTheme {
   static ThemeData lightTheme() {
     final baseTheme = ThemeData.light();
-    final baseTextTheme = baseTheme.textTheme;
+    final baseTextTheme = baseTheme.textTheme.apply(
+      fontFamily: 'Plus Jakarta',
+      bodyColor: blackColor,
+      displayColor: blackColor,
+    );
     return ThemeData(
       brightness: Brightness.light,
-      fontFamily: GoogleFonts.nunito().fontFamily,
+      fontFamily: 'Plus Jakarta',
       primarySwatch: primaryMaterialColor,
       primaryColor: primaryColor,
       scaffoldBackgroundColor: Colors.white,
@@ -25,15 +28,72 @@ class AppTheme {
         brightness: Brightness.light,
         surface: Colors.white,
       ),
-      textTheme: GoogleFonts.nunitoTextTheme(
-        baseTextTheme,
-      ).copyWith(
-        bodyLarge: GoogleFonts.nunito(color: blackColor),
-        bodyMedium: GoogleFonts.nunito(color: blackColor80),
-        bodySmall: GoogleFonts.nunito(color: blackColor60),
-        titleMedium: GoogleFonts.nunito(
+      textTheme: baseTextTheme.copyWith(
+        displayLarge: baseTextTheme.displayLarge?.copyWith(
+          fontSize: 32,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -1.2,
+        ),
+        displayMedium: baseTextTheme.displayMedium?.copyWith(
+          fontSize: 28,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -1.0,
+        ),
+        headlineMedium: baseTextTheme.headlineMedium?.copyWith(
+          fontSize: 24,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.8,
+        ),
+        headlineSmall: baseTextTheme.headlineSmall?.copyWith(
+          fontSize: 20,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.6,
+        ),
+        titleLarge: baseTextTheme.titleLarge?.copyWith(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.3,
+        ),
+        titleMedium: baseTextTheme.titleMedium?.copyWith(
+          fontSize: 16,
           color: blackColor,
           fontWeight: FontWeight.w700,
+          letterSpacing: -0.2,
+        ),
+        titleSmall: baseTextTheme.titleSmall?.copyWith(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0,
+        ),
+        bodyLarge: baseTextTheme.bodyLarge?.copyWith(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: blackColor,
+        ),
+        bodyMedium: baseTextTheme.bodyMedium?.copyWith(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: blackColor80,
+        ),
+        bodySmall: baseTextTheme.bodySmall?.copyWith(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: blackColor60,
+        ),
+        labelLarge: baseTextTheme.labelLarge?.copyWith(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.1,
+        ),
+        labelMedium: baseTextTheme.labelMedium?.copyWith(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.05,
+        ),
+        labelSmall: baseTextTheme.labelSmall?.copyWith(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.02,
         ),
       ),
       elevatedButtonTheme: elevatedButtonThemeData,
@@ -51,10 +111,14 @@ class AppTheme {
 
   static ThemeData darkTheme() {
     final baseTheme = ThemeData.dark();
-    final baseTextTheme = baseTheme.textTheme;
+    final baseTextTheme = baseTheme.textTheme.apply(
+      fontFamily: 'Plus Jakarta',
+      bodyColor: Colors.white,
+      displayColor: Colors.white,
+    );
     return ThemeData(
       brightness: Brightness.dark,
-      fontFamily: GoogleFonts.nunito().fontFamily,
+      fontFamily: 'Plus Jakarta',
       primarySwatch: primaryMaterialColor,
       primaryColor: primaryColor,
       scaffoldBackgroundColor: const Color(0xFF0F1117),
@@ -66,15 +130,72 @@ class AppTheme {
         brightness: Brightness.dark,
         surface: const Color(0xFF171A22),
       ),
-      textTheme: GoogleFonts.nunitoTextTheme(
-        baseTextTheme,
-      ).copyWith(
-        bodyLarge: GoogleFonts.nunito(color: Colors.white),
-        bodyMedium: GoogleFonts.nunito(color: whileColor80),
-        bodySmall: GoogleFonts.nunito(color: whileColor60),
-        titleMedium: GoogleFonts.nunito(
+      textTheme: baseTextTheme.copyWith(
+        displayLarge: baseTextTheme.displayLarge?.copyWith(
+          fontSize: 32,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -1.2,
+        ),
+        displayMedium: baseTextTheme.displayMedium?.copyWith(
+          fontSize: 28,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -1.0,
+        ),
+        headlineMedium: baseTextTheme.headlineMedium?.copyWith(
+          fontSize: 24,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.8,
+        ),
+        headlineSmall: baseTextTheme.headlineSmall?.copyWith(
+          fontSize: 20,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.6,
+        ),
+        titleLarge: baseTextTheme.titleLarge?.copyWith(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.3,
+        ),
+        titleMedium: baseTextTheme.titleMedium?.copyWith(
+          fontSize: 16,
           color: Colors.white,
           fontWeight: FontWeight.w700,
+          letterSpacing: -0.2,
+        ),
+        titleSmall: baseTextTheme.titleSmall?.copyWith(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0,
+        ),
+        bodyLarge: baseTextTheme.bodyLarge?.copyWith(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+        bodyMedium: baseTextTheme.bodyMedium?.copyWith(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: whileColor80,
+        ),
+        bodySmall: baseTextTheme.bodySmall?.copyWith(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: whileColor60,
+        ),
+        labelLarge: baseTextTheme.labelLarge?.copyWith(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.1,
+        ),
+        labelMedium: baseTextTheme.labelMedium?.copyWith(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.05,
+        ),
+        labelSmall: baseTextTheme.labelSmall?.copyWith(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.02,
         ),
       ),
       elevatedButtonTheme: elevatedButtonThemeData,

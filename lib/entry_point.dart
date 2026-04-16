@@ -21,8 +21,8 @@ class _EntryPointState extends State<EntryPoint> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
-    final cartProvider = context.watch<CartProvider>();
+    context.watch<AuthProvider>();
+    context.watch<CartProvider>();
 
     SvgPicture svgIcon(String src, {Color? color}) {
       return SvgPicture.asset(
@@ -43,8 +43,11 @@ class _EntryPointState extends State<EntryPoint> {
     final pages = <Widget>[
       HomeScreen(
         onOpenDiscover: () => _openDiscover(),
-        onOpenCategory: (categoryTitle) =>
-            _openDiscover(categoryTitle: categoryTitle),
+        onOpenCategory: (categoryTitle) => Navigator.pushNamed(
+          context,
+          categoryProductsScreenRoute,
+          arguments: categoryTitle,
+        ),
       ),
       DiscoverScreen(
         initialCategoryTitle: _discoverCategoryTitle,
@@ -55,94 +58,15 @@ class _EntryPointState extends State<EntryPoint> {
     ];
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
+      extendBody: true,
       appBar: AppBar(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         leading: const SizedBox(),
         leadingWidth: 0,
         centerTitle: false,
-        title: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
-                borderRadius: const BorderRadius.all(Radius.circular(12)),
-                border: Border.all(
-                  color: Theme.of(context).dividerColor.withValues(alpha: 0.9),
-                ),
-              ),
-              child: Image.asset(
-                'assets/logo/petsworld_logo.png',
-                fit: BoxFit.contain,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              "PetsWorld",
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
-        actions: [
-          if (authProvider.isAdmin)
-            IconButton(
-              onPressed: () {
-                Navigator.pushNamed(context, adminDashboardScreenRoute);
-              },
-              icon: SvgPicture.asset(
-                "assets/icons/Setting.svg",
-                height: 24,
-                colorFilter: ColorFilter.mode(
-                  Theme.of(context).textTheme.bodyLarge!.color!,
-                  BlendMode.srcIn,
-                ),
-              ),
-            ),
-          Stack(
-            children: [
-              IconButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, cartScreenRoute);
-                },
-                icon: SvgPicture.asset(
-                  "assets/icons/Bag.svg",
-                  height: 24,
-                  colorFilter: ColorFilter.mode(
-                    Theme.of(context).textTheme.bodyLarge!.color!,
-                    BlendMode.srcIn,
-                  ),
-                ),
-              ),
-              if (cartProvider.totalItems > 0)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: const BoxDecoration(
-                      color: errorColor,
-                      borderRadius: BorderRadius.all(Radius.circular(999)),
-                    ),
-                    child: Text(
-                      '${cartProvider.totalItems}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
+        title: _BrandHeader(currentIndex: _currentIndex),
+        actions: const [SizedBox(width: 6)],
       ),
       body: PageTransitionSwitcher(
         duration: defaultDuration,
@@ -156,104 +80,128 @@ class _EntryPointState extends State<EntryPoint> {
         child: pages[_currentIndex],
       ),
       bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(
-          defaultPadding,
-          defaultPadding / 2,
-          defaultPadding,
-          defaultPadding / 2,
+        minimum: const EdgeInsets.only(
+          left: defaultPadding,
+          right: defaultPadding,
+          bottom: 12,
+          top: 0,
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: const Color(0xCC0F1116),
-            borderRadius: const BorderRadius.all(Radius.circular(28)),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-          ),
-          child: ClipRRect(
-            borderRadius: const BorderRadius.all(Radius.circular(28)),
-            child: NavigationBarTheme(
-              data: NavigationBarThemeData(
-                backgroundColor: Colors.transparent,
-                indicatorColor: const Color(0xFFF1A208),
-                iconTheme: WidgetStateProperty.resolveWith((states) {
-                  final selected = states.contains(WidgetState.selected);
-                  return IconThemeData(
-                    color: selected ? Colors.white : Colors.white70,
-                  );
-                }),
-                labelTextStyle: WidgetStateProperty.resolveWith((states) {
-                  final selected = states.contains(WidgetState.selected);
-                  return TextStyle(
-                    color: selected ? Colors.white : Colors.white70,
-                    fontSize: 12,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  );
-                }),
-              ),
-              child: NavigationBar(
-                selectedIndex: _currentIndex,
-                onDestinationSelected: (index) {
-                  if (index != _currentIndex) {
-                    setState(() {
-                      _currentIndex = index;
-                      if (index == 1) {
-                        _discoverCategoryTitle = null;
-                        _discoverFilterSeed++;
-                      }
-                    });
-                  }
-                },
-                height: 66,
-                labelBehavior:
-                    NavigationDestinationLabelBehavior.alwaysShow,
-                destinations: [
-                  NavigationDestination(
-                    icon: svgIcon(
-                      "assets/icons/Shop.svg",
-                      color: Colors.white70,
-                    ),
-                    selectedIcon: svgIcon(
-                      "assets/icons/Shop.svg",
-                      color: Colors.white,
-                    ),
-                    label: "Shop",
-                  ),
-                  NavigationDestination(
-                    icon: svgIcon(
-                      "assets/icons/Category.svg",
-                      color: Colors.white70,
-                    ),
-                    selectedIcon: svgIcon(
-                      "assets/icons/Category.svg",
-                      color: Colors.white,
-                    ),
-                    label: "Discover",
-                  ),
-                  NavigationDestination(
-                    icon: svgIcon(
-                      "assets/icons/Bookmark.svg",
-                      color: Colors.white70,
-                    ),
-                    selectedIcon: svgIcon(
-                      "assets/icons/Bookmark.svg",
-                      color: Colors.white,
-                    ),
-                    label: "Saved",
-                  ),
-                  NavigationDestination(
-                    icon: svgIcon(
-                      "assets/icons/Profile.svg",
-                      color: Colors.white70,
-                    ),
-                    selectedIcon: svgIcon(
-                      "assets/icons/Profile.svg",
-                      color: Colors.white,
-                    ),
-                    label: "Profile",
+        child: Builder(
+          builder: (context) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF1F2328)
+                    : Colors.white,
+                borderRadius: const BorderRadius.all(Radius.circular(24)),
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark
+                        ? Colors.black.withValues(alpha: 0.5)
+                        : Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
                   ),
                 ],
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.black.withValues(alpha: 0.05),
+                  width: 1,
+                ),
               ),
-            ),
-          ),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.all(Radius.circular(20)),
+                child: NavigationBarTheme(
+                  data: NavigationBarThemeData(
+                    backgroundColor: Colors.transparent,
+                    indicatorColor: const Color(0xFFF0A500),
+                    iconTheme: WidgetStateProperty.resolveWith((states) {
+                      final selected = states.contains(WidgetState.selected);
+                      return IconThemeData(
+                        color: selected ? const Color(0xFF1F2328) : (isDark ? Colors.white70 : Colors.black54),
+                      );
+                    }),
+                    labelTextStyle: WidgetStateProperty.resolveWith((states) {
+                      final selected = states.contains(WidgetState.selected);
+                      return TextStyle(
+                        color: selected
+                            ? (isDark ? Colors.white : const Color(0xFF1F2328))
+                            : (isDark ? Colors.white70 : Colors.black54),
+                        fontSize: 12,
+                        fontFamily: 'Plus Jakarta',
+                        fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                      );
+                    }),
+                  ),
+                  child: NavigationBar(
+                    selectedIndex: _currentIndex,
+                    onDestinationSelected: (index) {
+                      if (index != _currentIndex) {
+                        setState(() {
+                          _currentIndex = index;
+                          if (index == 1) {
+                            _discoverCategoryTitle = null;
+                            _discoverFilterSeed++;
+                          }
+                        });
+                      }
+                    },
+                    height: 56,
+                    labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                    destinations: [
+                      NavigationDestination(
+                        icon: svgIcon(
+                          "assets/icons/Shop.svg",
+                          color: isDark ? Colors.white70 : Colors.black54,
+                        ),
+                        selectedIcon: svgIcon(
+                          "assets/icons/Shop.svg",
+                          color: Colors.white,
+                        ),
+                        label: "Shop",
+                      ),
+                      NavigationDestination(
+                        icon: svgIcon(
+                          "assets/icons/Category.svg",
+                          color: isDark ? Colors.white70 : Colors.black54,
+                        ),
+                        selectedIcon: svgIcon(
+                          "assets/icons/Category.svg",
+                          color: Colors.white,
+                        ),
+                        label: "Discover",
+                      ),
+                      NavigationDestination(
+                        icon: svgIcon(
+                          "assets/icons/Bookmark.svg",
+                          color: isDark ? Colors.white70 : Colors.black54,
+                        ),
+                        selectedIcon: svgIcon(
+                          "assets/icons/Bookmark.svg",
+                          color: Colors.white,
+                        ),
+                        label: "Saved",
+                      ),
+                      NavigationDestination(
+                        icon: svgIcon(
+                          "assets/icons/Profile.svg",
+                          color: isDark ? Colors.white70 : Colors.black54,
+                        ),
+                        selectedIcon: svgIcon(
+                          "assets/icons/Profile.svg",
+                          color: Colors.white,
+                        ),
+                        label: "Profile",
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
         ),
       ),
     );
@@ -265,5 +213,61 @@ class _EntryPointState extends State<EntryPoint> {
       _discoverCategoryTitle = categoryTitle;
       _discoverFilterSeed++;
     });
+  }
+}
+
+class _BrandHeader extends StatelessWidget {
+  const _BrandHeader({required this.currentIndex});
+
+  final int currentIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    final subtitles = <String>[
+      'Wellness curated for playful paws',
+      'Browse care by category',
+      'Your saved essentials',
+      'Profile and preferences',
+    ];
+    return Row(
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: const BorderRadius.all(Radius.circular(14)),
+            border: Border.all(
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.9),
+            ),
+          ),
+          child: Image.asset(
+            'assets/logo/petsworld_logo.png',
+            fit: BoxFit.contain,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "PetsWorld",
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              Text(
+                subtitles[currentIndex],
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }

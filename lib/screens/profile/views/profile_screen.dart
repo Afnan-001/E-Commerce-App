@@ -106,14 +106,6 @@ class ProfileScreen extends StatelessWidget {
                 title: 'Cart',
                 iconPath: 'assets/icons/Bag.svg',
                 onTap: () => Navigator.pushNamed(context, cartScreenRoute),
-              ),
-              _ActionTile(
-                title: 'Change password',
-                iconPath: 'assets/icons/Lock.svg',
-                onTap: () => Navigator.pushNamed(
-                  context,
-                  passwordRecoveryScreenRoute,
-                ),
                 isLast: true,
               ),
             ],

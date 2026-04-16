@@ -61,12 +61,12 @@ class AuthShell extends StatelessWidget {
                           padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
                           decoration: BoxDecoration(
                             color: isDark
-                                ? Colors.white.withValues(alpha: 0.08)
+                                ? const Color(0xFF141B26).withValues(alpha: 0.92)
                                 : Colors.white.withValues(alpha: 0.78),
                             borderRadius: BorderRadius.circular(32),
                             border: Border.all(
                               color: isDark
-                                  ? Colors.white.withValues(alpha: 0.12)
+                                  ? Colors.white.withValues(alpha: 0.08)
                                   : const Color(0xFFD6CBB8),
                             ),
                             boxShadow: [
@@ -195,7 +195,9 @@ class _Header extends StatelessWidget {
         Text(
           subtitle,
           style: theme.textTheme.bodyLarge?.copyWith(
-            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.9),
+            color: theme.textTheme.bodyMedium?.color?.withValues(
+              alpha: isDark ? 0.94 : 0.9,
+            ),
             height: 1.5,
           ),
         ),

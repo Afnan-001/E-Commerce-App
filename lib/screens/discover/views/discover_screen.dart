@@ -376,30 +376,22 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                 label,
                 preferredPetType: _currentTabIndex == 0 ? 'dogs' : 'cats',
               );
-              final isSelected =
-                  _selectedCategoryTitle?.toLowerCase() == label.toLowerCase();
 
-              return DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.all(Radius.circular(18)),
-                  border: isSelected
-                      ? Border.all(color: primaryColor, width: 1.5)
-                      : null,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(2),
-                  child: CategoryTile(
-                    label: label,
-                    imageUrl: (matchedCategory?.image ?? '').trim().isNotEmpty
-                        ? matchedCategory?.image
-                        : matchedCategory?.svgSrc,
-                    size: 80,
-                    onTap: () {
-                      setState(() {
-                        _selectedCategoryTitle = label;
-                      });
-                    },
-                  ),
+              return Padding(
+                padding: const EdgeInsets.all(2),
+                child: CategoryTile(
+                  label: label,
+                  imageUrl: (matchedCategory?.image ?? '').trim().isNotEmpty
+                      ? matchedCategory?.image
+                      : matchedCategory?.svgSrc,
+                  size: 80,
+                  onTap: () {
+                    Navigator.pushNamed(
+                      context,
+                      categoryProductsScreenRoute,
+                      arguments: label,
+                    );
+                  },
                 ),
               );
             }, childCount: section.categories.length),

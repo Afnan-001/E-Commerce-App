@@ -8,6 +8,7 @@ class ProductModel {
     required this.name,
     required this.price,
     required this.imageUrl,
+    this.imageUrls = const <String>[],
     this.description = '',
     this.category = '',
     this.brandName = '',
@@ -17,6 +18,7 @@ class ProductModel {
     this.isActive = true,
     this.isFeatured = false,
     this.isPopular = false,
+    this.isNewArrival = false,
     this.createdAt,
     this.updatedAt,
   });
@@ -30,15 +32,31 @@ class ProductModel {
   final double? salePrice;
   final int? discountPercent;
   final String imageUrl;
+  final List<String> imageUrls;
   final int stockQuantity;
   final bool isActive;
   final bool isFeatured;
   final bool isPopular;
+  final bool isNewArrival;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
   String get title => name;
   String get image => imageUrl;
+  List<String> get galleryImages {
+    final images = <String>[];
+    if (imageUrl.trim().isNotEmpty) {
+      images.add(imageUrl.trim());
+    }
+    for (final item in imageUrls) {
+      final normalized = item.trim();
+      if (normalized.isEmpty || images.contains(normalized)) {
+        continue;
+      }
+      images.add(normalized);
+    }
+    return images;
+  }
   String get categoryId => category;
   String get categoryName => category;
   double? get priceAfetDiscount => salePrice;
@@ -55,10 +73,12 @@ class ProductModel {
     double? salePrice,
     int? discountPercent,
     String? imageUrl,
+    List<String>? imageUrls,
     int? stockQuantity,
     bool? isActive,
     bool? isFeatured,
     bool? isPopular,
+    bool? isNewArrival,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -72,10 +92,12 @@ class ProductModel {
       salePrice: salePrice ?? this.salePrice,
       discountPercent: discountPercent ?? this.discountPercent,
       imageUrl: imageUrl ?? this.imageUrl,
+      imageUrls: imageUrls ?? this.imageUrls,
       stockQuantity: stockQuantity ?? this.stockQuantity,
       isActive: isActive ?? this.isActive,
       isFeatured: isFeatured ?? this.isFeatured,
       isPopular: isPopular ?? this.isPopular,
+      isNewArrival: isNewArrival ?? this.isNewArrival,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -84,6 +106,12 @@ class ProductModel {
   factory ProductModel.fromMap(String id, Map<String, dynamic> data) {
     final basePrice = (data['price'] as num?)?.toDouble() ?? 0;
     final parsedSalePrice = (data['salePrice'] as num?)?.toDouble();
+    final parsedImageUrls = ((data['imageUrls'] as List<dynamic>?) ?? const <dynamic>[])
+        .whereType<String>()
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList();
+    final primaryImage = (data['imageUrl'] as String? ?? '').trim();
     return ProductModel(
       id: id,
       name: data['name'] as String? ?? '',
@@ -96,11 +124,15 @@ class ProductModel {
       discountPercent:
           data['discountPercent'] as int? ??
           _discountFromPrices(basePrice, parsedSalePrice),
-      imageUrl: data['imageUrl'] as String? ?? '',
+      imageUrl: primaryImage.isNotEmpty
+          ? primaryImage
+          : (parsedImageUrls.isNotEmpty ? parsedImageUrls.first : ''),
+      imageUrls: parsedImageUrls,
       stockQuantity: data['stockQuantity'] as int? ?? 0,
       isActive: data['isActive'] as bool? ?? true,
       isFeatured: data['isFeatured'] as bool? ?? false,
       isPopular: data['isPopular'] as bool? ?? false,
+      isNewArrival: data['isNewArrival'] as bool? ?? false,
       createdAt: _dateTimeFromValue(data['createdAt']),
       updatedAt: _dateTimeFromValue(data['updatedAt']),
     );
@@ -116,10 +148,12 @@ class ProductModel {
       'salePrice': salePrice,
       'discountPercent': discountPercent,
       'imageUrl': imageUrl,
+      'imageUrls': galleryImages,
       'stockQuantity': stockQuantity,
       'isActive': isActive,
       'isFeatured': isFeatured,
       'isPopular': isPopular,
+      'isNewArrival': isNewArrival,
       'createdAt': createdAt == null ? null : Timestamp.fromDate(createdAt!),
       'updatedAt': updatedAt == null ? null : Timestamp.fromDate(updatedAt!),
     };

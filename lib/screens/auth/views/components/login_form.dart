@@ -58,14 +58,14 @@ class LogInForm extends StatelessWidget {
   }) {
     final isDark = theme.brightness == Brightness.dark;
     final borderColor = isDark
-        ? Colors.white.withValues(alpha: 0.12)
+        ? const Color(0xFF2B3445)
         : const Color(0xFFD9D0C2);
 
     return InputDecoration(
       hintText: hintText,
       filled: true,
       fillColor: isDark
-          ? Colors.white.withValues(alpha: 0.05)
+          ? const Color(0xFF101722)
           : const Color(0xFFFFFCF7),
       contentPadding: const EdgeInsets.symmetric(
         horizontal: 18,
@@ -88,7 +88,10 @@ class LogInForm extends StatelessWidget {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(22),
-        borderSide: const BorderSide(color: Color(0xFF18392F), width: 1.5),
+        borderSide: BorderSide(
+          color: isDark ? const Color(0xFFF6C667) : const Color(0xFF18392F),
+          width: 1.5,
+        ),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(22),

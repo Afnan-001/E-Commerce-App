@@ -24,7 +24,7 @@ class ProductProvider extends ChangeNotifier {
   String? _errorMessage;
   List<ProductModel> _catalogProducts = const <ProductModel>[];
   List<ProductModel> _featuredProducts = const <ProductModel>[];
-  HomeBannerModel _homeBanner = HomeBannerModel.defaultBanner();
+  List<HomeBannerModel> _homeBanners = const <HomeBannerModel>[];
   static const List<CategoryModel> _fallbackCategories = <CategoryModel>[
     CategoryModel(id: 'Dog', title: 'Dog'),
     CategoryModel(id: 'Cat', title: 'Cat'),
@@ -39,7 +39,7 @@ class ProductProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   List<ProductModel> get catalogProducts => _catalogProducts;
   List<ProductModel> get featuredProducts => _featuredProducts;
-  HomeBannerModel get homeBanner => _homeBanner;
+  List<HomeBannerModel> get homeBanners => _homeBanners;
   List<ProductModel> get popularProducts =>
       _catalogProducts.where((product) => product.isPopular).toList();
   List<ProductModel> get flashSaleProducts => _catalogProducts
@@ -51,25 +51,9 @@ class ProductProvider extends ChangeNotifier {
       .toList();
   List<ProductModel> get bestSellerProducts => popularProducts;
   List<ProductModel> get mostPopularProducts => popularProducts;
-  List<ProductModel> get newArrivals {
-    final indexedProducts = _catalogProducts.indexed.toList();
-    indexedProducts.sort((a, b) {
-      final aDate = a.$2.createdAt;
-      final bDate = b.$2.createdAt;
-      if (aDate == null && bDate == null) {
-        return a.$1.compareTo(b.$1);
-      }
-      if (aDate == null) {
-        return 1;
-      }
-      if (bDate == null) {
-        return -1;
-      }
-      return bDate.compareTo(aDate);
-    });
-
-    return indexedProducts.map((entry) => entry.$2).take(6).toList();
-  }
+  List<ProductModel> get newArrivals => _catalogProducts
+      .where((product) => product.isNewArrival)
+      .toList();
 
   List<ProductModel> get bookmarkedProducts => _catalogProducts
       .where((product) => _bookmarkedProductIds.contains(product.id))
@@ -159,17 +143,16 @@ class ProductProvider extends ChangeNotifier {
       final results = await Future.wait<dynamic>(<Future<dynamic>>[
         _productRepository.getCatalogProducts(),
         _productRepository.getFeaturedProducts(),
-        _productRepository.getHomeBanner(),
+        _productRepository.getHomeBanners(),
         _categoryRepository.getDiscoverCategories(),
       ]);
 
       _catalogProducts = results[0] as List<ProductModel>;
       _featuredProducts = results[1] as List<ProductModel>;
-      final loadedBanner = results[2] as HomeBannerModel?;
+      final loadedBanners = results[2] as List<HomeBannerModel>;
       final loadedCategories = results[3] as List<CategoryModel>;
-      _homeBanner = (loadedBanner == null || !loadedBanner.isActive)
-          ? HomeBannerModel.defaultBanner()
-          : loadedBanner;
+      _homeBanners =
+          loadedBanners.where((banner) => banner.isActive).toList();
       _discoverCategories = loadedCategories.isEmpty
           ? _fallbackCategories
           : loadedCategories;

@@ -97,6 +97,13 @@ Route<dynamic> generateRoute(RouteSettings settings) {
       return MaterialPageRoute(builder: (context) => const HomeScreen());
     case discoverScreenRoute:
       return MaterialPageRoute(builder: (context) => const DiscoverScreen());
+    case categoryProductsScreenRoute:
+      return MaterialPageRoute(
+        builder: (context) {
+          final categoryTitle = settings.arguments as String? ?? '';
+          return CategoryProductsScreen(categoryTitle: categoryTitle);
+        },
+      );
     case searchScreenRoute:
       return MaterialPageRoute(builder: (context) => const SearchScreen());
     case bookmarkScreenRoute:

@@ -32,10 +32,12 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
   late final TextEditingController _stockController;
 
   String? _imageUrl;
+  late List<String> _galleryImageUrls;
   String? _selectedMajorCategoryId;
   String? _selectedSubCategoryId;
   bool _isFeatured = false;
   bool _isPopular = false;
+  bool _isNewArrival = false;
   bool _isActive = true;
   bool _useCustomCategory = false;
 
@@ -61,8 +63,10 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
       text: product != null ? product.stockQuantity.toString() : '0',
     );
     _imageUrl = product?.imageUrl;
+    _galleryImageUrls = product?.galleryImages.toList() ?? <String>[];
     _isFeatured = product?.isFeatured ?? false;
     _isPopular = product?.isPopular ?? false;
+    _isNewArrival = product?.isNewArrival ?? false;
     _isActive = product?.isActive ?? true;
     _useCustomCategory = false;
   }
@@ -80,6 +84,15 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
   }
 
   Future<void> _pickAndUploadImage() async {
+    if (_galleryImageUrls.length >= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You can upload up to 5 product images only.'),
+        ),
+      );
+      return;
+    }
+
     final file = await _picker.pickImage(
       source: ImageSource.gallery,
       imageQuality: 85,
@@ -91,7 +104,11 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
     if (!mounted || imageUrl == null || imageUrl.isEmpty) return;
 
     setState(() {
-      _imageUrl = imageUrl;
+      _galleryImageUrls = <String>[
+        ..._galleryImageUrls,
+        imageUrl,
+      ];
+      _imageUrl = _galleryImageUrls.first;
     });
   }
 
@@ -147,7 +164,7 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Product image',
+                'Product images',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const SizedBox(height: defaultPadding / 2),
@@ -167,14 +184,107 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
                   child: NetworkImageWithLoader(_imageUrl ?? ''),
                 ),
               ),
+              if (_galleryImageUrls.isNotEmpty) ...[
+                const SizedBox(height: defaultPadding / 2),
+                SizedBox(
+                  height: 78,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _galleryImageUrls.length,
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(width: defaultPadding / 2),
+                    itemBuilder: (context, index) {
+                      final image = _galleryImageUrls[index];
+                      final isPrimary = index == 0;
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _galleryImageUrls = <String>[
+                                  image,
+                                  ..._galleryImageUrls.where(
+                                    (item) => item != image,
+                                  ),
+                                ];
+                                _imageUrl = _galleryImageUrls.first;
+                              });
+                            },
+                            child: Container(
+                              width: 78,
+                              decoration: BoxDecoration(
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(16),
+                                ),
+                                border: Border.all(
+                                  color: isPrimary
+                                      ? primaryColor
+                                      : Theme.of(context).dividerColor,
+                                  width: isPrimary ? 2 : 1,
+                                ),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(16),
+                                ),
+                                child: NetworkImageWithLoader(image),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: -6,
+                            right: -6,
+                            child: InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _galleryImageUrls = _galleryImageUrls
+                                      .where((item) => item != image)
+                                      .toList();
+                                  _imageUrl = _galleryImageUrls.isEmpty
+                                      ? null
+                                      : _galleryImageUrls.first;
+                                });
+                              },
+                              borderRadius: const BorderRadius.all(
+                                Radius.circular(999),
+                              ),
+                              child: Container(
+                                width: 24,
+                                height: 24,
+                                decoration: const BoxDecoration(
+                                  color: errorColor,
+                                  borderRadius: BorderRadius.all(
+                                    Radius.circular(999),
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.close_rounded,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ],
               const SizedBox(height: defaultPadding / 2),
               OutlinedButton(
                 onPressed: adminProvider.isSaving ? null : _pickAndUploadImage,
                 child: Text(
                   adminProvider.isSaving
                       ? 'Uploading...'
-                      : 'Upload from gallery',
+                      : 'Upload from gallery (${_galleryImageUrls.length}/5)',
                 ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'The first image is used as the main product photo.',
+                style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: defaultPadding),
               TextFormField(
@@ -443,6 +553,19 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
+                value: _isNewArrival,
+                title: const Text('Show in New Arrivals'),
+                subtitle: const Text(
+                  'Turn this on only for products you want in the home section.',
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _isNewArrival = value;
+                  });
+                },
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
                 value: _isActive,
                 title: const Text('Show product in catalog'),
                 onChanged: (value) {
@@ -471,7 +594,7 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
                         if ((_imageUrl ?? '').trim().isEmpty) {
                           messenger.showSnackBar(
                             const SnackBar(
-                              content: Text('Upload a product image first.'),
+                              content: Text('Upload at least one product image first.'),
                             ),
                           );
                           return;
@@ -515,12 +638,14 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
                           salePrice: salePrice,
                           discountPercent: discountPercent,
                           imageUrl: _imageUrl!.trim(),
+                          imageUrls: _galleryImageUrls,
                           stockQuantity: int.parse(
                             _stockController.text.trim(),
                           ),
                           isActive: _isActive,
                           isFeatured: _isFeatured,
                           isPopular: _isPopular,
+                          isNewArrival: _isNewArrival,
                           createdAt: widget.product?.createdAt,
                           updatedAt: widget.product?.updatedAt,
                         );

@@ -21,6 +21,13 @@ class CloudinaryService {
     );
   }
 
+  Future<String> uploadBannerImage(XFile file) async {
+    return uploadImageFile(
+      file,
+      folder: '${CloudinaryConfig.uploadFolder}/home_banners',
+    );
+  }
+
   Future<String> uploadAssetCategoryImage(String assetPath) async {
     final byteData = await rootBundle.load(assetPath);
     final bytes = byteData.buffer.asUint8List();
