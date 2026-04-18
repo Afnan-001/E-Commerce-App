@@ -28,6 +28,8 @@ class _AdminCategoryFormScreenState extends State<AdminCategoryFormScreen> {
   String? _selectedParentId;
   bool _isUploadingImage = false;
 
+  static const String _noParentValue = '__no_parent__';
+
   @override
   void initState() {
     super.initState();
@@ -119,26 +121,52 @@ class _AdminCategoryFormScreenState extends State<AdminCategoryFormScreen> {
               ),
               const SizedBox(height: defaultPadding),
               DropdownButtonFormField<String?>(
-                initialValue: _selectedParentId,
+                initialValue: _selectedParentId ?? _noParentValue,
+                isExpanded: true,
                 decoration: const InputDecoration(
                   labelText: 'Major category',
                   hintText: 'No parent = major category (Dogs/Cats)',
                 ),
                 items: [
                   const DropdownMenuItem<String?>(
-                    value: null,
+                    value: _noParentValue,
                     child: Text('No parent (major category)'),
                   ),
                   ...parentOptions.map(
                     (parent) => DropdownMenuItem<String?>(
                       value: parent.id,
-                      child: Text(parent.title),
+                      child: Text(
+                        parent.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                 ],
+                selectedItemBuilder: (context) {
+                  final labels = <String>[
+                    'No parent (major category)',
+                    ...parentOptions.map((parent) => parent.title),
+                  ];
+                  return labels
+                      .map(
+                        (label) => Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      )
+                      .toList();
+                },
                 onChanged: (value) {
                   setState(() {
-                    _selectedParentId = value;
+                    _selectedParentId =
+                        value == null || value == _noParentValue
+                        ? null
+                        : value;
                   });
                 },
               ),
@@ -146,8 +174,8 @@ class _AdminCategoryFormScreenState extends State<AdminCategoryFormScreen> {
               TextFormField(
                 controller: _imageController,
                 decoration: const InputDecoration(
-                  labelText: 'Category image URL (Cloudinary or asset path)',
-                  hintText: 'https://res.cloudinary.com/...',
+                  labelText: 'Category image URL',
+                  hintText: 'Paste an image link or upload one below',
                 ),
                 onChanged: (_) => setState(() {}),
               ),
@@ -167,11 +195,26 @@ class _AdminCategoryFormScreenState extends State<AdminCategoryFormScreen> {
                       : const Icon(Icons.upload_rounded),
                   label: Text(
                     _isUploadingImage
-                        ? 'Uploading to Cloudinary...'
-                        : 'Select image and upload to Cloudinary',
+                        ? 'Uploading image...'
+                        : 'Select image',
                   ),
                 ),
               ),
+              if (_imageController.text.trim().isNotEmpty) ...[
+                const SizedBox(height: defaultPadding / 2),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _imageController.clear();
+                      });
+                    },
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('Remove image'),
+                  ),
+                ),
+              ],
               const SizedBox(height: defaultPadding / 2),
               Container(
                 height: 96,

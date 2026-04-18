@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shop/models/product_option_model.dart';
 
 @immutable
 class ProductModel {
@@ -15,6 +16,7 @@ class ProductModel {
     this.salePrice,
     this.discountPercent,
     this.stockQuantity = 0,
+    this.packOptions = const <ProductOptionModel>[],
     this.isActive = true,
     this.isFeatured = false,
     this.isPopular = false,
@@ -34,6 +36,7 @@ class ProductModel {
   final String imageUrl;
   final List<String> imageUrls;
   final int stockQuantity;
+  final List<ProductOptionModel> packOptions;
   final bool isActive;
   final bool isFeatured;
   final bool isPopular;
@@ -62,6 +65,20 @@ class ProductModel {
   double? get priceAfetDiscount => salePrice;
   int? get dicountpercent => discountPercent;
   bool get hasDiscount => salePrice != null && salePrice! < price;
+  bool get hasPackOptions => packOptions.isNotEmpty;
+  ProductOptionModel? get defaultPackOption {
+    if (packOptions.isEmpty) return null;
+    for (final option in packOptions) {
+      if (option.isDefault) {
+        return option;
+      }
+    }
+    return packOptions.first;
+  }
+  int get totalPackStock => packOptions.fold<int>(
+    0,
+    (total, option) => total + option.stockQuantity,
+  );
 
   ProductModel copyWith({
     String? id,
@@ -75,6 +92,7 @@ class ProductModel {
     String? imageUrl,
     List<String>? imageUrls,
     int? stockQuantity,
+    List<ProductOptionModel>? packOptions,
     bool? isActive,
     bool? isFeatured,
     bool? isPopular,
@@ -94,6 +112,7 @@ class ProductModel {
       imageUrl: imageUrl ?? this.imageUrl,
       imageUrls: imageUrls ?? this.imageUrls,
       stockQuantity: stockQuantity ?? this.stockQuantity,
+      packOptions: packOptions ?? this.packOptions,
       isActive: isActive ?? this.isActive,
       isFeatured: isFeatured ?? this.isFeatured,
       isPopular: isPopular ?? this.isPopular,
@@ -111,6 +130,14 @@ class ProductModel {
         .map((item) => item.trim())
         .where((item) => item.isNotEmpty)
         .toList();
+    final parsedPackOptions =
+        ((data['packOptions'] as List<dynamic>?) ?? const <dynamic>[])
+            .whereType<Map>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .map(ProductOptionModel.fromMap)
+            .where((item) => item.label.trim().isNotEmpty)
+            .toList();
+    final primaryPack = _resolvePrimaryPack(parsedPackOptions);
     final primaryImage = (data['imageUrl'] as String? ?? '').trim();
     return ProductModel(
       id: id,
@@ -119,16 +146,19 @@ class ProductModel {
           data['category'] as String? ?? data['categoryName'] as String? ?? '',
       brandName: data['brandName'] as String? ?? '',
       description: data['description'] as String? ?? '',
-      price: basePrice,
-      salePrice: parsedSalePrice,
+      price: primaryPack?.price ?? basePrice,
+      salePrice: primaryPack?.salePrice ?? parsedSalePrice,
       discountPercent:
+          primaryPack?.discountPercent ??
           data['discountPercent'] as int? ??
           _discountFromPrices(basePrice, parsedSalePrice),
       imageUrl: primaryImage.isNotEmpty
           ? primaryImage
           : (parsedImageUrls.isNotEmpty ? parsedImageUrls.first : ''),
       imageUrls: parsedImageUrls,
-      stockQuantity: data['stockQuantity'] as int? ?? 0,
+      stockQuantity:
+          primaryPack?.stockQuantity ?? data['stockQuantity'] as int? ?? 0,
+      packOptions: parsedPackOptions,
       isActive: data['isActive'] as bool? ?? true,
       isFeatured: data['isFeatured'] as bool? ?? false,
       isPopular: data['isPopular'] as bool? ?? false,
@@ -139,17 +169,22 @@ class ProductModel {
   }
 
   Map<String, dynamic> toMap() {
+    final primaryPack = _resolvePrimaryPack(packOptions);
     return <String, dynamic>{
       'name': name,
       'brandName': brandName,
       'description': description,
       'category': category,
-      'price': price,
-      'salePrice': salePrice,
-      'discountPercent': discountPercent,
+      'price': primaryPack?.price ?? price,
+      'salePrice': primaryPack?.salePrice ?? salePrice,
+      'discountPercent':
+          primaryPack?.discountPercent ??
+          discountPercent ??
+          _discountFromPrices(primaryPack?.price ?? price, primaryPack?.salePrice ?? salePrice),
       'imageUrl': imageUrl,
       'imageUrls': galleryImages,
-      'stockQuantity': stockQuantity,
+      'stockQuantity': primaryPack?.stockQuantity ?? stockQuantity,
+      'packOptions': packOptions.map((item) => item.toMap()).toList(),
       'isActive': isActive,
       'isFeatured': isFeatured,
       'isPopular': isPopular,
@@ -178,5 +213,17 @@ class ProductModel {
     }
 
     return (((price - salePrice) / price) * 100).round();
+  }
+
+  static ProductOptionModel? _resolvePrimaryPack(
+    List<ProductOptionModel> packOptions,
+  ) {
+    if (packOptions.isEmpty) return null;
+    for (final option in packOptions) {
+      if (option.isDefault) {
+        return option;
+      }
+    }
+    return packOptions.first;
   }
 }

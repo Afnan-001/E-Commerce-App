@@ -19,7 +19,7 @@ class HomeBannerCard extends StatelessWidget {
         : const Color(0x40131A21);
 
     return AspectRatio(
-      aspectRatio: 1.92,
+      aspectRatio: 1.56,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -57,11 +57,11 @@ class HomeBannerCard extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                    top: 18,
-                    right: 18,
+                    top: 20,
+                    right: 20,
                     child: Container(
-                      width: 42,
-                      height: 42,
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.94),
                         borderRadius: const BorderRadius.all(
@@ -82,8 +82,8 @@ class HomeBannerCard extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                    left: 18,
-                    bottom: 18,
+                    left: 20,
+                    bottom: 20,
                     child: Container(
                       width: 74,
                       height: 6,

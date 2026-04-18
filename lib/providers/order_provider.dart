@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import 'package:shop/core/services/order_invoice_service.dart';
 import 'package:shop/core/services/pdf_invoice_service.dart';
 import 'package:shop/models/order_model.dart';
 import 'package:shop/repositories/order_repository.dart';
@@ -8,11 +9,16 @@ class OrderProvider extends ChangeNotifier {
   OrderProvider({
     required OrderRepository orderRepository,
     PdfInvoiceService? pdfInvoiceService,
+    OrderInvoiceService? orderInvoiceService,
   }) : _orderRepository = orderRepository,
-       _pdfInvoiceService = pdfInvoiceService ?? PdfInvoiceService();
+       _pdfInvoiceService = pdfInvoiceService ?? PdfInvoiceService(),
+       _orderInvoiceService =
+           orderInvoiceService ??
+           OrderInvoiceService(pdfInvoiceService: pdfInvoiceService);
 
   final OrderRepository _orderRepository;
   final PdfInvoiceService _pdfInvoiceService;
+  final OrderInvoiceService _orderInvoiceService;
 
   List<OrderModel> _orders = <OrderModel>[];
   bool _isLoading = false;
@@ -118,6 +124,45 @@ class OrderProvider extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  Future<bool> cancelOrder({
+    required String orderId,
+    required String userId,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _orderRepository.cancelOrder(orderId: orderId, userId: userId);
+      final index = _orders.indexWhere((order) => order.id == orderId);
+      if (index != -1) {
+        _orders[index] = _orders[index].copyWith(
+          orderStatus: OrderStatus.cancelled,
+        );
+      }
+      return true;
+    } catch (error) {
+      _errorMessage = error.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<OrderInvoiceResult?> saveInvoice(OrderModel order) async {
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      return await _orderInvoiceService.saveInvoice(order);
+    } catch (error) {
+      _errorMessage = error.toString();
+      notifyListeners();
+      return null;
+    }
   }
 }
 

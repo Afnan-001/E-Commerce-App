@@ -12,7 +12,7 @@ abstract class UserDataRepository {
   });
   Future<void> removeCartItem({
     required String userId,
-    required String productId,
+    required String cartItemId,
   });
   Future<void> clearCart(String userId);
 
@@ -65,16 +65,9 @@ class FirestoreUserDataRepository implements UserDataRepository {
     }
 
     final snapshot = await _cartCollection(userId).get();
-    return snapshot.docs.map((doc) {
-      final data = doc.data();
-      return CartItemModel(
-        product: ProductModel.fromMap(
-          data['productId'] as String? ?? doc.id,
-          Map<String, dynamic>.from(data['product'] as Map<String, dynamic>? ?? <String, dynamic>{}),
-        ),
-        quantity: data['quantity'] as int? ?? 1,
-      );
-    }).toList();
+    return snapshot.docs
+        .map((doc) => CartItemModel.fromMap(doc.data()))
+        .toList();
   }
 
   @override
@@ -90,13 +83,13 @@ class FirestoreUserDataRepository implements UserDataRepository {
   @override
   Future<void> removeCartItem({
     required String userId,
-    required String productId,
+    required String cartItemId,
   }) async {
-    if (!_isReady || userId.trim().isEmpty || productId.trim().isEmpty) {
+    if (!_isReady || userId.trim().isEmpty || cartItemId.trim().isEmpty) {
       return;
     }
 
-    await _cartCollection(userId).doc(productId).delete();
+    await _cartCollection(userId).doc(cartItemId).delete();
   }
 
   @override
@@ -135,11 +128,8 @@ class FirestoreUserDataRepository implements UserDataRepository {
       return;
     }
 
-    await _cartCollection(userId).doc(item.product.id).set(<String, dynamic>{
-      'productId': item.product.id,
-      'quantity': item.quantity,
-      'updatedAt': FieldValue.serverTimestamp(),
-      'product': item.product.toMap(),
-    });
+    final payload = item.toMap();
+    payload['updatedAt'] = FieldValue.serverTimestamp();
+    await _cartCollection(userId).doc(item.id).set(payload);
   }
 }

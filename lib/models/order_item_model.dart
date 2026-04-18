@@ -9,17 +9,26 @@ class OrderItemModel {
     required this.productName,
     required this.imageUrl,
     required this.productPrice,
+    this.originalProductPrice,
     required this.quantity,
+    this.selectedOptionId = '',
+    this.selectedOptionLabel = '',
   });
 
   final String productId;
   final String productName;
   final String imageUrl;
   final double productPrice;
+  final double? originalProductPrice;
   final int quantity;
+  final String selectedOptionId;
+  final String selectedOptionLabel;
 
-  String get name => productName;
+  String get name => selectedOptionLabel.trim().isEmpty
+      ? productName
+      : '$productName (${selectedOptionLabel.trim()})';
   double get unitPrice => productPrice;
+  double? get originalUnitPrice => originalProductPrice;
 
   double get lineTotal => productPrice * quantity;
 
@@ -29,7 +38,10 @@ class OrderItemModel {
       productName: item.product.name,
       imageUrl: item.product.imageUrl,
       productPrice: item.unitPrice,
+      originalProductPrice: item.originalUnitPrice,
       quantity: item.quantity,
+      selectedOptionId: item.selectedOptionId,
+      selectedOptionLabel: item.selectedOptionLabel,
     );
   }
 
@@ -43,7 +55,12 @@ class OrderItemModel {
           (data['productPrice'] as num?)?.toDouble() ??
           (data['unitPrice'] as num?)?.toDouble() ??
           0,
+      originalProductPrice:
+          (data['originalProductPrice'] as num?)?.toDouble() ??
+          (data['originalUnitPrice'] as num?)?.toDouble(),
       quantity: data['quantity'] as int? ?? 0,
+      selectedOptionId: data['selectedOptionId'] as String? ?? '',
+      selectedOptionLabel: data['selectedOptionLabel'] as String? ?? '',
     );
   }
 
@@ -53,9 +70,13 @@ class OrderItemModel {
       'productName': productName,
       'imageUrl': imageUrl,
       'productPrice': productPrice,
+      'originalProductPrice': originalProductPrice,
       'quantity': quantity,
+      'selectedOptionId': selectedOptionId,
+      'selectedOptionLabel': selectedOptionLabel,
       'name': productName,
       'unitPrice': productPrice,
+      'originalUnitPrice': originalProductPrice,
     };
   }
 }

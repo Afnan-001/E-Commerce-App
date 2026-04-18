@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import 'package:shop/models/cart_item_model.dart';
 import 'package:shop/models/product_model.dart';
+import 'package:shop/models/product_option_model.dart';
 import 'package:shop/repositories/user_data_repository.dart';
 
 class CartProvider extends ChangeNotifier {
@@ -56,20 +57,39 @@ class CartProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> addToCart(ProductModel product, {int quantity = 1}) async {
+  Future<bool> addToCart(
+    ProductModel product, {
+    required ProductOptionModel? selectedOption,
+    int quantity = 1,
+  }) async {
     if (_userId == null || _userId!.isEmpty) {
-      _errorMessage = 'Please log in to save cart items to Firestore.';
+      _errorMessage = 'Please log in to save items to your cart.';
       notifyListeners();
       return false;
     }
 
     _errorMessage = null;
     final previousItems = List<CartItemModel>.from(_items);
-    final existingIndex =
-        _items.indexWhere((item) => item.product.id == product.id);
+    final resolvedOption = selectedOption ?? product.defaultPackOption;
+    final optionId = resolvedOption?.id ?? '';
+    final optionLabel = resolvedOption?.label ?? '';
+    final unitPrice = resolvedOption?.effectivePrice ?? product.salePrice ?? product.price;
+    final originalUnitPrice = resolvedOption?.price ?? product.price;
+    final itemId =
+        '${product.id}::${optionId.trim().isEmpty ? 'default' : optionId.trim()}';
+    final existingIndex = _items.indexWhere((item) => item.id == itemId);
 
     if (existingIndex == -1) {
-      _items.add(CartItemModel(product: product, quantity: quantity));
+      _items.add(
+        CartItemModel(
+          product: product,
+          selectedOptionId: optionId,
+          selectedOptionLabel: optionLabel,
+          unitPrice: unitPrice,
+          originalUnitPrice: originalUnitPrice,
+          quantity: quantity,
+        ),
+      );
     } else {
       final existingItem = _items[existingIndex];
       _items[existingIndex] = existingItem.copyWith(
@@ -79,7 +99,7 @@ class CartProvider extends ChangeNotifier {
 
     notifyListeners();
     try {
-      await _persistProduct(product.id);
+      await _persistCartItem(itemId);
       return true;
     } catch (error) {
       _errorMessage = error.toString();
@@ -91,8 +111,8 @@ class CartProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateQuantity(String productId, int quantity) async {
-    final index = _items.indexWhere((item) => item.product.id == productId);
+  Future<bool> updateQuantity(String cartItemId, int quantity) async {
+    final index = _items.indexWhere((item) => item.id == cartItemId);
     if (index == -1) return false;
 
     _errorMessage = null;
@@ -105,7 +125,7 @@ class CartProvider extends ChangeNotifier {
 
     notifyListeners();
     try {
-      await _persistByProductId(productId);
+      await _persistCartItem(cartItemId);
       return true;
     } catch (error) {
       _errorMessage = error.toString();
@@ -117,16 +137,16 @@ class CartProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> removeFromCart(String productId) async {
+  Future<bool> removeFromCart(String cartItemId) async {
     _errorMessage = null;
     final previousItems = List<CartItemModel>.from(_items);
-    _items.removeWhere((item) => item.product.id == productId);
+    _items.removeWhere((item) => item.id == cartItemId);
     notifyListeners();
     try {
       if (_userId != null && _userId!.isNotEmpty) {
         await _userDataRepository.removeCartItem(
           userId: _userId!,
-          productId: productId,
+          cartItemId: cartItemId,
         );
       }
       return true;
@@ -160,27 +180,13 @@ class CartProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _persistProduct(String productId) async {
-    final index = _items.indexWhere((item) => item.product.id == productId);
-    if (index == -1) {
-      return;
-    }
-
-    if (_userId != null && _userId!.isNotEmpty) {
-      await _userDataRepository.upsertCartItem(
-        userId: _userId!,
-        item: _items[index],
-      );
-    }
-  }
-
-  Future<void> _persistByProductId(String productId) async {
-    final index = _items.indexWhere((item) => item.product.id == productId);
+  Future<void> _persistCartItem(String cartItemId) async {
+    final index = _items.indexWhere((item) => item.id == cartItemId);
     if (index == -1) {
       if (_userId != null && _userId!.isNotEmpty) {
         await _userDataRepository.removeCartItem(
           userId: _userId!,
-          productId: productId,
+          cartItemId: cartItemId,
         );
       }
       return;

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../constants.dart';
 
-class LogInForm extends StatelessWidget {
+class LogInForm extends StatefulWidget {
   const LogInForm({
     super.key,
     required this.formKey,
@@ -15,38 +15,64 @@ class LogInForm extends StatelessWidget {
   final TextEditingController passwordController;
 
   @override
+  State<LogInForm> createState() => _LogInFormState();
+}
+
+class _LogInFormState extends State<LogInForm> {
+  bool _obscurePassword = true;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Form(
-      key: formKey,
-      child: Column(
-        children: [
-          TextFormField(
-            controller: emailController,
-            validator: emaildValidator.call,
-            textInputAction: TextInputAction.next,
-            keyboardType: TextInputType.emailAddress,
-            autofillHints: const [AutofillHints.username, AutofillHints.email],
-            decoration: _buildDecoration(
-              theme,
-              hintText: "Email address",
-              icon: Icons.alternate_email_rounded,
+    return AutofillGroup(
+      child: Form(
+        key: widget.formKey,
+        child: Column(
+          children: [
+            _FieldLabel(title: 'Email'),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: widget.emailController,
+              validator: emaildValidator.call,
+              textInputAction: TextInputAction.next,
+              keyboardType: TextInputType.emailAddress,
+              autofillHints: const [
+                AutofillHints.username,
+                AutofillHints.email,
+              ],
+              decoration: _buildDecoration(
+                theme,
+                hintText: 'name@example.com',
+                icon: Icons.alternate_email_rounded,
+              ),
             ),
-          ),
-          const SizedBox(height: defaultPadding),
-          TextFormField(
-            controller: passwordController,
-            validator: passwordValidator.call,
-            obscureText: true,
-            autofillHints: const [AutofillHints.password],
-            decoration: _buildDecoration(
-              theme,
-              hintText: "Password",
-              icon: Icons.lock_outline_rounded,
+            const SizedBox(height: 16),
+            _FieldLabel(title: 'Password'),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: widget.passwordController,
+              validator: passwordValidator.call,
+              obscureText: _obscurePassword,
+              autofillHints: const [AutofillHints.password],
+              decoration: _buildDecoration(
+                theme,
+                hintText: 'Enter your password',
+                icon: Icons.lock_outline_rounded,
+                suffixIcon: IconButton(
+                  onPressed: () {
+                    setState(() => _obscurePassword = !_obscurePassword);
+                  },
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                  ),
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -55,6 +81,7 @@ class LogInForm extends StatelessWidget {
     ThemeData theme, {
     required String hintText,
     required IconData icon,
+    Widget? suffixIcon,
   }) {
     final isDark = theme.brightness == Brightness.dark;
     final borderColor = isDark
@@ -64,20 +91,13 @@ class LogInForm extends StatelessWidget {
     return InputDecoration(
       hintText: hintText,
       filled: true,
-      fillColor: isDark
-          ? const Color(0xFF101722)
-          : const Color(0xFFFFFCF7),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 18,
-        vertical: 18,
-      ),
+      fillColor: isDark ? const Color(0xFF101722) : const Color(0xFFFFFCF7),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
       hintStyle: TextStyle(
         color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.68),
       ),
-      prefixIcon: Icon(
-        icon,
-        color: const Color(0xFFB88917),
-      ),
+      prefixIcon: Icon(icon, color: const Color(0xFFB88917)),
+      suffixIcon: suffixIcon,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(22),
         borderSide: BorderSide(color: borderColor),
@@ -100,6 +120,26 @@ class LogInForm extends StatelessWidget {
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(22),
         borderSide: const BorderSide(color: errorColor, width: 1.5),
+      ),
+    );
+  }
+}
+
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w800,
+          color: Theme.of(context).textTheme.bodyLarge?.color,
+        ),
       ),
     );
   }

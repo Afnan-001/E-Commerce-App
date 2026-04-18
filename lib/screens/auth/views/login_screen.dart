@@ -84,17 +84,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return AuthShell(
       eyebrow: 'WELCOME BACK',
-      title: 'Sign in to your curated pet care world.',
-      subtitle:
-          'Track orders, manage grooming, and pick up where you left off with a calmer, faster checkout experience.',
+      title: 'Sign in to your account',
+      subtitle: 'Access your cart, saved products, and orders in one place.',
       footer: Center(
         child: Wrap(
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Text(
-              "Don't have an account? ",
-              style: theme.textTheme.bodyMedium,
-            ),
+            Text("Don't have an account? ", style: theme.textTheme.bodyMedium),
             TextButton(
               onPressed: () {
                 Navigator.pushNamed(context, signUpScreenRoute);
@@ -109,7 +105,8 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           _InfoStrip(
             icon: Icons.verified_user_outlined,
-            text: 'Email/password accounts require verification before first login.',
+            text:
+                'Email/password accounts require verification before first login.',
           ),
           const SizedBox(height: 20),
           LogInForm(
@@ -162,10 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
               onPressed: authProvider.isLoading
                   ? null
                   : () {
-                      Navigator.pushNamed(
-                        context,
-                        passwordRecoveryScreenRoute,
-                      );
+                      Navigator.pushNamed(context, passwordRecoveryScreenRoute);
                     },
               child: const Text('Forgot password?'),
             ),
@@ -189,19 +183,8 @@ class _LoginScreenState extends State<LoginScreen> {
       width: double.infinity,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF18392F), Color(0xFF2A6050), Color(0xFFF1A208)],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
+          color: const Color(0xFF1E242B),
           borderRadius: BorderRadius.circular(22),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF18392F).withValues(alpha: 0.25),
-              blurRadius: 24,
-              offset: const Offset(0, 12),
-            ),
-          ],
         ),
         child: ElevatedButton(
           onPressed: authProvider.isLoading ? null : () => _signIn(context),
@@ -283,10 +266,7 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 class _InfoStrip extends StatelessWidget {
-  const _InfoStrip({
-    required this.icon,
-    required this.text,
-  });
+  const _InfoStrip({required this.icon, required this.text});
 
   final IconData icon;
   final String text;
@@ -298,19 +278,19 @@ class _InfoStrip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : const Color(0xFFF8F2E5),
-        borderRadius: BorderRadius.circular(18),
+        color: isDark ? const Color(0xFF202733) : const Color(0xFFF6F6F2),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.10)
-              : const Color(0xFFE5D8BF),
+          color: isDark ? const Color(0xFF2A333F) : const Color(0xFFE7E7E1),
         ),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: const Color(0xFFB88917)),
+          Icon(
+            icon,
+            size: 18,
+            color: isDark ? Colors.white70 : const Color(0xFF5D646E),
+          ),
           const SizedBox(width: 10),
           Expanded(child: Text(text)),
         ],
@@ -333,32 +313,29 @@ class _AuthActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final foregroundColor = isDark ? Colors.white : const Color(0xFF18392F);
+    final foregroundColor = isDark ? Colors.white : const Color(0xFF20262D);
 
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           side: BorderSide(
-            color: isDark
-              ? Colors.white.withValues(alpha: 0.10)
-              : const Color(0xFFD9D0C2),
+            color: isDark ? const Color(0xFF313A47) : const Color(0xFFD9DAD6),
           ),
-          backgroundColor: isDark
-              ? Colors.white.withValues(alpha: 0.04)
-              : const Color(0xFFFFFCF7),
+          backgroundColor: isDark ? const Color(0xFF181E27) : Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
           ),
         ),
-        icon: Icon(icon, color: foregroundColor),
+        icon: Icon(icon, color: foregroundColor, size: 20),
         label: Text(
           label,
           style: TextStyle(
             fontFamily: 'Plus Jakarta',
             fontWeight: FontWeight.w600,
+            fontSize: 14,
             color: foregroundColor,
           ),
         ),

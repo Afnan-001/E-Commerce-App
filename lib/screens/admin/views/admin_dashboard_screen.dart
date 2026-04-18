@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shop/constants.dart';
 import 'package:shop/core/config/cloudinary_config.dart';
+import 'package:shop/core/config/payment_config.dart';
 import 'package:shop/models/order_model.dart';
 import 'package:shop/providers/admin_provider.dart';
 import 'package:shop/providers/auth_provider.dart';
@@ -22,7 +23,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_requestedLoad) return;
+    if (_requestedLoad) {
+      return;
+    }
+
     final authProvider = context.read<AuthProvider>();
     final adminProvider = context.read<AdminProvider>();
     if (!authProvider.isAdmin || adminProvider.hasLoadedData || adminProvider.isLoading) {
@@ -31,7 +35,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     _requestedLoad = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       context.read<AdminProvider>().loadAdminData();
     });
   }
@@ -56,361 +62,612 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       );
     }
 
-    final totalProducts = adminProvider.products.length;
-    final totalOrders = adminProvider.orders.length;
-    final pendingOrders = adminProvider.orders
-        .where(
-          (order) =>
-              order.orderStatus == OrderStatus.placed ||
-              order.orderStatus == OrderStatus.confirmed ||
-              order.orderStatus == OrderStatus.shipped,
-        )
-        .length;
-    final completedOrders = adminProvider.orders
-        .where(
-          (order) =>
-              order.orderStatus == OrderStatus.delivered ||
-              order.orderStatus == OrderStatus.cancelled,
-        )
-        .length;
-    final activeProducts = adminProvider.products
-        .where((product) => product.isActive)
-        .length;
-    final hiddenProducts = totalProducts - activeProducts;
-    final featuredProducts = adminProvider.products
-        .where((product) => product.isFeatured)
-        .length;
-    final activeBanners = adminProvider.homeBanners.where((item) => item.isActive).length;
-    final totalRevenue = adminProvider.orders.fold<double>(
+    if (adminProvider.isLoading && !adminProvider.hasLoadedData) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final products = adminProvider.products;
+    final orders = adminProvider.orders;
+    final categories = adminProvider.categories;
+    final banners = adminProvider.homeBanners;
+
+    final deliveredOrders = orders.where((order) => order.isDelivered).toList();
+    final cancelledOrders = orders.where((order) => order.isCancelled).toList();
+    final openOrders = orders.where((order) => !order.isCompleted).toList();
+    final deliveredRevenue = deliveredOrders.fold<double>(
       0,
       (sum, order) => sum + order.totalPrice,
     );
+    final outstandingRevenue = openOrders.fold<double>(
+      0,
+      (sum, order) => sum + order.totalPrice,
+    );
+    final averageDeliveredOrderValue = deliveredOrders.isEmpty
+        ? 0.0
+        : deliveredRevenue / deliveredOrders.length;
+    final featuredProducts = products.where((product) => product.isFeatured).length;
+    final activeProducts = products.where((product) => product.isActive).length;
+    final activeBanners = banners.where((banner) => banner.isActive).length;
 
-    final productByCategory = <String, int>{};
-    for (final product in adminProvider.products) {
-      final key = product.category.trim().isEmpty
-          ? 'Unassigned'
-          : product.category;
-      productByCategory[key] = (productByCategory[key] ?? 0) + 1;
+    final categoryBreakdown = <String, int>{};
+    for (final product in products) {
+      final key = product.category.trim().isEmpty ? 'Unassigned' : product.category.trim();
+      categoryBreakdown[key] = (categoryBreakdown[key] ?? 0) + 1;
     }
-
-    final chartEntries = productByCategory.entries.toList()
+    final categoryEntries = categoryBreakdown.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text('Admin panel'),
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        foregroundColor: Theme.of(context).textTheme.titleMedium?.color,
-      ),
-      body: RefreshIndicator(
-        onRefresh: () => context.read<AdminProvider>().loadAdminData(),
-        child: adminProvider.isLoading && !adminProvider.hasLoadedData
-            ? const Center(child: CircularProgressIndicator())
-            : ListView(
-                padding: const EdgeInsets.fromLTRB(
-                  defaultPadding,
-                  defaultPadding / 2,
-                  defaultPadding,
-                  defaultPadding * 1.5,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth >= 1180;
+        final isTablet = constraints.maxWidth >= 760;
+
+        return Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          appBar: isDesktop
+              ? null
+              : AppBar(
+                  title: const Text('Admin Dashboard'),
+                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                 ),
-                children: [
-                  _HeroHeader(
-                    totalOrders: totalOrders,
-                    totalRevenue: totalRevenue,
-                    pendingOrders: pendingOrders,
+          body: RefreshIndicator(
+            onRefresh: () => context.read<AdminProvider>().loadAdminData(),
+            child: isDesktop
+                ? Row(
+                    children: [
+                      const _AdminSidebar(),
+                      Expanded(
+                        child: _DashboardContent(
+                          isDesktop: true,
+                          isTablet: true,
+                          orders: orders,
+                          categoriesCount: categories.length,
+                          totalProducts: products.length,
+                          featuredProducts: featuredProducts,
+                          activeProducts: activeProducts,
+                          activeBanners: activeBanners,
+                          openOrders: openOrders.length,
+                          cancelledOrders: cancelledOrders.length,
+                          deliveredOrders: deliveredOrders.length,
+                          deliveredRevenue: deliveredRevenue,
+                          outstandingRevenue: outstandingRevenue,
+                          averageDeliveredOrderValue: averageDeliveredOrderValue,
+                          categoryEntries: categoryEntries,
+                          adminError: adminProvider.errorMessage,
+                        ),
+                      ),
+                    ],
+                  )
+                : _DashboardContent(
+                    isDesktop: false,
+                    isTablet: isTablet,
+                    orders: orders,
+                    categoriesCount: categories.length,
+                    totalProducts: products.length,
+                    featuredProducts: featuredProducts,
+                    activeProducts: activeProducts,
                     activeBanners: activeBanners,
+                    openOrders: openOrders.length,
+                    cancelledOrders: cancelledOrders.length,
+                    deliveredOrders: deliveredOrders.length,
+                    deliveredRevenue: deliveredRevenue,
+                    outstandingRevenue: outstandingRevenue,
+                    averageDeliveredOrderValue: averageDeliveredOrderValue,
+                    categoryEntries: categoryEntries,
+                    adminError: adminProvider.errorMessage,
                   ),
-                  const SizedBox(height: defaultPadding),
-                  GridView.count(
-                    crossAxisCount: 2,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisSpacing: defaultPadding,
-                    mainAxisSpacing: defaultPadding,
-                    childAspectRatio: 1.0,
-                    children: [
-                      _StatCard(
-                        label: 'Products',
-                        value: '$totalProducts',
-                        helper: '$activeProducts active',
-                        icon: Icons.inventory_2_outlined,
-                        accent: const Color(0xFF285943),
-                      ),
-                      _StatCard(
-                        label: 'Orders',
-                        value: '$totalOrders',
-                        helper: '$pendingOrders pending',
-                        icon: Icons.receipt_long_outlined,
-                        accent: const Color(0xFF7A4B32),
-                      ),
-                      _StatCard(
-                        label: 'Categories',
-                        value: '${adminProvider.categories.length}',
-                        helper: '$featuredProducts featured',
-                        icon: Icons.category_outlined,
-                        accent: const Color(0xFF3A5E9F),
-                      ),
-                      _StatCard(
-                        label: 'Cloudinary',
-                        value: CloudinaryConfig.isConfigured
-                            ? 'Ready'
-                            : 'Setup',
-                        helper: 'Shared shop uploads',
-                        icon: Icons.cloud_upload_outlined,
-                        accent: const Color(0xFF7A4BB7),
-                      ),
-                      _StatCard(
-                        label: 'Banners',
-                        value: '$activeBanners',
-                        helper: 'Live in carousel',
-                        icon: Icons.view_carousel_outlined,
-                        accent: const Color(0xFFCC8C2E),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: defaultPadding),
-                  _SectionCard(
-                    title: 'Order status',
-                    subtitle: 'Quick view of pending vs completed orders',
-                    child: Row(
-                      children: [
-                        _RingChart(
-                          pendingOrders: pendingOrders,
-                          completedOrders: completedOrders,
-                        ),
-                        const SizedBox(width: defaultPadding),
-                        Expanded(
-                          child: Column(
-                            children: [
-                              _LegendTile(
-                                color: const Color(0xFFEF8F5A),
-                                label: 'Pending',
-                                value: '$pendingOrders',
-                              ),
-                              const SizedBox(height: defaultPadding / 2),
-                              _LegendTile(
-                                color: const Color(0xFF3EA66B),
-                                label: 'Completed',
-                                value: '$completedOrders',
-                              ),
-                              const SizedBox(height: defaultPadding / 2),
-                              _LegendTile(
-                                color: const Color(0xFF7A4BB7),
-                                label: 'Total revenue',
-                                value: 'Rs ${totalRevenue.toStringAsFixed(0)}',
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DashboardContent extends StatelessWidget {
+  const _DashboardContent({
+    required this.isDesktop,
+    required this.isTablet,
+    required this.orders,
+    required this.categoriesCount,
+    required this.totalProducts,
+    required this.featuredProducts,
+    required this.activeProducts,
+    required this.activeBanners,
+    required this.openOrders,
+    required this.cancelledOrders,
+    required this.deliveredOrders,
+    required this.deliveredRevenue,
+    required this.outstandingRevenue,
+    required this.averageDeliveredOrderValue,
+    required this.categoryEntries,
+    required this.adminError,
+  });
+
+  final bool isDesktop;
+  final bool isTablet;
+  final List<OrderModel> orders;
+  final int categoriesCount;
+  final int totalProducts;
+  final int featuredProducts;
+  final int activeProducts;
+  final int activeBanners;
+  final int openOrders;
+  final int cancelledOrders;
+  final int deliveredOrders;
+  final double deliveredRevenue;
+  final double outstandingRevenue;
+  final double averageDeliveredOrderValue;
+  final List<MapEntry<String, int>> categoryEntries;
+  final String? adminError;
+
+  @override
+  Widget build(BuildContext context) {
+    final padding = isDesktop ? 28.0 : 18.0;
+    final recentOrders = orders.take(5).toList();
+    final statusCards = [
+      _MetricCard(
+        title: 'Delivered revenue',
+        value: 'Rs ${deliveredRevenue.toStringAsFixed(0)}',
+        helper: '$deliveredOrders delivered orders',
+        accent: _DashboardPalette.orange,
+        icon: Icons.payments_outlined,
+      ),
+      _MetricCard(
+        title: 'Open orders',
+        value: '$openOrders',
+        helper: 'Placed, confirmed, or shipped',
+        accent: _DashboardPalette.blue,
+        icon: Icons.local_shipping_outlined,
+      ),
+      _MetricCard(
+        title: 'Catalog',
+        value: '$totalProducts',
+        helper: '$activeProducts active, $featuredProducts featured',
+        accent: _DashboardPalette.green,
+        icon: Icons.inventory_2_outlined,
+      ),
+      _MetricCard(
+        title: 'Store setup',
+        value: '$categoriesCount categories',
+        helper: '$activeBanners live banners',
+        accent: _DashboardPalette.rose,
+        icon: Icons.storefront_outlined,
+      ),
+    ];
+
+    return ListView(
+      padding: EdgeInsets.fromLTRB(padding, padding, padding, 28),
+      children: [
+        _DashboardTopBar(isDesktop: isDesktop),
+        const SizedBox(height: 22),
+        if (!isDesktop) ...[
+          const _DashboardHeadline(),
+          const SizedBox(height: 18),
+        ],
+        _ResponsiveMetricGrid(cards: statusCards, isDesktop: isDesktop),
+        const SizedBox(height: 22),
+        isTablet
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 7,
+                    child: _RevenuePanel(
+                      deliveredRevenue: deliveredRevenue,
+                      outstandingRevenue: outstandingRevenue,
+                      averageDeliveredOrderValue: averageDeliveredOrderValue,
                     ),
                   ),
-                  const SizedBox(height: defaultPadding),
-                  _SectionCard(
-                    title: 'Catalog breakdown',
-                    subtitle: 'Products by category across the whole shop',
-                    child: chartEntries.isEmpty
-                        ? const _EmptyChartMessage(
-                            message:
-                                'Add products and category bars will appear here.',
-                          )
-                        : Column(
-                            children: chartEntries
-                                .map(
-                                  (entry) => Padding(
-                                    padding: const EdgeInsets.only(
-                                      bottom: defaultPadding * 0.75,
-                                    ),
-                                    child: _HorizontalBar(
-                                      label: entry.key,
-                                      value: entry.value,
-                                      total: totalProducts == 0
-                                          ? 1
-                                          : totalProducts,
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                  ),
-                  const SizedBox(height: defaultPadding),
-                  _SectionCard(
-                    title: 'Inventory mix',
-                    subtitle:
-                        'Track visible vs hidden products for the shared shop',
-                    child: Column(
-                      children: [
-                        _InventoryRow(
-                          label: 'Visible in store',
-                          value: activeProducts,
-                          color: const Color(0xFF285943),
-                        ),
-                        const SizedBox(height: defaultPadding / 2),
-                        _InventoryRow(
-                          label: 'Hidden from store',
-                          value: hiddenProducts,
-                          color: const Color(0xFFB05252),
-                        ),
-                        const SizedBox(height: defaultPadding / 2),
-                        _InventoryRow(
-                          label: 'Featured on home',
-                          value: featuredProducts,
-                          color: const Color(0xFF3A5E9F),
-                        ),
-                      ],
+                  const SizedBox(width: 16),
+                  Expanded(
+                    flex: 4,
+                    child: _OrderStatusPanel(
+                      openOrders: openOrders,
+                      deliveredOrders: deliveredOrders,
+                      cancelledOrders: cancelledOrders,
                     ),
                   ),
-                  const SizedBox(height: defaultPadding),
-                  _SectionCard(
-                    title: 'System status',
-                    subtitle: 'Single-shop setup health',
-                    child: Column(
-                      children: [
-                        _StatusTile(
-                          title: 'Firebase',
-                          message: adminProvider.errorMessage == null
-                              ? 'Firestore access is working for this admin account.'
-                              : adminProvider.errorMessage!,
-                          isHealthy: adminProvider.errorMessage == null,
-                        ),
-                        const SizedBox(height: defaultPadding / 2),
-                        _StatusTile(
-                          title: 'Cloudinary',
-                          message: CloudinaryConfig.isConfigured
-                              ? 'Cloudinary is configured for product image uploads.'
-                              : 'Add your cloud name and unsigned upload preset to enable uploads.',
-                          isHealthy: CloudinaryConfig.isConfigured,
-                        ),
-                      ],
-                    ),
+                ],
+              )
+            : Column(
+                children: [
+                  _RevenuePanel(
+                    deliveredRevenue: deliveredRevenue,
+                    outstandingRevenue: outstandingRevenue,
+                    averageDeliveredOrderValue: averageDeliveredOrderValue,
                   ),
-                  const SizedBox(height: defaultPadding),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.pushNamed(
-                              context,
-                              adminProductsScreenRoute,
-                            );
-                          },
-                          icon: const Icon(Icons.inventory_2_outlined),
-                          label: const Text('Products'),
-                        ),
-                      ),
-                      const SizedBox(width: defaultPadding),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.pushNamed(
-                              context,
-                              adminOrdersScreenRoute,
-                            );
-                          },
-                          icon: const Icon(Icons.receipt_long_outlined),
-                          label: const Text('Orders'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: defaultPadding / 2),
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.pushNamed(context, adminCategoriesScreenRoute);
-                    },
-                    icon: const Icon(Icons.category_outlined),
-                    label: const Text('Manage categories'),
-                  ),
-                  const SizedBox(height: defaultPadding / 2),
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.pushNamed(context, adminHomeBannerScreenRoute);
-                    },
-                    icon: const Icon(Icons.view_carousel_outlined),
-                    label: const Text('Manage home banners'),
+                  const SizedBox(height: 16),
+                  _OrderStatusPanel(
+                    openOrders: openOrders,
+                    deliveredOrders: deliveredOrders,
+                    cancelledOrders: cancelledOrders,
                   ),
                 ],
               ),
+        const SizedBox(height: 22),
+        isTablet
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 7,
+                    child: _RecentOrdersPanel(orders: recentOrders),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    flex: 4,
+                    child: _CategoryBreakdownPanel(entries: categoryEntries),
+                  ),
+                ],
+              )
+            : Column(
+                children: [
+                  _RecentOrdersPanel(orders: recentOrders),
+                  const SizedBox(height: 16),
+                  _CategoryBreakdownPanel(entries: categoryEntries),
+                ],
+              ),
+        const SizedBox(height: 22),
+        isTablet
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Expanded(child: _QuickActionsPanel()),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _SystemHealthPanel(adminError: adminError),
+                  ),
+                ],
+              )
+            : Column(
+                children: [
+                  const _QuickActionsPanel(),
+                  const SizedBox(height: 16),
+                  _SystemHealthPanel(adminError: adminError),
+                ],
+              ),
+      ],
+    );
+  }
+}
+
+class _AdminSidebar extends StatelessWidget {
+  const _AdminSidebar();
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      _SidebarItem(icon: Icons.dashboard_outlined, label: 'Dashboard', active: true),
+      _SidebarItem(
+        icon: Icons.receipt_long_outlined,
+        label: 'Orders',
+        onTap: () => Navigator.pushNamed(context, adminOrdersScreenRoute),
+      ),
+      _SidebarItem(
+        icon: Icons.inventory_2_outlined,
+        label: 'Products',
+        onTap: () => Navigator.pushNamed(context, adminProductsScreenRoute),
+      ),
+      _SidebarItem(
+        icon: Icons.category_outlined,
+        label: 'Categories',
+        onTap: () => Navigator.pushNamed(context, adminCategoriesScreenRoute),
+      ),
+      _SidebarItem(
+        icon: Icons.view_carousel_outlined,
+        label: 'Banners',
+        onTap: () => Navigator.pushNamed(context, adminHomeBannerScreenRoute),
+      ),
+    ];
+
+    return Container(
+      width: 252,
+      color: Theme.of(context).cardColor,
+      padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: _DashboardPalette.orange.withValues(alpha: 0.14),
+                  borderRadius: const BorderRadius.all(Radius.circular(14)),
+                ),
+                child: const Icon(Icons.pets, color: _DashboardPalette.orange),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'PetsWorld',
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.titleLarge?.color,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      fontFamily: grandisExtendedFont,
+                    ),
+                  ),
+                  Text(
+                    'Admin workspace',
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodySmall?.color,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 28),
+          const _DashboardHeadline(compact: true),
+          const SizedBox(height: 20),
+          ...items.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: item,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _HeroHeader extends StatelessWidget {
-  const _HeroHeader({
-    required this.totalOrders,
-    required this.totalRevenue,
-    required this.pendingOrders,
-    required this.activeBanners,
+class _DashboardHeadline extends StatelessWidget {
+  const _DashboardHeadline({this.compact = false});
+
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Store control room',
+          style: TextStyle(
+            color: Theme.of(context).textTheme.headlineSmall?.color,
+            fontSize: compact ? 20 : 28,
+            fontWeight: FontWeight.w800,
+            fontFamily: grandisExtendedFont,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Track fulfilled revenue, watch active orders, and keep the pet catalog healthy.',
+          style: TextStyle(
+            color: Theme.of(context).textTheme.bodyMedium?.color,
+            height: 1.45,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DashboardTopBar extends StatelessWidget {
+  const _DashboardTopBar({required this.isDesktop});
+
+  final bool isDesktop;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      runSpacing: 12,
+      spacing: 12,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        if (isDesktop) const _DashboardHeadline(),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            Container(
+              constraints: const BoxConstraints(maxWidth: 340),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: const BorderRadius.all(Radius.circular(18)),
+                border: Border.all(color: Theme.of(context).dividerColor),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.search,
+                    color: Theme.of(context).textTheme.bodySmall?.color,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Search orders, products, categories',
+                      style: TextStyle(
+                        color: Theme.of(context).textTheme.bodySmall?.color,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.pushNamed(context, adminOrdersScreenRoute),
+              icon: const Icon(Icons.receipt_long_outlined),
+              label: const Text('Orders'),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ResponsiveMetricGrid extends StatelessWidget {
+  const _ResponsiveMetricGrid({
+    required this.cards,
+    required this.isDesktop,
   });
 
-  final int totalOrders;
-  final double totalRevenue;
-  final int pendingOrders;
-  final int activeBanners;
+  final List<Widget> cards;
+  final bool isDesktop;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final columns = width < 430
+        ? 1
+        : width >= 1180
+        ? 4
+        : width >= 820
+        ? 2
+        : 2;
+    final childAspectRatio = width < 430
+        ? 1.45
+        : width >= 820
+        ? 1.45
+        : 0.95;
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: cards.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: columns,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: isDesktop ? 1.15 : childAspectRatio,
+      ),
+      itemBuilder: (context, index) => cards[index],
+    );
+  }
+}
+
+class _MetricCard extends StatelessWidget {
+  const _MetricCard({
+    required this.title,
+    required this.value,
+    required this.helper,
+    required this.accent,
+    required this.icon,
+  });
+
+  final String title;
+  final String value;
+  final String helper;
+  final Color accent;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(defaultPadding),
-      decoration: const BoxDecoration(
-        borderRadius: BorderRadius.all(Radius.circular(24)),
-        gradient: LinearGradient(
-          colors: [Color(0xFF1B4332), Color(0xFF2D6A4F), Color(0xFF40916C)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: const BorderRadius.all(Radius.circular(24)),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.14),
+              borderRadius: const BorderRadius.all(Radius.circular(16)),
+            ),
+            child: Icon(icon, color: accent),
+          ),
+          const SizedBox(height: 16),
           Text(
-            'Single shop control room',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
+            value,
+            style: TextStyle(
+              color: Theme.of(context).textTheme.titleLarge?.color,
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              fontFamily: grandisExtendedFont,
             ),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Track shared catalog activity, order progress, and storefront health for every admin account.',
-            style: TextStyle(color: Colors.white70, height: 1.4),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              color: Theme.of(context).textTheme.titleMedium?.color,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              fontFamily: grandisExtendedFont,
+            ),
           ),
-          const SizedBox(height: defaultPadding),
+          const SizedBox(height: 6),
+          Text(
+            helper,
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodySmall?.color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RevenuePanel extends StatelessWidget {
+  const _RevenuePanel({
+    required this.deliveredRevenue,
+    required this.outstandingRevenue,
+    required this.averageDeliveredOrderValue,
+  });
+
+  final double deliveredRevenue;
+  final double outstandingRevenue;
+  final double averageDeliveredOrderValue;
+
+  @override
+  Widget build(BuildContext context) {
+    final series = [
+      deliveredRevenue * 0.46,
+      deliveredRevenue * 0.63,
+      deliveredRevenue * 0.58,
+      deliveredRevenue * 0.8,
+      deliveredRevenue * 0.74,
+      deliveredRevenue,
+    ];
+
+    return _Panel(
+      title: 'Revenue analytics',
+      subtitle: 'Only delivered orders contribute to revenue',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: 188,
+            child: CustomPaint(
+              painter: _RevenueChartPainter(values: series),
+              child: const SizedBox.expand(),
+            ),
+          ),
+          const SizedBox(height: 16),
           Wrap(
-            spacing: defaultPadding,
-            runSpacing: defaultPadding,
+            spacing: 12,
+            runSpacing: 12,
             children: [
-              SizedBox(
-                width: 132,
-                child: _HeroMetric(
-                  label: 'Revenue',
-                  value: 'Rs ${totalRevenue.toStringAsFixed(0)}',
-                ),
+              _MiniStat(
+                label: 'Delivered revenue',
+                value: 'Rs ${deliveredRevenue.toStringAsFixed(0)}',
+                color: _DashboardPalette.orange,
               ),
-              SizedBox(
-                width: 132,
-                child: _HeroMetric(
-                  label: 'Orders',
-                  value: '$totalOrders total',
-                ),
+              _MiniStat(
+                label: 'Open-order value',
+                value: 'Rs ${outstandingRevenue.toStringAsFixed(0)}',
+                color: _DashboardPalette.blue,
               ),
-              SizedBox(
-                width: 132,
-                child: _HeroMetric(
-                  label: 'Pending',
-                  value: '$pendingOrders open',
-                ),
-              ),
-              SizedBox(
-                width: 132,
-                child: _HeroMetric(
-                  label: 'Banners',
-                  value: '$activeBanners live',
-                ),
+              _MiniStat(
+                label: 'Avg delivered order',
+                value: 'Rs ${averageDeliveredOrderValue.toStringAsFixed(0)}',
+                color: _DashboardPalette.green,
               ),
             ],
           ),
@@ -420,122 +677,71 @@ class _HeroHeader extends StatelessWidget {
   }
 }
 
-class _HeroMetric extends StatelessWidget {
-  const _HeroMetric({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.14),
-        borderRadius: const BorderRadius.all(Radius.circular(16)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              fontSize: 16,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const SizedBox.shrink(),
-          Text(label, style: const TextStyle(color: Colors.white70)),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.helper,
-    required this.icon,
-    required this.accent,
+class _OrderStatusPanel extends StatelessWidget {
+  const _OrderStatusPanel({
+    required this.openOrders,
+    required this.deliveredOrders,
+    required this.cancelledOrders,
   });
 
-  final String label;
-  final String value;
-  final String helper;
-  final IconData icon;
-  final Color accent;
+  final int openOrders;
+  final int deliveredOrders;
+  final int cancelledOrders;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final titleColor = isDark ? Colors.white : const Color(0xFF1B1D22);
-    final subtitleColor = isDark
-        ? Colors.white.withValues(alpha: 0.86)
-        : const Color(0xFF505463);
-    final helperColor = isDark
-        ? Colors.white.withValues(alpha: 0.72)
-        : const Color(0xFF727788);
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: const BorderRadius.all(Radius.circular(22)),
-        border: Border.all(color: Theme.of(context).dividerColor),
-        boxShadow: isDark
-            ? const []
-            : const [
-                BoxShadow(
-                  color: Color(0x12000000),
-                  blurRadius: 18,
-                  offset: Offset(0, 8),
-                ),
-              ],
-      ),
+    return _Panel(
+      title: 'Order completion',
+      subtitle: 'See how many orders are active, delivered, or cancelled',
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.12),
-              borderRadius: const BorderRadius.all(Radius.circular(14)),
-            ),
-            child: Icon(icon, color: accent),
-          ),
-          const SizedBox(height: 8),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              value,
-              style: TextStyle(
-                color: titleColor,
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
-                height: 1.05,
+          SizedBox(
+            width: 170,
+            height: 170,
+            child: CustomPaint(
+              painter: _OrderStatusRingPainter(
+                openOrders: openOrders,
+                deliveredOrders: deliveredOrders,
+                cancelledOrders: cancelledOrders,
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${openOrders + deliveredOrders + cancelledOrders}',
+                      style: const TextStyle(
+                        color: _DashboardPalette.ink,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const Text(
+                      'total orders',
+                      style: TextStyle(color: _DashboardPalette.muted),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              color: subtitleColor,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            ),
+          const SizedBox(height: 18),
+          _LegendRow(
+            label: 'Open',
+            value: '$openOrders',
+            color: _DashboardPalette.blue,
           ),
-          const SizedBox(height: 2),
-          Text(
-            helper,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: helperColor, fontSize: 12),
+          const SizedBox(height: 10),
+          _LegendRow(
+            label: 'Delivered',
+            value: '$deliveredOrders',
+            color: _DashboardPalette.orange,
+          ),
+          const SizedBox(height: 10),
+          _LegendRow(
+            label: 'Cancelled',
+            value: '$cancelledOrders',
+            color: _DashboardPalette.rose,
           ),
         ],
       ),
@@ -543,8 +749,283 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({
+class _RecentOrdersPanel extends StatelessWidget {
+  const _RecentOrdersPanel({required this.orders});
+
+  final List<OrderModel> orders;
+
+  @override
+  Widget build(BuildContext context) {
+    return _Panel(
+      title: 'Recent orders',
+      subtitle: 'The latest orders entering your fulfillment pipeline',
+      child: Column(
+        children: [
+          Align(
+            alignment: Alignment.centerRight,
+            child: Consumer<AdminProvider>(
+              builder: (context, adminProvider, _) {
+                return TextButton.icon(
+                  onPressed: adminProvider.orders.isEmpty || adminProvider.isSaving
+                      ? null
+                      : () async {
+                          final result = await adminProvider.exportOrders();
+                          if (!context.mounted) {
+                            return;
+                          }
+                          final message = result == null
+                              ? adminProvider.errorMessage ??
+                                  'Unable to export orders.'
+                              : result.location == null
+                              ? 'Orders exported as ${result.fileName}.'
+                              : 'Orders exported to ${result.location}.';
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(message)),
+                          );
+                        },
+                  icon: const Icon(Icons.download_rounded),
+                  label: const Text('Export Excel'),
+                );
+              },
+            ),
+          ),
+          if (orders.isEmpty)
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'No recent orders yet.',
+                style: TextStyle(color: _DashboardPalette.muted),
+              ),
+            )
+          else
+            ...orders.map(
+              (order) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.7)
+                        : _DashboardPalette.softSurface,
+                    borderRadius: const BorderRadius.all(Radius.circular(16)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFFE7CC),
+                          borderRadius: BorderRadius.all(Radius.circular(14)),
+                        ),
+                        child: const Icon(
+                          Icons.receipt_long_outlined,
+                          color: _DashboardPalette.orange,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              order.customerName,
+                              style: TextStyle(
+                                color: Theme.of(context).textTheme.titleSmall?.color,
+                                fontWeight: FontWeight.w700,
+                                fontFamily: grandisExtendedFont,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Order #${order.id}',
+                              style: TextStyle(
+                                color: Theme.of(context).textTheme.bodySmall?.color,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        'Rs ${order.totalPrice.toStringAsFixed(0)}',
+                        style: TextStyle(
+                          color: Theme.of(context).textTheme.titleSmall?.color,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: grandisExtendedFont,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoryBreakdownPanel extends StatelessWidget {
+  const _CategoryBreakdownPanel({required this.entries});
+
+  final List<MapEntry<String, int>> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = entries.fold<int>(0, (sum, entry) => sum + entry.value);
+
+    return _Panel(
+      title: 'Top categories',
+      subtitle: 'Merchandising mix across the current catalog',
+      child: entries.isEmpty
+          ? const Text(
+              'Add products and category insights will appear here.',
+              style: TextStyle(color: _DashboardPalette.muted),
+            )
+          : Column(
+              children: entries.take(6).map((entry) {
+                final progress = total == 0 ? 0.0 : entry.value / total;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              entry.key,
+                              style: TextStyle(
+                                color: Theme.of(context).textTheme.titleSmall?.color,
+                                fontWeight: FontWeight.w700,
+                                fontFamily: grandisExtendedFont,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${entry.value}',
+                            style: TextStyle(
+                              color: Theme.of(context).textTheme.bodySmall?.color,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: const BorderRadius.all(Radius.circular(999)),
+                        child: LinearProgressIndicator(
+                          minHeight: 10,
+                          value: progress,
+                          backgroundColor: Theme.of(context).dividerColor,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            _DashboardPalette.orange,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+    );
+  }
+}
+
+class _QuickActionsPanel extends StatelessWidget {
+  const _QuickActionsPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    final actions = [
+      (
+        icon: Icons.inventory_2_outlined,
+        label: 'Manage products',
+        route: adminProductsScreenRoute,
+      ),
+      (
+        icon: Icons.receipt_long_outlined,
+        label: 'Review orders',
+        route: adminOrdersScreenRoute,
+      ),
+      (
+        icon: Icons.category_outlined,
+        label: 'Manage categories',
+        route: adminCategoriesScreenRoute,
+      ),
+      (
+        icon: Icons.view_carousel_outlined,
+        label: 'Edit banners',
+        route: adminHomeBannerScreenRoute,
+      ),
+    ];
+
+    return _Panel(
+      title: 'Quick actions',
+      subtitle: 'Jump straight into the most common admin tasks',
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: actions
+            .map(
+              (action) => SizedBox(
+                width: 220,
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.pushNamed(context, action.route),
+                  icon: Icon(action.icon),
+                  label: Text(action.label),
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+}
+
+class _SystemHealthPanel extends StatelessWidget {
+  const _SystemHealthPanel({required this.adminError});
+
+  final String? adminError;
+
+  @override
+  Widget build(BuildContext context) {
+    return _Panel(
+      title: 'System health',
+      subtitle: 'Configuration checks for the admin workspace',
+      child: Column(
+        children: [
+          _HealthTile(
+            title: 'Firebase',
+            description: adminError == null
+                ? 'Admin reads and writes are available for this account.'
+                : adminError!,
+            healthy: adminError == null,
+          ),
+          const SizedBox(height: 12),
+          _HealthTile(
+            title: 'Cloudinary',
+            description: CloudinaryConfig.isConfigured
+                ? 'Image uploads are configured.'
+                : 'Add your Cloudinary cloud name and unsigned upload preset.',
+            healthy: CloudinaryConfig.isConfigured,
+          ),
+          const SizedBox(height: 12),
+          _HealthTile(
+            title: 'Razorpay',
+            description: isRazorpayConfigured
+                ? 'Client-side checkout is configured and ready for a secure backend order endpoint.'
+                : 'Add RAZORPAY_KEY_ID and RAZORPAY_ORDER_CREATION_URL as dart-defines.',
+            healthy: isRazorpayConfigured,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Panel extends StatelessWidget {
+  const _Panel({
     required this.title,
     required this.subtitle,
     required this.child,
@@ -556,26 +1037,12 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final titleColor = isDark ? Colors.white : const Color(0xFF1B1D22);
-    final subtitleColor = isDark
-        ? Colors.white.withValues(alpha: 0.82)
-        : const Color(0xFF5A5F70);
     return Container(
-      padding: const EdgeInsets.all(defaultPadding),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: const BorderRadius.all(Radius.circular(24)),
         border: Border.all(color: Theme.of(context).dividerColor),
-        boxShadow: isDark
-            ? const []
-            : const [
-                BoxShadow(
-                  color: Color(0x10000000),
-                  blurRadius: 16,
-                  offset: Offset(0, 8),
-                ),
-              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -583,14 +1050,20 @@ class _SectionCard extends StatelessWidget {
           Text(
             title,
             style: TextStyle(
-              color: titleColor,
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
+              color: Theme.of(context).textTheme.titleLarge?.color,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              fontFamily: grandisExtendedFont,
             ),
           ),
           const SizedBox(height: 4),
-          Text(subtitle, style: TextStyle(color: subtitleColor, fontSize: 16)),
-          const SizedBox(height: defaultPadding),
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodyMedium?.color,
+            ),
+          ),
+          const SizedBox(height: 18),
           child,
         ],
       ),
@@ -598,48 +1071,43 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-class _RingChart extends StatelessWidget {
-  const _RingChart({
-    required this.pendingOrders,
-    required this.completedOrders,
+class _MiniStat extends StatelessWidget {
+  const _MiniStat({
+    required this.label,
+    required this.value,
+    required this.color,
   });
 
-  final int pendingOrders;
-  final int completedOrders;
+  final String label;
+  final String value;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final total = math.max(1, pendingOrders + completedOrders);
-    final completedSweep = completedOrders / total;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return SizedBox(
-      width: 116,
-      height: 116,
-      child: Stack(
-        alignment: Alignment.center,
+    return Container(
+      width: 188,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: const BorderRadius.all(Radius.circular(16)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TweenAnimationBuilder<double>(
-            tween: Tween<double>(begin: 0, end: completedSweep),
-            duration: const Duration(milliseconds: 700),
-            builder: (context, value, child) {
-              return CustomPaint(
-                size: const Size.square(116),
-                painter: _RingPainter(progress: value, isDark: isDark),
-              );
-            },
+          Text(
+            value,
+            style: TextStyle(
+              color: Theme.of(context).textTheme.titleSmall?.color,
+              fontWeight: FontWeight.w800,
+              fontFamily: grandisExtendedFont,
+            ),
           ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '$total',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const Text('orders'),
-            ],
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodySmall?.color,
+            ),
           ),
         ],
       ),
@@ -647,91 +1115,19 @@ class _RingChart extends StatelessWidget {
   }
 }
 
-class _RingPainter extends CustomPainter {
-  _RingPainter({required this.progress, required this.isDark});
-
-  final double progress;
-  final bool isDark;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const strokeWidth = 14.0;
-    final rect = Offset.zero & size;
-    final center = rect.center;
-    final radius = (size.width - strokeWidth) / 2;
-
-    final basePaint = Paint()
-      ..color = isDark ? const Color(0xFF2A3140) : const Color(0xFFECE7DB)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    final completedPaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [Color(0xFF3EA66B), Color(0xFF1B7F4B)],
-      ).createShader(rect)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    final pendingPaint = Paint()
-      ..color = const Color(0xFFEF8F5A)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawCircle(center, radius, basePaint);
-
-    final startAngle = -math.pi / 2;
-    final completedAngle = progress * 2 * math.pi;
-    final pendingAngle = (1 - progress) * 2 * math.pi;
-
-    if (completedAngle > 0.02) {
-      canvas.drawArc(
-        rect.deflate(strokeWidth / 2),
-        startAngle,
-        completedAngle,
-        false,
-        completedPaint,
-      );
-    }
-
-    if (pendingAngle > 0.02) {
-      canvas.drawArc(
-        rect.deflate(strokeWidth / 2),
-        startAngle + completedAngle,
-        pendingAngle,
-        false,
-        pendingPaint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _RingPainter oldDelegate) {
-    return oldDelegate.progress != progress || oldDelegate.isDark != isDark;
-  }
-}
-
-class _LegendTile extends StatelessWidget {
-  const _LegendTile({
-    required this.color,
+class _LegendRow extends StatelessWidget {
+  const _LegendRow({
     required this.label,
     required this.value,
+    required this.color,
   });
 
-  final Color color;
   final String label;
   final String value;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final valueColor = Theme.of(context).brightness == Brightness.dark
-        ? Colors.white
-        : const Color(0xFF22252E);
-    final labelColor = Theme.of(context).brightness == Brightness.dark
-        ? Colors.white.withValues(alpha: 0.88)
-        : const Color(0xFF4E5465);
     return Row(
       children: [
         Container(
@@ -744,60 +1140,19 @@ class _LegendTile extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: Text(label, style: TextStyle(color: labelColor)),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodySmall?.color,
+            ),
+          ),
         ),
         Text(
           value,
-          style: TextStyle(color: valueColor, fontWeight: FontWeight.w700),
-        ),
-      ],
-    );
-  }
-}
-
-class _HorizontalBar extends StatelessWidget {
-  const _HorizontalBar({
-    required this.label,
-    required this.value,
-    required this.total,
-  });
-
-  final String label;
-  final int value;
-  final int total;
-
-  @override
-  Widget build(BuildContext context) {
-    final progress = total == 0 ? 0.0 : value / total;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : const Color(0xFF2A2D36);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(color: textColor, fontWeight: FontWeight.w600),
-              ),
-            ),
-            Text(
-              '$value',
-              style: TextStyle(color: textColor, fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: const BorderRadius.all(Radius.circular(999)),
-          child: LinearProgressIndicator(
-            value: progress,
-            minHeight: 10,
-            backgroundColor: isDark
-                ? const Color(0xFF2A3140)
-                : const Color(0xFFECE7DB),
-            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF3A5E9F)),
+          style: TextStyle(
+            color: Theme.of(context).textTheme.titleSmall?.color,
+            fontWeight: FontWeight.w700,
+            fontFamily: grandisExtendedFont,
           ),
         ),
       ],
@@ -805,86 +1160,35 @@ class _HorizontalBar extends StatelessWidget {
   }
 }
 
-class _InventoryRow extends StatelessWidget {
-  const _InventoryRow({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  final String label;
-  final int value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final textColor = Theme.of(context).brightness == Brightness.dark
-        ? Colors.white
-        : const Color(0xFF2A2D36);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: const BorderRadius.all(Radius.circular(16)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: const BorderRadius.all(Radius.circular(999)),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(label, style: TextStyle(color: textColor)),
-          ),
-          Text(
-            '$value',
-            style: TextStyle(color: textColor, fontWeight: FontWeight.w700),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusTile extends StatelessWidget {
-  const _StatusTile({
+class _HealthTile extends StatelessWidget {
+  const _HealthTile({
     required this.title,
-    required this.message,
-    required this.isHealthy,
+    required this.description,
+    required this.healthy,
   });
 
   final String title;
-  final String message;
-  final bool isHealthy;
+  final String description;
+  final bool healthy;
 
   @override
   Widget build(BuildContext context) {
-    final color = isHealthy ? const Color(0xFF2D8F59) : errorColor;
-    final titleColor = Theme.of(context).brightness == Brightness.dark
-        ? Colors.white
-        : const Color(0xFF20232B);
-    final messageColor = Theme.of(context).brightness == Brightness.dark
-        ? Colors.white.withValues(alpha: 0.9)
-        : const Color(0xFF4F5565);
+    final color = healthy ? _DashboardPalette.green : _DashboardPalette.rose;
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
+        color: color.withValues(alpha: 0.1),
         borderRadius: const BorderRadius.all(Radius.circular(16)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
-            isHealthy ? Icons.verified_outlined : Icons.warning_amber_rounded,
+            healthy ? Icons.verified_outlined : Icons.warning_amber_rounded,
             color: color,
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -892,12 +1196,18 @@ class _StatusTile extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    color: titleColor,
+                    color: Theme.of(context).textTheme.titleSmall?.color,
                     fontWeight: FontWeight.w700,
+                    fontFamily: grandisExtendedFont,
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(message, style: TextStyle(color: messageColor)),
+                Text(
+                  description,
+                  style: TextStyle(
+                    color: Theme.of(context).textTheme.bodySmall?.color,
+                  ),
+                ),
               ],
             ),
           ),
@@ -907,23 +1217,211 @@ class _StatusTile extends StatelessWidget {
   }
 }
 
-class _EmptyChartMessage extends StatelessWidget {
-  const _EmptyChartMessage({required this.message});
+class _SidebarItem extends StatelessWidget {
+  const _SidebarItem({
+    required this.icon,
+    required this.label,
+    this.active = false,
+    this.onTap,
+  });
 
-  final String message;
+  final IconData icon;
+  final String label;
+  final bool active;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(defaultPadding),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A1E28) : const Color(0xFFF8F6F0),
-        borderRadius: const BorderRadius.all(Radius.circular(18)),
-        border: Border.all(color: Theme.of(context).dividerColor),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: const BorderRadius.all(Radius.circular(16)),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: active ? _DashboardPalette.orange : Colors.transparent,
+          borderRadius: const BorderRadius.all(Radius.circular(16)),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: active
+                  ? Colors.white
+                  : Theme.of(context).textTheme.bodySmall?.color,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: TextStyle(
+                color: active
+                    ? Colors.white
+                    : Theme.of(context).textTheme.titleSmall?.color,
+                fontWeight: FontWeight.w700,
+                fontFamily: grandisExtendedFont,
+              ),
+            ),
+          ],
+        ),
       ),
-      child: Text(message),
     );
   }
+}
+
+class _RevenueChartPainter extends CustomPainter {
+  const _RevenueChartPainter({required this.values});
+
+  final List<double> values;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final backgroundPaint = Paint()
+      ..color = _DashboardPalette.softSurface
+      ..style = PaintingStyle.fill;
+    final gridPaint = Paint()
+      ..color = _DashboardPalette.border
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final linePaint = Paint()
+      ..color = _DashboardPalette.orange
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final fillPaint = Paint()
+      ..shader = const LinearGradient(
+        colors: [
+          Color(0x44FF8C21),
+          Color(0x10FF8C21),
+          Color(0x00FF8C21),
+        ],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+      ).createShader(Offset.zero & size);
+
+    final rect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      const Radius.circular(18),
+    );
+    canvas.drawRRect(rect, backgroundPaint);
+
+    for (var index = 1; index <= 3; index++) {
+      final y = size.height * index / 4;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    if (values.isEmpty) {
+      return;
+    }
+
+    final maxValue = values.reduce(math.max);
+    final minValue = values.reduce(math.min);
+    final range = math.max(1.0, maxValue - minValue);
+    final stepX = values.length == 1 ? 0.0 : size.width / (values.length - 1);
+
+    final points = <Offset>[];
+    for (var i = 0; i < values.length; i++) {
+      final normalized = (values[i] - minValue) / range;
+      final x = stepX * i;
+      final y = size.height - (normalized * (size.height - 26)) - 13;
+      points.add(Offset(x, y));
+    }
+
+    final path = Path()..moveTo(points.first.dx, points.first.dy);
+    for (var i = 1; i < points.length; i++) {
+      final previous = points[i - 1];
+      final current = points[i];
+      final controlX = (previous.dx + current.dx) / 2;
+      path.cubicTo(controlX, previous.dy, controlX, current.dy, current.dx, current.dy);
+    }
+
+    final fillPath = Path.from(path)
+      ..lineTo(points.last.dx, size.height)
+      ..lineTo(points.first.dx, size.height)
+      ..close();
+
+    canvas.drawPath(fillPath, fillPaint);
+    canvas.drawPath(path, linePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _RevenueChartPainter oldDelegate) {
+    return oldDelegate.values != values;
+  }
+}
+
+class _OrderStatusRingPainter extends CustomPainter {
+  const _OrderStatusRingPainter({
+    required this.openOrders,
+    required this.deliveredOrders,
+    required this.cancelledOrders,
+  });
+
+  final int openOrders;
+  final int deliveredOrders;
+  final int cancelledOrders;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const stroke = 18.0;
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height).deflate(stroke / 2);
+    final total = math.max(1, openOrders + deliveredOrders + cancelledOrders).toDouble();
+    final basePaint = Paint()
+      ..color = _DashboardPalette.border
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round;
+    final openPaint = Paint()
+      ..color = _DashboardPalette.blue
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round;
+    final deliveredPaint = Paint()
+      ..color = _DashboardPalette.orange
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round;
+    final cancelledPaint = Paint()
+      ..color = _DashboardPalette.rose
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawArc(rect, 0, math.pi * 2, false, basePaint);
+
+    final openSweep = (openOrders / total) * math.pi * 2;
+    final deliveredSweep = (deliveredOrders / total) * math.pi * 2;
+    final cancelledSweep = (cancelledOrders / total) * math.pi * 2;
+    var startAngle = -math.pi / 2;
+
+    if (openSweep > 0) {
+      canvas.drawArc(rect, startAngle, openSweep, false, openPaint);
+      startAngle += openSweep;
+    }
+    if (deliveredSweep > 0) {
+      canvas.drawArc(rect, startAngle, deliveredSweep, false, deliveredPaint);
+      startAngle += deliveredSweep;
+    }
+    if (cancelledSweep > 0) {
+      canvas.drawArc(rect, startAngle, cancelledSweep, false, cancelledPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _OrderStatusRingPainter oldDelegate) {
+    return oldDelegate.openOrders != openOrders ||
+        oldDelegate.deliveredOrders != deliveredOrders ||
+        oldDelegate.cancelledOrders != cancelledOrders;
+  }
+}
+
+class _DashboardPalette {
+  static const softSurface = Color(0xFFFFFBF5);
+  static const border = Color(0xFFE9DDCF);
+  static const ink = Color(0xFF231F20);
+  static const muted = Color(0xFF7F766D);
+  static const orange = Color(0xFFFF8C21);
+  static const blue = Color(0xFF4B6BFB);
+  static const green = Color(0xFF278C69);
+  static const rose = Color(0xFFD25C58);
 }

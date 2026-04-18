@@ -26,7 +26,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final PageController _bannerController = PageController(
-    viewportFraction: 0.94,
+    viewportFraction: 0.99,
   );
   Timer? _bannerTimer;
   int _currentBannerIndex = 0;
@@ -526,7 +526,7 @@ class _BannerCarousel extends StatelessWidget {
     return Column(
       children: [
         SizedBox(
-          height: 200,
+          height: 248,
           child: PageView.builder(
             controller: controller,
             itemCount: banners.length,
@@ -534,7 +534,7 @@ class _BannerCarousel extends StatelessWidget {
             itemBuilder: (context, index) {
               final banner = banners[index];
               return Padding(
-                padding: const EdgeInsets.only(right: 10),
+                padding: const EdgeInsets.only(right: 6),
                 child: HomeBannerCard(
                   banner: banner,
                   onTap: () => onTapBanner(banner),

@@ -55,6 +55,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '119947379250',
     projectId: 'pet-shop-app-ee6f2',
     storageBucket: 'pet-shop-app-ee6f2.firebasestorage.app',
+    androidClientId:
+        '119947379250-u2ehvus4ldmn50ol5bm8or0du1bf4amr.apps.googleusercontent.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
@@ -63,6 +65,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '119947379250',
     projectId: 'pet-shop-app-ee6f2',
     storageBucket: 'pet-shop-app-ee6f2.firebasestorage.app',
+    iosClientId:
+        '119947379250-1bisfc4st0srheld5qnav2m50tpbafai.apps.googleusercontent.com',
     iosBundleId: 'com.example.shop',
   );
 }

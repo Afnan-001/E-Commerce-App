@@ -38,7 +38,7 @@ class FlashSale extends StatelessWidget {
           const SectionEmptyState(
             title: "No sale items yet",
             message:
-                "Discounted pet products from Firestore will appear here once they are marked with a sale price.",
+                "Discounted pet products will appear here once they go on sale.",
           )
         else
           SizedBox(

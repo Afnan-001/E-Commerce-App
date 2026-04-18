@@ -15,10 +15,11 @@ class RazorpayCheckoutService {
     required String receiptId,
     Map<String, dynamic>? notes,
   }) async {
-    if (razorpayOrderCreationUrl.isEmpty) {
+    if (!isRazorpayConfigured) {
       throw StateError(
-        'Configure a secure backend endpoint for Razorpay order creation. '
-        'The Razorpay secret key must never live in the Flutter client.',
+        'Razorpay is not configured. Provide RAZORPAY_KEY_ID and '
+        'RAZORPAY_ORDER_CREATION_URL as dart-defines, and keep the secret key '
+        'only on your backend.',
       );
     }
 
@@ -57,6 +58,12 @@ class RazorpayCheckoutService {
     required void Function(PaymentFailureResponse response) onFailure,
     required void Function(ExternalWalletResponse response) onExternalWallet,
   }) {
+    if (razorpayKeyId.trim().isEmpty) {
+      throw StateError(
+        'Missing Razorpay key id. Add RAZORPAY_KEY_ID before opening checkout.',
+      );
+    }
+
     _razorpay.clear();
     _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, onSuccess);
     _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, onFailure);

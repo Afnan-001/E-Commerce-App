@@ -5,9 +5,14 @@ import 'package:shop/models/order_model.dart';
 import 'package:shop/route/route_constants.dart';
 
 class OrderSuccessScreen extends StatelessWidget {
-  const OrderSuccessScreen({super.key, required this.order});
+  const OrderSuccessScreen({
+    super.key,
+    required this.order,
+    this.invoiceMessage,
+  });
 
   final OrderModel order;
+  final String? invoiceMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +42,21 @@ class OrderSuccessScreen extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: defaultPadding),
+                if ((invoiceMessage ?? '').isNotEmpty) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(defaultPadding),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: const BorderRadius.all(
+                        Radius.circular(defaultBorderRadious),
+                      ),
+                      border: Border.all(color: Theme.of(context).dividerColor),
+                    ),
+                    child: Text(invoiceMessage!),
+                  ),
+                  const SizedBox(height: defaultPadding),
+                ],
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(defaultPadding),

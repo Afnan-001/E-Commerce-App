@@ -4,6 +4,7 @@ import 'package:form_field_validator/form_field_validator.dart';
 const grandisExtendedFont = "Grandis Extended";
 
 // On color 80, 60.... those means opacity
+const double bottomNavBarHeight = 70.0; // Height for floating bottom nav bar with spacing
 
 const Color primaryColor = Color(0xFF7B61FF);
 

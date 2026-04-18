@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shop/core/services/order_invoice_service.dart';
+import 'package:shop/core/services/order_export_service.dart';
 import 'package:shop/models/category_model.dart';
 import 'package:shop/models/home_banner_model.dart';
 import 'package:shop/models/order_model.dart';
@@ -10,10 +12,17 @@ import 'package:shop/models/product_model.dart';
 import 'package:shop/repositories/admin_repository.dart';
 
 class AdminProvider extends ChangeNotifier {
-  AdminProvider({required AdminRepository adminRepository})
-    : _adminRepository = adminRepository;
+  AdminProvider({
+    required AdminRepository adminRepository,
+    OrderExportService? orderExportService,
+    OrderInvoiceService? orderInvoiceService,
+  }) : _adminRepository = adminRepository,
+       _orderExportService = orderExportService ?? const OrderExportService(),
+       _orderInvoiceService = orderInvoiceService ?? OrderInvoiceService();
 
   final AdminRepository _adminRepository;
+  final OrderExportService _orderExportService;
+  final OrderInvoiceService _orderInvoiceService;
 
   bool _isLoading = false;
   bool _isSaving = false;
@@ -489,6 +498,38 @@ class AdminProvider extends ChangeNotifier {
     } catch (error) {
       _errorMessage = error.toString();
       return false;
+    } finally {
+      _isSaving = false;
+      notifyListeners();
+    }
+  }
+
+  Future<OrderExportResult?> exportOrders() async {
+    _isSaving = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      return await _orderExportService.exportOrders(_orders);
+    } catch (error) {
+      _errorMessage = error.toString();
+      return null;
+    } finally {
+      _isSaving = false;
+      notifyListeners();
+    }
+  }
+
+  Future<OrderInvoiceResult?> exportInvoice(OrderModel order) async {
+    _isSaving = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      return await _orderInvoiceService.saveInvoice(order);
+    } catch (error) {
+      _errorMessage = error.toString();
+      return null;
     } finally {
       _isSaving = false;
       notifyListeners();

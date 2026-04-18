@@ -33,13 +33,21 @@ class ProductDetailsScreen extends StatelessWidget {
       return const FeaturePlaceholderScreen(
         title: "Product unavailable",
         description:
-            "This product could not be loaded. Refresh the catalog after Firebase data is connected.",
+            "This product could not be loaded right now. Please try again in a moment.",
       );
     }
 
-    final currentProduct = product!;
+    final productProvider = context.watch<ProductProvider>();
+    final currentProduct =
+        productProvider.catalogProducts
+            .where((item) => item.id == product!.id)
+            .firstOrNull ??
+        product!;
+    final totalStock = currentProduct.hasPackOptions
+        ? currentProduct.totalPackStock
+        : currentProduct.stockQuantity;
     final isProductAvailable =
-        currentProduct.isActive && currentProduct.stockQuantity > 0;
+        currentProduct.isActive && totalStock > 0;
     final relatedProducts = context
         .watch<ProductProvider>()
         .popularProducts
@@ -49,7 +57,10 @@ class ProductDetailsScreen extends StatelessWidget {
     final productImages = currentProduct.galleryImages.isEmpty
         ? const <String>['']
         : currentProduct.galleryImages;
-    final displayPrice = currentProduct.salePrice ?? currentProduct.price;
+    final displayPrice =
+        currentProduct.defaultPackOption?.effectivePrice ??
+        currentProduct.salePrice ??
+        currentProduct.price;
     final isBookmarked =
         context.watch<ProductProvider>().isBookmarked(currentProduct.id);
 
@@ -112,7 +123,7 @@ class ProductDetailsScreen extends StatelessWidget {
               title: currentProduct.title,
               isAvailable: isProductAvailable,
               description: currentProduct.description.isEmpty
-                  ? "Product details will appear here once the item description is added in Firebase."
+                  ? "Product details will appear here once the item description is available."
                   : currentProduct.description,
             ),
             ProductListTile(
@@ -135,7 +146,7 @@ class ProductDetailsScreen extends StatelessWidget {
                       InfoSection(
                         heading: "Product notes",
                         body: currentProduct.description.isEmpty
-                            ? "Add a richer description in Firestore to show grooming directions, ingredients, or usage details."
+                            ? "More details will appear here for ingredients, grooming directions, or usage tips."
                             : currentProduct.description,
                       ),
                       const InfoSection(

@@ -11,9 +11,11 @@ class CategoryProductsScreen extends StatelessWidget {
   const CategoryProductsScreen({
     super.key,
     required this.categoryTitle,
+    this.petType,
   });
 
   final String categoryTitle;
+  final String? petType;
 
   @override
   Widget build(BuildContext context) {
@@ -72,14 +74,43 @@ class CategoryProductsScreen extends StatelessWidget {
 
   List<ProductModel> _productsForCategory(ProductProvider productProvider) {
     final normalized = categoryTitle.trim().toLowerCase();
+    final normalizedPetType = petType?.trim().toLowerCase();
     if (normalized.isEmpty) {
       return productProvider.catalogProducts;
     }
 
     return productProvider.catalogProducts.where((product) {
       final productCategory = product.category.trim().toLowerCase();
-      return productCategory == normalized ||
+      final matchesCategory = productCategory == normalized ||
           productCategory.contains(normalized);
+      if (!matchesCategory) {
+        return false;
+      }
+
+      if (normalizedPetType == null || normalizedPetType.isEmpty) {
+        return true;
+      }
+
+      if (!_isSharedAcrossPets(normalized)) {
+        return true;
+      }
+
+      return productCategory.contains(normalizedPetType);
     }).toList();
+  }
+
+  bool _isSharedAcrossPets(String normalizedTitle) {
+    const shared = <String>{
+      'beds & mats',
+      'feeding bowls',
+      'cages & houses',
+      'toys',
+      'treats & biscuits',
+      'gravy & jelly',
+      'supplements',
+      'shampoos & dry bath',
+      'combs / brushes',
+    };
+    return shared.contains(normalizedTitle);
   }
 }

@@ -98,13 +98,20 @@ class CartScreen extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    item.product.name,
+                                    item.displayName,
                                     style: Theme.of(
                                       context,
                                     ).textTheme.titleSmall,
                                   ),
                                   const SizedBox(height: defaultPadding / 4),
                                   Text(item.product.brandName),
+                                  if (item.selectedOptionLabel.trim().isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        top: defaultPadding / 4,
+                                      ),
+                                      child: Text('Pack: ${item.selectedOptionLabel}'),
+                                    ),
                                   const SizedBox(height: defaultPadding / 4),
                                   Text(
                                     'Rs ${item.unitPrice.toStringAsFixed(0)}',
@@ -121,7 +128,7 @@ class CartScreen extends StatelessWidget {
                                         onTap: () async {
                                           final success = await cartProvider
                                               .updateQuantity(
-                                                item.product.id,
+                                                item.id,
                                                 item.quantity - 1,
                                               );
                                           if (!context.mounted || success) {
@@ -133,7 +140,7 @@ class CartScreen extends StatelessWidget {
                                             SnackBar(
                                               content: Text(
                                                 cartProvider.errorMessage ??
-                                                    'Unable to update cart in Firestore.',
+                                                    'Unable to update your cart right now.',
                                               ),
                                             ),
                                           );
@@ -150,7 +157,7 @@ class CartScreen extends StatelessWidget {
                                         onTap: () async {
                                           final success = await cartProvider
                                               .updateQuantity(
-                                                item.product.id,
+                                                item.id,
                                                 item.quantity + 1,
                                               );
                                           if (!context.mounted || success) {
@@ -162,7 +169,7 @@ class CartScreen extends StatelessWidget {
                                             SnackBar(
                                               content: Text(
                                                 cartProvider.errorMessage ??
-                                                    'Unable to update cart in Firestore.',
+                                                    'Unable to update your cart right now.',
                                               ),
                                             ),
                                           );
@@ -172,7 +179,7 @@ class CartScreen extends StatelessWidget {
                                       TextButton(
                                         onPressed: () async {
                                           final success = await cartProvider
-                                              .removeFromCart(item.product.id);
+                                              .removeFromCart(item.id);
                                           if (!context.mounted || success) {
                                             return;
                                           }
@@ -182,7 +189,7 @@ class CartScreen extends StatelessWidget {
                                             SnackBar(
                                               content: Text(
                                                 cartProvider.errorMessage ??
-                                                    'Unable to remove cart item from Firestore.',
+                                                    'Unable to remove this item right now.',
                                               ),
                                             ),
                                           );

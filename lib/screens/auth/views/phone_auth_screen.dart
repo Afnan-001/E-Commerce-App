@@ -245,7 +245,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
             ],
             const SizedBox(height: defaultPadding),
             Text(
-              'Note: Use a real device for phone auth. For testing, add test phone numbers in Firebase Auth console.',
+              'Note: Phone sign-in works best on a real device.',
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: Colors.black54),

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:shop/models/app_user_model.dart';
 import 'package:shop/repositories/auth_repository.dart';
@@ -217,17 +218,13 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateProfile({
-    required String name,
-  }) async {
+  Future<bool> updateProfile({required String name}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      _currentUser = await _authRepository.updateProfile(
-        name: name,
-      );
+      _currentUser = await _authRepository.updateProfile(name: name);
       return true;
     } catch (error) {
       _errorMessage = _mapAuthError(error);
@@ -279,11 +276,13 @@ class AuthProvider extends ChangeNotifier {
         case 'too-many-requests':
           return 'Too many attempts. Please try again in a few minutes.';
         case 'operation-not-allowed':
-          return 'This sign-in method is not enabled in Firebase Auth.';
+          return 'This sign-in method is not available right now.';
         case 'network-request-failed':
           return 'Network issue. Please check your internet connection.';
         case 'account-exists-with-different-credential':
           return 'This account exists with a different sign-in method.';
+        case 'google-id-token-missing':
+          return 'Google Sign-In could not be completed. Please try again.';
         case 'invalid-phone-number':
           return 'Please enter a valid phone number with country code.';
         case 'session-expired':
@@ -298,6 +297,26 @@ class AuthProvider extends ChangeNotifier {
           return 'This email address is already verified. You can log in now.';
         default:
           return error.message ?? 'Authentication failed. Please try again.';
+      }
+    }
+
+    if (error is GoogleSignInException) {
+      switch (error.code) {
+        case GoogleSignInExceptionCode.canceled:
+          return 'Google Sign-In was canceled.';
+        case GoogleSignInExceptionCode.clientConfigurationError:
+        case GoogleSignInExceptionCode.providerConfigurationError:
+          return 'Google Sign-In is not available right now. Please use another sign-in method.';
+        case GoogleSignInExceptionCode.uiUnavailable:
+          return 'Google Sign-In UI is unavailable right now. Please try again.';
+        case GoogleSignInExceptionCode.userMismatch:
+          return 'Google Sign-In session mismatch. Please try again.';
+        case GoogleSignInExceptionCode.interrupted:
+          return 'Google Sign-In was interrupted. Please try again.';
+        case GoogleSignInExceptionCode.unknownError:
+          return ((error.description ?? '').trim().isNotEmpty)
+              ? error.description!.trim()
+              : 'Google Sign-In failed. Please try again.';
       }
     }
 

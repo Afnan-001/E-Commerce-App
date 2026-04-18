@@ -8,8 +8,9 @@ const AppBarTheme appBarLightTheme = AppBarTheme(
   iconTheme: IconThemeData(color: blackColor),
   titleTextStyle: TextStyle(
     fontSize: 16,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w700,
     color: blackColor,
+    fontFamily: grandisExtendedFont,
   ),
 );
 
@@ -19,8 +20,9 @@ const AppBarTheme appBarDarkTheme = AppBarTheme(
   iconTheme: IconThemeData(color: Colors.white),
   titleTextStyle: TextStyle(
     fontSize: 16,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w700,
     color: Colors.white,
+    fontFamily: grandisExtendedFont,
   ),
 );
 

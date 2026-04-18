@@ -58,8 +58,8 @@ class _EntryPointState extends State<EntryPoint> {
     ];
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      extendBody: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      extendBody: false,
       appBar: AppBar(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         leading: const SizedBox(),
@@ -116,7 +116,9 @@ class _EntryPointState extends State<EntryPoint> {
                 borderRadius: const BorderRadius.all(Radius.circular(20)),
                 child: NavigationBarTheme(
                   data: NavigationBarThemeData(
-                    backgroundColor: Colors.transparent,
+                    backgroundColor: isDark
+                        ? const Color(0xFF1F2328)
+                        : Colors.white,
                     indicatorColor: const Color(0xFFF0A500),
                     iconTheme: WidgetStateProperty.resolveWith((states) {
                       final selected = states.contains(WidgetState.selected);

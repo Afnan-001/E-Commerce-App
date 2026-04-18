@@ -31,62 +31,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   String _searchQuery = '';
   int _currentTabIndex = 0;
 
-  static const List<_PetSection> _dogsSections = <_PetSection>[
-    _PetSection(
-      title: 'Lifestyle & Accessories',
-      categories: <String>[
-        'Clothing & Accessories',
-        'Harness & Bodybelts',
-        'Collars, Leashes & Chains',
-        'Beds & Mats',
-        'Feeding Bowls',
-        'Cages & Houses',
-        'Bones & Munchies',
-        'Toys',
-      ],
-    ),
-    _PetSection(
-      title: 'Food Essentials',
-      categories: <String>[
-        'Dog Food (All)',
-        'Dry Food',
-        'Wet Food',
-        'Treats & Biscuits',
-        'Gravy & Jelly',
-        'Supplements',
-      ],
-    ),
-    _PetSection(
-      title: 'Grooming',
-      categories: <String>['Shampoos & Dry Bath', 'Combs / Brushes'],
-    ),
-  ];
-
-  static const List<_PetSection> _catsSections = <_PetSection>[
-    _PetSection(
-      title: 'Lifestyle & Accessories',
-      categories: <String>[
-        'Beds & Mats',
-        'Feeding Bowls',
-        'Cages & Houses',
-        'Toys',
-      ],
-    ),
-    _PetSection(
-      title: 'Food Essentials',
-      categories: <String>[
-        'Cat Food (All)',
-        'Treats & Biscuits',
-        'Gravy & Jelly',
-        'Supplements',
-      ],
-    ),
-    _PetSection(
-      title: 'Grooming',
-      categories: <String>['Shampoos & Dry Bath', 'Combs / Brushes'],
-    ),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -123,9 +67,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
     setState(() {
       _currentTabIndex = _tabController.index;
-      final availableLabels = _tabSections
+      final availableLabels = _sectionsForTab(
+            context.read<ProductProvider>().discoverCategories,
+            _currentTabIndex,
+          )
           .expand((section) => section.categories)
-          .map((label) => label.toLowerCase())
+          .map((category) => category.title.toLowerCase())
           .toSet();
       if (_selectedCategoryTitle != null &&
           !availableLabels.contains(_selectedCategoryTitle!.toLowerCase())) {
@@ -136,13 +83,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   void _syncInitialSelection() {
     final normalized = widget.initialCategoryTitle?.trim().toLowerCase();
-    final belongsToCats =
-        normalized != null &&
-        _catsSections.any(
-          (section) => section.categories.any(
-            (category) => category.toLowerCase() == normalized,
-          ),
-        );
+    final belongsToCats = normalized != null &&
+        _petTypeForCategory(
+              context.read<ProductProvider>().discoverCategories,
+              normalized,
+            ) ==
+            'cats';
     final targetIndex = belongsToCats ? 1 : 0;
 
     _currentTabIndex = targetIndex;
@@ -154,21 +100,47 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     }
   }
 
-  List<_PetSection> get _tabSections =>
-      _currentTabIndex == 0 ? _dogsSections : _catsSections;
-
   @override
   Widget build(BuildContext context) {
     final productProvider = context.watch<ProductProvider>();
+    final tabSections = _sectionsForTab(
+      productProvider.discoverCategories,
+      _currentTabIndex,
+    );
     final products = _filteredProducts(productProvider);
+    final mediaQuery = MediaQuery.of(context);
+    final width = mediaQuery.size.width;
+    final safeBottom = mediaQuery.padding.bottom;
+    final categoryCrossAxisCount = width >= 1100
+        ? 5
+        : width >= 760
+        ? 4
+        : 3;
+    final categoryTileSize = width >= 1100
+        ? 96.0
+        : width >= 760
+        ? 92.0
+        : 84.0;
+    final categoryTileMainExtent = categoryTileSize + 64;
+    final productCrossAxisCount = width >= 1100
+        ? 4
+        : width >= 760
+        ? 3
+        : 2;
 
     return Scaffold(
       body: SafeArea(
+        bottom: false,
         child: CustomScrollView(
           slivers: <Widget>[
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.all(defaultPadding),
+                padding: const EdgeInsets.fromLTRB(
+                  defaultPadding,
+                  defaultPadding,
+                  defaultPadding,
+                  12,
+                ),
                 child: SearchForm(
                   onChanged: (value) {
                     setState(() {
@@ -183,24 +155,45 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               delegate: _DiscoverTabHeaderDelegate(
                 child: Container(
                   color: Theme.of(context).scaffoldBackgroundColor,
-                  child: TabBar(
-                    controller: _tabController,
-                    indicatorColor: primaryColor,
-                    indicatorWeight: 3,
-                    labelColor: primaryColor,
-                    unselectedLabelColor:
-                        Theme.of(context).textTheme.bodyMedium?.color ??
-                        (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white70
-                            : Colors.black54),
-                    labelStyle: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                  padding: const EdgeInsets.fromLTRB(
+                    defaultPadding,
+                    0,
+                    defaultPadding,
+                    10,
+                  ),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: const BorderRadius.all(Radius.circular(18)),
+                      border: Border.all(color: Theme.of(context).dividerColor),
                     ),
-                    tabs: const <Tab>[
-                      Tab(text: 'Dogs'),
-                      Tab(text: 'Cats'),
-                    ],
+                    child: TabBar(
+                      controller: _tabController,
+                      dividerColor: Colors.transparent,
+                      indicator: BoxDecoration(
+                        color: primaryColor,
+                        borderRadius: const BorderRadius.all(
+                          Radius.circular(14),
+                        ),
+                      ),
+                      padding: const EdgeInsets.all(6),
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      labelPadding: const EdgeInsets.symmetric(horizontal: 22),
+                      labelColor: Colors.white,
+                      unselectedLabelColor:
+                          Theme.of(context).textTheme.bodyMedium?.color ??
+                          (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white70
+                              : Colors.black54),
+                      labelStyle: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      tabs: const <Tab>[
+                        Tab(text: 'Dogs'),
+                        Tab(text: 'Cats'),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -208,58 +201,88 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             ..._buildCategorySections(
               context,
               productProvider.discoverCategories,
+              tabSections,
+              categoryCrossAxisCount,
+              categoryTileSize,
+              categoryTileMainExtent,
             ),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
                   defaultPadding,
-                  defaultPadding,
+                  defaultPadding * 1.25,
                   defaultPadding,
                   defaultPadding / 2,
                 ),
                 child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                  spacing: 10,
+                  runSpacing: 10,
                   crossAxisAlignment: WrapCrossAlignment.center,
-                  children: <Widget>[
-                    Text(
-                      _selectedCategoryTitle ?? 'All pet products',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
+                  children: [
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: width >= 760 ? width * 0.6 : width * 0.72,
+                      ),
+                      child: Text(
+                        _selectedCategoryTitle ?? 'Everything in store',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
                       ),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
+                        horizontal: 14,
+                        vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFF3DC),
-                        borderRadius: const BorderRadius.all(
-                          Radius.circular(999),
-                        ),
+                        color: Theme.of(context).cardColor,
+                        borderRadius: const BorderRadius.all(Radius.circular(999)),
+                        border: Border.all(color: Theme.of(context).dividerColor),
                       ),
                       child: Text(
                         '${products.length} items',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF6F5128),
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
-                    if (_selectedCategoryTitle != null)
-                      TextButton(
-                        onPressed: () {
-                          setState(() {
-                            _selectedCategoryTitle = null;
-                          });
-                        },
-                        child: const Text('Clear filter'),
-                      ),
+                    Text(
+                      _selectedCategoryTitle == null
+                          ? 'Browse the whole catalog.'
+                          : 'Filtered by category.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
                   ],
                 ),
               ),
             ),
+            if (_selectedCategoryTitle != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    defaultPadding,
+                    0,
+                    defaultPadding,
+                    6,
+                  ),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _selectedCategoryTitle = null;
+                        });
+                      },
+                      icon: const Icon(Icons.close_rounded, size: 18),
+                      label: const Text('Clear category filter'),
+                    ),
+                  ),
+                ),
+              ),
             if (products.isEmpty)
               SliverToBoxAdapter(
                 child: SectionEmptyState(
@@ -267,21 +290,21 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                       ? 'No products in this category'
                       : 'No matching products',
                   message: _searchQuery.isEmpty
-                      ? 'Admin-added products will appear here automatically when they match this category.'
+                      ? 'Products in this category will appear here automatically.'
                       : 'Try another product name, brand, or category keyword.',
                 ),
               )
             else
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(
+                padding: EdgeInsets.fromLTRB(
                   defaultPadding,
                   0,
                   defaultPadding,
-                  defaultPadding,
+                  defaultPadding + safeBottom + 20,
                 ),
                 sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: productCrossAxisCount,
                     mainAxisSpacing: defaultPadding,
                     crossAxisSpacing: defaultPadding,
                     childAspectRatio: 0.68,
@@ -319,27 +342,44 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   List<Widget> _buildCategorySections(
     BuildContext context,
     List<CategoryModel> categories,
+    List<_PetSection> tabSections,
+    int categoryCrossAxisCount,
+    double categoryTileSize,
+    double categoryTileMainExtent,
   ) {
     final slivers = <Widget>[
       SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
             defaultPadding,
-            defaultPadding / 2,
+            4,
             defaultPadding,
-            defaultPadding / 2,
+            10,
           ),
-          child: Text(
-            'Browse categories',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Browse categories',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Text(
+                _currentTabIndex == 0 ? 'For dogs' : 'For cats',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: primaryColor,
+                ),
+              ),
+            ],
           ),
         ),
       ),
     ];
 
-    for (final section in _tabSections) {
+    for (final section in tabSections) {
       slivers.add(
         SliverToBoxAdapter(
           child: Padding(
@@ -351,9 +391,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             ),
             child: Text(
               section.title,
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         ),
@@ -363,36 +403,31 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: defaultPadding),
           sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: categoryCrossAxisCount,
               mainAxisSpacing: 14,
               crossAxisSpacing: 12,
-              childAspectRatio: 0.68,
+              mainAxisExtent: categoryTileMainExtent,
             ),
             delegate: SliverChildBuilderDelegate((context, index) {
-              final label = section.categories[index];
-              final matchedCategory = _matchFirestoreCategory(
-                categories,
-                label,
-                preferredPetType: _currentTabIndex == 0 ? 'dogs' : 'cats',
-              );
+              final category = section.categories[index];
 
-              return Padding(
-                padding: const EdgeInsets.all(2),
-                child: CategoryTile(
-                  label: label,
-                  imageUrl: (matchedCategory?.image ?? '').trim().isNotEmpty
-                      ? matchedCategory?.image
-                      : matchedCategory?.svgSrc,
-                  size: 80,
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      categoryProductsScreenRoute,
-                      arguments: label,
-                    );
-                  },
-                ),
+              return CategoryTile(
+                label: category.title,
+                imageUrl: (category.image ?? '').trim().isNotEmpty
+                    ? category.image
+                    : category.svgSrc,
+                size: categoryTileSize,
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    categoryProductsScreenRoute,
+                    arguments: <String, String>{
+                      'categoryTitle': category.title,
+                      'petType': _currentTabIndex == 0 ? 'dogs' : 'cats',
+                    },
+                  );
+                },
               );
             }, childCount: section.categories.length),
           ),
@@ -401,6 +436,97 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     }
 
     return slivers;
+  }
+
+  List<_PetSection> _sectionsForTab(
+    List<CategoryModel> categories,
+    int tabIndex,
+  ) {
+    final petType = tabIndex == 0 ? 'dogs' : 'cats';
+    final parent = _petParentCategory(categories, petType);
+    if (parent == null) {
+      return const <_PetSection>[];
+    }
+
+    final lifestyle = <CategoryModel>[];
+    final food = <CategoryModel>[];
+    final grooming = <CategoryModel>[];
+
+    for (final category in parent.subCategories) {
+      final normalized = _normalizedCategoryKey(category.title);
+      if (_isGroomingCategory(normalized)) {
+        grooming.add(category);
+      } else if (_isFoodCategory(normalized)) {
+        food.add(category);
+      } else {
+        lifestyle.add(category);
+      }
+    }
+
+    final sections = <_PetSection>[];
+    if (lifestyle.isNotEmpty) {
+      sections.add(
+        _PetSection(title: 'Lifestyle & Accessories', categories: lifestyle),
+      );
+    }
+    if (food.isNotEmpty) {
+      sections.add(_PetSection(title: 'Food Essentials', categories: food));
+    }
+    if (grooming.isNotEmpty) {
+      sections.add(_PetSection(title: 'Grooming', categories: grooming));
+    }
+    return sections;
+  }
+
+  CategoryModel? _petParentCategory(
+    List<CategoryModel> categories,
+    String petType,
+  ) {
+    final normalizedPet = _normalizedCategoryKey(petType);
+    for (final category in categories) {
+      final normalizedTitle = _normalizedCategoryKey(category.title);
+      final normalizedId = _normalizedCategoryKey(category.id);
+      if (normalizedTitle == normalizedPet ||
+          normalizedTitle == normalizedPet.replaceAll('s', '') ||
+          normalizedId == normalizedPet ||
+          normalizedId == normalizedPet.replaceAll('s', '')) {
+        return category;
+      }
+    }
+    return null;
+  }
+
+  String? _petTypeForCategory(List<CategoryModel> categories, String label) {
+    final normalized = _normalizedCategoryKey(label);
+    for (final parent in categories) {
+      final parentKey = _normalizedCategoryKey(parent.title);
+      if (parentKey == 'dogs' || parentKey == 'cats') {
+        final hasMatch = parent.subCategories.any(
+          (category) =>
+              _normalizedCategoryKey(category.title) == normalized ||
+              _normalizedCategoryKey(category.id) == normalized,
+        );
+        if (hasMatch) {
+          return parentKey;
+        }
+      }
+    }
+    return null;
+  }
+
+  bool _isFoodCategory(String normalizedTitle) {
+    return normalizedTitle.contains('food') ||
+        normalizedTitle.contains('treat') ||
+        normalizedTitle.contains('gravy') ||
+        normalizedTitle.contains('supplement') ||
+        normalizedTitle.contains('biscuit');
+  }
+
+  bool _isGroomingCategory(String normalizedTitle) {
+    return normalizedTitle.contains('shampoo') ||
+        normalizedTitle.contains('comb') ||
+        normalizedTitle.contains('brush') ||
+        normalizedTitle.contains('groom');
   }
 
   List<ProductModel> _filteredProducts(ProductProvider productProvider) {
@@ -549,7 +675,7 @@ class _PetSection {
   const _PetSection({required this.title, required this.categories});
 
   final String title;
-  final List<String> categories;
+  final List<CategoryModel> categories;
 }
 
 class _DiscoverTabHeaderDelegate extends SliverPersistentHeaderDelegate {
@@ -558,10 +684,10 @@ class _DiscoverTabHeaderDelegate extends SliverPersistentHeaderDelegate {
   final Widget child;
 
   @override
-  double get minExtent => kTextTabBarHeight;
+  double get minExtent => 72;
 
   @override
-  double get maxExtent => kTextTabBarHeight;
+  double get maxExtent => 72;
 
   @override
   Widget build(

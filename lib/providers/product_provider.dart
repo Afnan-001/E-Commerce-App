@@ -91,7 +91,7 @@ class ProductProvider extends ChangeNotifier {
 
   Future<bool> toggleBookmark(ProductModel product) async {
     if (_userId == null || _userId!.isEmpty) {
-      _errorMessage = 'Please log in to save products to Firestore.';
+      _errorMessage = 'Please log in to save products.';
       notifyListeners();
       return false;
     }

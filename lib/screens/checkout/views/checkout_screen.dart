@@ -20,6 +20,7 @@ import 'package:shop/providers/address_provider.dart';
 import 'package:shop/providers/auth_provider.dart';
 import 'package:shop/providers/cart_provider.dart';
 import 'package:shop/providers/order_provider.dart';
+import 'package:shop/providers/product_provider.dart';
 import 'package:shop/repositories/order_repository.dart';
 import 'package:shop/route/route_constants.dart';
 import 'package:shop/screens/address/views/address_form_screen.dart';
@@ -174,10 +175,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           },
                           leadingIcon: Icons.local_shipping_outlined,
                         ),
-                        if (razorpayOrderCreationUrl.isEmpty) ...[
+                        if (!isRazorpayConfigured) ...[
                           const SizedBox(height: defaultPadding / 2),
                           Text(
-                            'Razorpay needs a secure backend order endpoint before it can be used.',
+                            'Online payment will be available soon. You can still place your order with cash on delivery.',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],
@@ -227,8 +228,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   const SizedBox(height: defaultPadding / 2),
                   Text(
                     _selectedPaymentMethod == _CheckoutPaymentMethod.cod
-                        ? 'Cash on delivery orders will be saved to Firestore with a pending payment status.'
-                        : 'Secure Razorpay checkout opens after the backend creates the order id.',
+                        ? 'Pay in cash when your order arrives.'
+                        : 'A secure payment page will open to complete your purchase.',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
@@ -271,9 +272,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       return;
     }
 
-    if (isRazorpayFlow && razorpayOrderCreationUrl.isEmpty) {
+    if (isRazorpayFlow && !isRazorpayConfigured) {
       _showSnackBar(
-        'Razorpay is not configured yet. Add a secure backend order-creation endpoint first, or choose Cash on Delivery.',
+        'Online payment is not available right now. Please choose Cash on Delivery.',
       );
       return;
     }
@@ -308,6 +309,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     try {
       if (paymentMethod == PaymentMethod.cod) {
+        final confirmed = await _confirmCashOnDelivery(
+          totalAmount: pricing.totalAmount,
+          itemCount: items.fold<int>(
+            0,
+            (total, item) => total + item.quantity,
+          ),
+          addressLabel: deliveryAddress.shortAddress,
+        );
+        if (!mounted || !confirmed) {
+          setState(() {
+            _isProcessing = false;
+          });
+          return;
+        }
+
         final order = draftOrder.copyWith(
           payment: pendingPayment,
           createdAt: DateTime.now(),
@@ -408,9 +424,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final orderRepository = context.read<OrderRepository>();
     final orderProvider = context.read<OrderProvider>();
     final cartProvider = context.read<CartProvider>();
+    final productProvider = context.read<ProductProvider>();
 
     await orderRepository.saveOrder(order);
     orderProvider.addOrder(order);
+    final invoiceResult = await orderProvider.saveInvoice(order);
+    await productProvider.loadInitialData();
     await cartProvider.clear();
     _razorpayService.dispose();
 
@@ -419,9 +438,118 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       _isProcessing = false;
     });
 
+    final invoiceMessage = invoiceResult == null
+        ? null
+        : invoiceResult.location == null
+        ? 'Invoice saved as ${invoiceResult.fileName}.'
+        : 'Invoice saved to ${invoiceResult.location}.';
+
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => OrderSuccessScreen(order: order)),
+      MaterialPageRoute(
+        builder: (_) => OrderSuccessScreen(
+          order: order,
+          invoiceMessage: invoiceMessage,
+        ),
+      ),
     );
+  }
+
+  Future<bool> _confirmCashOnDelivery({
+    required double totalAmount,
+    required int itemCount,
+    required String addressLabel,
+  }) async {
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(defaultBorderRadious * 2),
+          topRight: Radius.circular(defaultBorderRadious * 2),
+        ),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              defaultPadding,
+              defaultPadding,
+              defaultPadding,
+              defaultPadding * 1.25,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Theme.of(sheetContext).dividerColor,
+                      borderRadius: const BorderRadius.all(
+                        Radius.circular(999),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: defaultPadding),
+                Text(
+                  'Confirm cash on delivery',
+                  style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Please review the order details before placing it.',
+                  style: Theme.of(sheetContext).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: defaultPadding),
+                _SectionCard(
+                  title: 'Order summary',
+                  child: Column(
+                    children: [
+                      _PriceRow(label: 'Items', value: '$itemCount'),
+                      const SizedBox(height: defaultPadding / 3),
+                      _PriceRow(
+                        label: 'Payment',
+                        value: 'Cash on Delivery',
+                      ),
+                      const SizedBox(height: defaultPadding / 3),
+                      _PriceRow(
+                        label: 'Deliver to',
+                        value: addressLabel,
+                      ),
+                      const SizedBox(height: defaultPadding / 3),
+                      _PriceRow(
+                        label: 'Total',
+                        value: _formatMoney(totalAmount),
+                        isBold: true,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: defaultPadding),
+                OutlinedButton(
+                  onPressed: () => Navigator.of(sheetContext).pop(false),
+                  child: const Text('Review again'),
+                ),
+                const SizedBox(height: defaultPadding / 2),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(sheetContext).pop(true),
+                  child: const Text('Confirm order'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    return confirmed == true;
   }
 
   OrderModel _buildOrder({
@@ -455,7 +583,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   OrderPricingModel _buildPricing(List<CartItemModel> items) {
     final subtotal = items.fold<double>(
       0,
-      (total, item) => total + (item.product.price * item.quantity),
+      (total, item) =>
+          total + ((item.originalUnitPrice ?? item.unitPrice) * item.quantity),
     );
     final saleTotal = items.fold<double>(
       0,
@@ -564,18 +693,22 @@ class _CheckoutItemTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                item.product.name,
+                item.displayName,
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const SizedBox(height: 4),
               Text(item.product.brandName),
+              if (item.selectedOptionLabel.trim().isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text('Pack: ${item.selectedOptionLabel}'),
+              ],
               const SizedBox(height: 4),
               Text('Qty ${item.quantity}'),
             ],
           ),
         ),
         Text(
-          'Rs ${(item.unitPrice * item.quantity).toStringAsFixed(0)}',
+          'Rs ${item.totalPrice.toStringAsFixed(0)}',
           style: Theme.of(context).textTheme.titleSmall,
         ),
       ],

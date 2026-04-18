@@ -49,6 +49,14 @@ class OrderModel {
   double get totalPrice => pricing.totalAmount;
   PaymentMethod get paymentMethod => payment.paymentMethod;
   PaymentStatus get paymentStatus => payment.paymentStatus;
+  bool get isDelivered => orderStatus == OrderStatus.delivered;
+  bool get isCancelled => orderStatus == OrderStatus.cancelled;
+  bool get isShipped => orderStatus == OrderStatus.shipped;
+  bool get isCompleted => isDelivered || isCancelled;
+  bool get canUserCancel =>
+      orderStatus == OrderStatus.placed || orderStatus == OrderStatus.confirmed;
+  int get totalItems =>
+      items.fold<int>(0, (totalQty, item) => totalQty + item.quantity);
 
   OrderModel copyWith({
     String? orderId,
@@ -86,7 +94,8 @@ class OrderModel {
     final paymentData = data['payment'];
 
     final items = (data['items'] as List<dynamic>? ?? const <dynamic>[])
-        .whereType<Map<String, dynamic>>()
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
         .map(OrderItemModel.fromMap)
         .toList();
 
@@ -98,8 +107,10 @@ class OrderModel {
       userEmail: data['userEmail'] as String? ?? '',
       userPhone:
           data['userPhone'] as String? ?? data['phoneNumber'] as String? ?? '',
-      deliveryAddress: deliveryAddressData is Map<String, dynamic>
-          ? OrderDeliveryAddressModel.fromMap(deliveryAddressData)
+      deliveryAddress: deliveryAddressData is Map
+          ? OrderDeliveryAddressModel.fromMap(
+              Map<String, dynamic>.from(deliveryAddressData),
+            )
           : OrderDeliveryAddressModel(
               fullName: data['customerName'] as String? ?? '',
               phone: data['phoneNumber'] as String? ?? '',
@@ -109,8 +120,8 @@ class OrderModel {
               pincode: '',
             ),
       items: items,
-      pricing: pricingData is Map<String, dynamic>
-          ? OrderPricingModel.fromMap(pricingData)
+      pricing: pricingData is Map
+          ? OrderPricingModel.fromMap(Map<String, dynamic>.from(pricingData))
           : OrderPricingModel(
               subtotal: (data['subtotal'] as num?)?.toDouble() ?? 0,
               deliveryCharge: (data['deliveryCharge'] as num?)?.toDouble() ?? 0,
@@ -120,8 +131,8 @@ class OrderModel {
                   (data['total'] as num?)?.toDouble() ??
                   0,
             ),
-      payment: paymentData is Map<String, dynamic>
-          ? OrderPaymentModel.fromMap(paymentData)
+      payment: paymentData is Map
+          ? OrderPaymentModel.fromMap(Map<String, dynamic>.from(paymentData))
           : OrderPaymentModel(
               paymentMethod: _paymentMethodFromString(
                 data['paymentMethod'] as String?,

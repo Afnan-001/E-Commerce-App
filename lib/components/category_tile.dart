@@ -27,21 +27,19 @@ class CategoryTile extends StatelessWidget {
         width: size,
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
+            SizedBox(
               width: size,
               height: size,
-              decoration: const BoxDecoration(
-                color: Color(0xFFFFF3DC),
-                borderRadius: BorderRadius.all(Radius.circular(14)),
-              ),
-              alignment: Alignment.center,
-              padding: const EdgeInsets.all(8),
               child: trimmedImageUrl.isNotEmpty
-                  ? NetworkImageWithLoader(
-                      trimmedImageUrl,
-                      radius: 14,
-                      fit: BoxFit.contain,
+                  ? ClipRRect(
+                      borderRadius: const BorderRadius.all(Radius.circular(14)),
+                      child: NetworkImageWithLoader(
+                        trimmedImageUrl,
+                        radius: 14,
+                        fit: BoxFit.cover,
+                      ),
                     )
                   : const Icon(
                       Icons.pets_rounded,
@@ -49,7 +47,7 @@ class CategoryTile extends StatelessWidget {
                       size: 30,
                     ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               label,
               maxLines: 2,

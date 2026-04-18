@@ -46,13 +46,41 @@ class FirestoreAdminRepository implements AdminRepository {
   @override
   Future<void> deleteProduct(String productId) async {
     _ensureReady();
-    await _db.collection('products').doc(productId).delete();
+    final docRef = _db.collection('products').doc(productId);
+    final snapshot = await docRef.get();
+    if (!snapshot.exists) {
+      return;
+    }
+
+    final product = ProductModel.fromMap(snapshot.id, snapshot.data()!);
+    await docRef.delete();
+    await _cloudinaryService.deleteImagesByUrls(product.galleryImages);
   }
 
   @override
   Future<void> deleteCategory(String categoryId) async {
     _ensureReady();
-    await _db.collection('categories').doc(categoryId).delete();
+    final batch = _db.batch();
+    final categoriesRef = _db.collection('categories');
+    final descendants = await categoriesRef
+        .where('parentId', isEqualTo: categoryId)
+        .get();
+    final rootSnapshot = await categoriesRef.doc(categoryId).get();
+    final imageUrlsToDelete = <String>[];
+
+    if (rootSnapshot.exists) {
+      final root = CategoryModel.fromMap(rootSnapshot.id, rootSnapshot.data()!);
+      imageUrlsToDelete.addAll(_categoryImageUrls(root));
+    }
+
+    for (final doc in descendants.docs) {
+      final category = CategoryModel.fromMap(doc.id, doc.data());
+      imageUrlsToDelete.addAll(_categoryImageUrls(category));
+      batch.delete(doc.reference);
+    }
+    batch.delete(categoriesRef.doc(categoryId));
+    await batch.commit();
+    await _cloudinaryService.deleteImagesByUrls(imageUrlsToDelete);
   }
 
   @override
@@ -98,6 +126,13 @@ class FirestoreAdminRepository implements AdminRepository {
     final docRef = isNewProduct
         ? _db.collection('products').doc()
         : _db.collection('products').doc(product.id);
+    ProductModel? previousProduct;
+    if (!isNewProduct) {
+      final snapshot = await docRef.get();
+      if (snapshot.exists) {
+        previousProduct = ProductModel.fromMap(snapshot.id, snapshot.data()!);
+      }
+    }
     final payload = product.copyWith(id: docRef.id).toMap();
 
     payload['updatedAt'] = FieldValue.serverTimestamp();
@@ -108,6 +143,13 @@ class FirestoreAdminRepository implements AdminRepository {
     }
 
     await docRef.set(payload, SetOptions(merge: true));
+
+    if (previousProduct != null) {
+      final removedImages = previousProduct.galleryImages
+          .where((image) => !product.galleryImages.contains(image))
+          .toList();
+      await _cloudinaryService.deleteImagesByUrls(removedImages);
+    }
   }
 
   @override
@@ -117,6 +159,13 @@ class FirestoreAdminRepository implements AdminRepository {
     final docRef = category.id.isEmpty
         ? _db.collection('categories').doc()
         : _db.collection('categories').doc(category.id);
+    CategoryModel? previousCategory;
+    if (category.id.isNotEmpty) {
+      final snapshot = await docRef.get();
+      if (snapshot.exists) {
+        previousCategory = CategoryModel.fromMap(snapshot.id, snapshot.data()!);
+      }
+    }
 
     final payload = CategoryModel(
       id: docRef.id,
@@ -130,6 +179,13 @@ class FirestoreAdminRepository implements AdminRepository {
     );
 
     await docRef.set(payload.toMap(), SetOptions(merge: true));
+
+    if (previousCategory != null) {
+      final removedImages = _categoryImageUrls(previousCategory)
+          .where((image) => !_categoryImageUrls(payload).contains(image))
+          .toList();
+      await _cloudinaryService.deleteImagesByUrls(removedImages);
+    }
   }
 
   @override
@@ -227,5 +283,16 @@ class FirestoreAdminRepository implements AdminRepository {
         'the platform config files before using the admin panel.',
       );
     }
+  }
+
+  List<String> _categoryImageUrls(CategoryModel category) {
+    final urls = <String>{};
+    if ((category.image ?? '').trim().isNotEmpty) {
+      urls.add(category.image!.trim());
+    }
+    if ((category.svgSrc ?? '').trim().isNotEmpty) {
+      urls.add(category.svgSrc!.trim());
+    }
+    return urls.toList();
   }
 }

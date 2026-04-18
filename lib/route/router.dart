@@ -100,7 +100,14 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     case categoryProductsScreenRoute:
       return MaterialPageRoute(
         builder: (context) {
-          final categoryTitle = settings.arguments as String? ?? '';
+          final arguments = settings.arguments;
+          if (arguments is Map<String, dynamic>) {
+            return CategoryProductsScreen(
+              categoryTitle: arguments['categoryTitle'] as String? ?? '',
+              petType: arguments['petType'] as String?,
+            );
+          }
+          final categoryTitle = arguments as String? ?? '';
           return CategoryProductsScreen(categoryTitle: categoryTitle);
         },
       );
