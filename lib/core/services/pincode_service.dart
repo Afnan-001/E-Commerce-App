@@ -5,10 +5,15 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class PincodeLookupResult {
-  const PincodeLookupResult({required this.district, required this.state});
+  const PincodeLookupResult({
+    required this.district,
+    required this.state,
+    required this.city,
+  });
 
   final String district;
   final String state;
+  final String city;
 }
 
 class PincodeLookupException implements Exception {
@@ -75,6 +80,12 @@ class PincodeService {
 
       final district = (office['District'] as String? ?? '').trim();
       final state = (office['State'] as String? ?? '').trim();
+      final city =
+          (office['Block'] as String? ??
+                  office['Taluk'] as String? ??
+                  office['Division'] as String? ??
+                  '')
+              .trim();
 
       if (district.isEmpty || state.isEmpty) {
         throw const PincodeLookupException(
@@ -82,7 +93,7 @@ class PincodeService {
         );
       }
 
-      return PincodeLookupResult(district: district, state: state);
+      return PincodeLookupResult(district: district, state: state, city: city);
     } on PincodeLookupException {
       rethrow;
     } on SocketException {

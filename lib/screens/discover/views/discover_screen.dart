@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shop/components/category_tile.dart';
-import 'package:shop/components/product/product_card.dart';
 import 'package:shop/constants.dart';
 import 'package:shop/core/widgets/section_empty_state.dart';
 import 'package:shop/models/category_model.dart';
-import 'package:shop/models/product_model.dart';
 import 'package:shop/providers/product_provider.dart';
 import 'package:shop/route/route_constants.dart';
 import 'package:shop/screens/search/views/components/search_form.dart';
@@ -27,7 +25,6 @@ class DiscoverScreen extends StatefulWidget {
 class _DiscoverScreenState extends State<DiscoverScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
-  String? _selectedCategoryTitle;
   String _searchQuery = '';
   int _currentTabIndex = 0;
 
@@ -37,6 +34,14 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     _tabController = TabController(length: 2, vsync: this)
       ..addListener(_handleTabChange);
     _syncInitialSelection();
+  }
+
+  @override
+  void dispose() {
+    _tabController
+      ..removeListener(_handleTabChange)
+      ..dispose();
+    super.dispose();
   }
 
   @override
@@ -51,14 +56,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     }
   }
 
-  @override
-  void dispose() {
-    _tabController
-      ..removeListener(_handleTabChange)
-      ..dispose();
-    super.dispose();
-  }
-
   void _handleTabChange() {
     if (_tabController.indexIsChanging ||
         _currentTabIndex == _tabController.index) {
@@ -67,23 +64,13 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
     setState(() {
       _currentTabIndex = _tabController.index;
-      final availableLabels = _sectionsForTab(
-            context.read<ProductProvider>().discoverCategories,
-            _currentTabIndex,
-          )
-          .expand((section) => section.categories)
-          .map((category) => category.title.toLowerCase())
-          .toSet();
-      if (_selectedCategoryTitle != null &&
-          !availableLabels.contains(_selectedCategoryTitle!.toLowerCase())) {
-        _selectedCategoryTitle = null;
-      }
     });
   }
 
   void _syncInitialSelection() {
     final normalized = widget.initialCategoryTitle?.trim().toLowerCase();
-    final belongsToCats = normalized != null &&
+    final belongsToCats =
+        normalized != null &&
         _petTypeForCategory(
               context.read<ProductProvider>().discoverCategories,
               normalized,
@@ -92,9 +79,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final targetIndex = belongsToCats ? 1 : 0;
 
     _currentTabIndex = targetIndex;
-    _selectedCategoryTitle = widget.initialCategoryTitle?.trim().isEmpty == true
-        ? null
-        : widget.initialCategoryTitle?.trim();
     if (_tabController.index != targetIndex) {
       _tabController.index = targetIndex;
     }
@@ -103,14 +87,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   @override
   Widget build(BuildContext context) {
     final productProvider = context.watch<ProductProvider>();
-    final tabSections = _sectionsForTab(
-      productProvider.discoverCategories,
-      _currentTabIndex,
+    final tabSections = _filterSectionsForQuery(
+      _sectionsForTab(productProvider.discoverCategories, _currentTabIndex),
+      _searchQuery,
     );
-    final products = _filteredProducts(productProvider);
-    final mediaQuery = MediaQuery.of(context);
-    final width = mediaQuery.size.width;
-    final safeBottom = mediaQuery.padding.bottom;
+    final hasQuery = _searchQuery.trim().isNotEmpty;
+    final width = MediaQuery.of(context).size.width;
     final categoryCrossAxisCount = width >= 1100
         ? 5
         : width >= 760
@@ -122,11 +104,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         ? 92.0
         : 84.0;
     final categoryTileMainExtent = categoryTileSize + 64;
-    final productCrossAxisCount = width >= 1100
-        ? 4
-        : width >= 760
-        ? 3
-        : 2;
 
     return Scaffold(
       body: SafeArea(
@@ -205,134 +182,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               categoryCrossAxisCount,
               categoryTileSize,
               categoryTileMainExtent,
+              hasQuery: hasQuery,
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  defaultPadding,
-                  defaultPadding * 1.25,
-                  defaultPadding,
-                  defaultPadding / 2,
-                ),
-                child: Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: width >= 760 ? width * 0.6 : width * 0.72,
-                      ),
-                      child: Text(
-                        _selectedCategoryTitle ?? 'Everything in store',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style:
-                            Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                        borderRadius: const BorderRadius.all(Radius.circular(999)),
-                        border: Border.all(color: Theme.of(context).dividerColor),
-                      ),
-                      child: Text(
-                        '${products.length} items',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      _selectedCategoryTitle == null
-                          ? 'Browse the whole catalog.'
-                          : 'Filtered by category.',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            if (_selectedCategoryTitle != null)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    defaultPadding,
-                    0,
-                    defaultPadding,
-                    6,
-                  ),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          _selectedCategoryTitle = null;
-                        });
-                      },
-                      icon: const Icon(Icons.close_rounded, size: 18),
-                      label: const Text('Clear category filter'),
-                    ),
-                  ),
-                ),
-              ),
-            if (products.isEmpty)
-              SliverToBoxAdapter(
-                child: SectionEmptyState(
-                  title: _searchQuery.isEmpty
-                      ? 'No products in this category'
-                      : 'No matching products',
-                  message: _searchQuery.isEmpty
-                      ? 'Products in this category will appear here automatically.'
-                      : 'Try another product name, brand, or category keyword.',
-                ),
-              )
-            else
-              SliverPadding(
-                padding: EdgeInsets.fromLTRB(
-                  defaultPadding,
-                  0,
-                  defaultPadding,
-                  defaultPadding + safeBottom + 20,
-                ),
-                sliver: SliverGrid(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: productCrossAxisCount,
-                    mainAxisSpacing: defaultPadding,
-                    crossAxisSpacing: defaultPadding,
-                    childAspectRatio: 0.68,
-                  ),
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    final product = products[index];
-                    return ProductCard(
-                      image: product.image,
-                      brandName: product.brandName,
-                      title: product.title,
-                      price: product.price,
-                      priceAfetDiscount: product.priceAfetDiscount,
-                      dicountpercent: product.dicountpercent,
-                      isSaved: productProvider.isBookmarked(product.id),
-                      onToggleSaved: () {
-                        context.read<ProductProvider>().toggleBookmark(product);
-                      },
-                      press: () {
-                        Navigator.pushNamed(
-                          context,
-                          productDetailsScreenRoute,
-                          arguments: product,
-                        );
-                      },
-                    );
-                  }, childCount: products.length),
-                ),
-              ),
           ],
         ),
       ),
@@ -345,8 +196,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     List<_PetSection> tabSections,
     int categoryCrossAxisCount,
     double categoryTileSize,
-    double categoryTileMainExtent,
-  ) {
+    double categoryTileMainExtent, {
+    required bool hasQuery,
+  }) {
     final slivers = <Widget>[
       SliverToBoxAdapter(
         child: Padding(
@@ -361,13 +213,17 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               Expanded(
                 child: Text(
                   'Browse categories',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
                 ),
               ),
               Text(
-                _currentTabIndex == 0 ? 'For dogs' : 'For cats',
+                hasQuery
+                    ? 'Search results'
+                    : _currentTabIndex == 0
+                    ? 'For dogs'
+                    : 'For cats',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: primaryColor,
@@ -378,6 +234,23 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         ),
       ),
     ];
+
+    if (tabSections.isEmpty) {
+      slivers.add(
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: defaultPadding),
+            child: SectionEmptyState(
+              title: hasQuery ? 'No matching categories' : 'No categories yet',
+              message: hasQuery
+                  ? 'Try another keyword like food, toys, bowls, grooming, or beds.'
+                  : 'Categories added from the admin panel will appear here automatically.',
+            ),
+          ),
+        ),
+      );
+      return slivers;
+    }
 
     for (final section in tabSections) {
       slivers.add(
@@ -391,9 +264,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             ),
             child: Text(
               section.title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
           ),
         ),
@@ -419,11 +292,15 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     : category.svgSrc,
                 size: categoryTileSize,
                 onTap: () {
+                  final fullCategoryTitle = _fullCategoryPath(
+                    category,
+                    categories,
+                  );
                   Navigator.pushNamed(
                     context,
                     categoryProductsScreenRoute,
                     arguments: <String, String>{
-                      'categoryTitle': category.title,
+                      'categoryTitle': fullCategoryTitle,
                       'petType': _currentTabIndex == 0 ? 'dogs' : 'cats',
                     },
                   );
@@ -478,6 +355,30 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     return sections;
   }
 
+  List<_PetSection> _filterSectionsForQuery(
+    List<_PetSection> sections,
+    String query,
+  ) {
+    final normalized = _normalizedCategoryKey(query);
+    if (normalized.isEmpty) {
+      return sections;
+    }
+
+    final filtered = <_PetSection>[];
+    for (final section in sections) {
+      final matches = section.categories.where((category) {
+        final title = _normalizedCategoryKey(category.title);
+        final id = _normalizedCategoryKey(category.id);
+        return title.contains(normalized) || id.contains(normalized);
+      }).toList();
+
+      if (matches.isNotEmpty) {
+        filtered.add(_PetSection(title: section.title, categories: matches));
+      }
+    }
+    return filtered;
+  }
+
   CategoryModel? _petParentCategory(
     List<CategoryModel> categories,
     String petType,
@@ -529,105 +430,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         normalizedTitle.contains('groom');
   }
 
-  List<ProductModel> _filteredProducts(ProductProvider productProvider) {
-    final selectedCategoryTitle = _selectedCategoryTitle?.trim();
-    if (selectedCategoryTitle == null || selectedCategoryTitle.isEmpty) {
-      return productProvider.searchInCatalog(
-        _searchQuery,
-        source: productProvider.catalogProducts,
-      );
-    }
-
-    final normalizedTitle = selectedCategoryTitle.toLowerCase();
-    final petType = _currentTabIndex == 0 ? 'dogs' : 'cats';
-    final matchedCategory = _matchFirestoreCategory(
-      productProvider.discoverCategories,
-      selectedCategoryTitle,
-      preferredPetType: petType,
-    );
-    final matchedId = matchedCategory?.id.trim().toLowerCase();
-    final matchedTitle = matchedCategory?.title.trim().toLowerCase();
-
-    final normalizedPetType = petType.toLowerCase();
-    final ambiguousAcrossPets = _isCategorySharedAcrossDogsAndCats(
-      normalizedTitle,
-    );
-    final filteredByCategory = productProvider.catalogProducts.where((product) {
-      final normalizedCategory = product.category.trim().toLowerCase();
-      final containsBaseLabel = normalizedCategory.contains(normalizedTitle);
-      final containsMatchedTitle =
-          matchedTitle != null && normalizedCategory.contains(matchedTitle);
-      final equalsMatchedId =
-          matchedId != null && normalizedCategory == matchedId;
-      final containsMatchedId =
-          matchedId != null && normalizedCategory.contains(matchedId);
-      final containsPetType = normalizedCategory.contains(normalizedPetType);
-
-      if (!ambiguousAcrossPets) {
-        return containsBaseLabel ||
-            containsMatchedTitle ||
-            equalsMatchedId ||
-            containsMatchedId;
-      }
-
-      return (containsMatchedId || equalsMatchedId || containsMatchedTitle) ||
-          ((containsBaseLabel || containsMatchedTitle) && containsPetType);
-    }).toList();
-
-    return productProvider.searchInCatalog(
-      _searchQuery,
-      source: filteredByCategory,
-    );
-  }
-
-  CategoryModel? _matchFirestoreCategory(
-    List<CategoryModel> categories,
-    String label, {
-    String? preferredPetType,
-  }) {
-    final normalized = _normalizedCategoryKey(label);
-    final flattened = _flattenCategories(categories);
-    final byId = <String, CategoryModel>{
-      for (final category in flattened) category.id: category,
-    };
-    CategoryModel? bestMatch;
-    var bestScore = -1;
-
-    for (final category in flattened) {
-      final titleKey = _normalizedCategoryKey(category.title);
-      final idKey = _normalizedCategoryKey(category.id);
-      if (titleKey.contains(normalized) ||
-          normalized.contains(titleKey) ||
-          idKey.contains(normalized) ||
-          normalized.contains(idKey)) {
-        var score = 0;
-        if (titleKey == normalized || idKey == normalized) {
-          score += 3;
-        }
-        if (preferredPetType != null && preferredPetType.isNotEmpty) {
-          final normalizedPet = _normalizedCategoryKey(preferredPetType);
-          if (idKey.startsWith('${normalizedPet}_')) {
-            score += 5;
-          }
-          final parent = category.parentId == null
-              ? null
-              : byId[category.parentId!];
-          final parentTitle = parent == null
-              ? ''
-              : _normalizedCategoryKey(parent.title);
-          if (parentTitle == normalizedPet) {
-            score += 8;
-          }
-        }
-        if (score > bestScore) {
-          bestScore = score;
-          bestMatch = category;
-        }
-      }
-    }
-    return bestMatch;
-  }
-
   List<CategoryModel> _flattenCategories(List<CategoryModel> categories) {
     final flat = <CategoryModel>[];
     void collect(List<CategoryModel> nodes) {
@@ -643,6 +445,25 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     return flat;
   }
 
+  String _fullCategoryPath(
+    CategoryModel category,
+    List<CategoryModel> categories,
+  ) {
+    if (category.parentId == null || category.parentId!.trim().isEmpty) {
+      return category.title;
+    }
+
+    final byId = <String, CategoryModel>{
+      for (final item in _flattenCategories(categories)) item.id: item,
+    };
+    final parent = byId[category.parentId!];
+    if (parent == null) {
+      return category.title;
+    }
+
+    return '${parent.title} > ${category.title}';
+  }
+
   String _normalizedCategoryKey(String value) {
     final lowered = value.toLowerCase().trim();
     return lowered
@@ -653,21 +474,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
-  }
-
-  bool _isCategorySharedAcrossDogsAndCats(String normalizedTitle) {
-    const shared = <String>{
-      'beds mats',
-      'feeding bowls',
-      'cages houses',
-      'toys',
-      'treats biscuits',
-      'gravy jelly',
-      'supplements',
-      'shampoos dry bath',
-      'combs brushes',
-    };
-    return shared.contains(normalizedTitle);
   }
 }
 

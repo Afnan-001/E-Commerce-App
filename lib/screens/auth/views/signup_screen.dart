@@ -22,6 +22,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _acceptedPrivacyPolicy = false;
 
   @override
   void dispose() {
@@ -131,8 +132,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                 ),
                 child: Checkbox(
-                  value: true,
-                  onChanged: (_) {},
+                  value: _acceptedPrivacyPolicy,
+                  onChanged: (value) {
+                    setState(() {
+                      _acceptedPrivacyPolicy = value ?? false;
+                    });
+                  },
                   activeColor: const Color(0xFF18392F),
                 ),
               ),
@@ -142,22 +147,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   padding: const EdgeInsets.only(top: 12),
                   child: Text.rich(
                     TextSpan(
-                      text: 'By continuing, you agree to our',
+                      text: 'By continuing, you agree to the',
                       style: theme.textTheme.bodyMedium,
                       children: [
                         TextSpan(
-                          recognizer: TapGestureRecognizer()..onTap = () {},
-                          text: ' Terms of Service',
-                          style: TextStyle(
-                            color: theme.brightness == Brightness.dark
-                                ? const Color(0xFFF6C667)
-                                : const Color(0xFF18392F),
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const TextSpan(text: ' and'),
-                        TextSpan(
-                          recognizer: TapGestureRecognizer()..onTap = () {},
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () {
+                              Navigator.pushNamed(
+                                context,
+                                privacyPolicyScreenRoute,
+                              );
+                            },
                           text: ' Privacy Policy.',
                           style: TextStyle(
                             color: theme.brightness == Brightness.dark
@@ -200,7 +200,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             authProvider.isLoading ? 'Please wait...' : 'Create account',
             style: const TextStyle(
               color: Colors.white,
-              fontFamily: 'Plus Jakarta',
+              fontFamily: null,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -235,6 +235,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Future<void> _signUp(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
+    if (!_acceptedPrivacyPolicy) {
+      await showAuthErrorDialog(
+        context,
+        message: 'Please agree to the Privacy Policy to continue.',
+      );
+      return;
+    }
 
     final auth = context.read<AuthProvider>();
     final navigator = Navigator.of(context);
@@ -331,7 +338,7 @@ class _AuthActionButton extends StatelessWidget {
         label: Text(
           label,
           style: TextStyle(
-            fontFamily: 'Plus Jakarta',
+            fontFamily: null,
             fontWeight: FontWeight.w600,
             fontSize: 14,
             color: foregroundColor,

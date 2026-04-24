@@ -9,18 +9,13 @@ import 'package:shop/providers/cart_provider.dart';
 import 'package:shop/providers/product_provider.dart';
 import 'package:shop/models/product_option_model.dart';
 import 'package:shop/screens/product/views/added_to_cart_message_screen.dart';
-import 'package:shop/screens/product/views/components/product_list_tile.dart';
-import 'package:shop/screens/product/views/location_permission_store_availability_screen.dart';
 
 import '../../../constants.dart';
 import 'components/product_quantity.dart';
 import 'components/unit_price.dart';
 
 class ProductBuyNowScreen extends StatefulWidget {
-  const ProductBuyNowScreen({
-    super.key,
-    required this.product,
-  });
+  const ProductBuyNowScreen({super.key, required this.product});
 
   final ProductModel product;
 
@@ -44,7 +39,8 @@ class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
   void initState() {
     super.initState();
     final product = widget.product;
-    _selectedOption = product.packOptions
+    _selectedOption =
+        product.packOptions
             .where((option) => option.stockQuantity > 0)
             .cast<ProductOptionModel?>()
             .firstOrNull ??
@@ -55,7 +51,9 @@ class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
   Widget build(BuildContext context) {
     final product = widget.product;
     final totalPrice = _unitPrice * _quantity;
-    final isBookmarked = context.watch<ProductProvider>().isBookmarked(product.id);
+    final isBookmarked = context.watch<ProductProvider>().isBookmarked(
+      product.id,
+    );
 
     return Scaffold(
       bottomNavigationBar: CartButton(
@@ -120,8 +118,9 @@ class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
                   onPressed: () async {
                     final messenger = ScaffoldMessenger.of(context);
                     final productProvider = context.read<ProductProvider>();
-                    final success =
-                        await productProvider.toggleBookmark(product);
+                    final success = await productProvider.toggleBookmark(
+                      product,
+                    );
                     if (!context.mounted || success) return;
                     messenger.showSnackBar(
                       SnackBar(
@@ -150,8 +149,9 @@ class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
               slivers: [
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: defaultPadding),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: defaultPadding,
+                    ),
                     child: AspectRatio(
                       aspectRatio: 1.05,
                       child: NetworkImageWithLoader(product.imageUrl),
@@ -170,7 +170,9 @@ class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
                             Expanded(
                               child: UnitPrice(
                                 price: _selectedOption?.price ?? product.price,
-                                priceAfterDiscount: _selectedOption?.salePrice ?? product.salePrice,
+                                priceAfterDiscount:
+                                    _selectedOption?.salePrice ??
+                                    product.salePrice,
                               ),
                             ),
                             ProductQuantity(
@@ -216,7 +218,8 @@ class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
                                     : (_) {
                                         setState(() {
                                           _selectedOption = option;
-                                          if (_quantity > option.stockQuantity) {
+                                          if (_quantity >
+                                              option.stockQuantity) {
                                             _quantity = option.stockQuantity;
                                           }
                                         });
@@ -238,8 +241,9 @@ class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
                 ),
                 const SliverToBoxAdapter(child: Divider()),
                 SliverPadding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: defaultPadding),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: defaultPadding,
+                  ),
                   sliver: SliverToBoxAdapter(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -251,38 +255,56 @@ class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
                           style: Theme.of(context).textTheme.titleSmall,
                         ),
                         const SizedBox(height: defaultPadding / 2),
+                        if (product.description.isNotEmpty) ...[
+                          Text(product.description),
+                          const SizedBox(height: defaultPadding),
+                        ],
                         Text(
-                          product.description.isEmpty
-                              ? "A detailed description will appear here with ingredients, pet suitability, or usage tips."
-                              : product.description,
-                        ),
-                        const SizedBox(height: defaultPadding),
-                        Text(
-                          "Store pickup availability",
+                          "Delivery support",
                           style: Theme.of(context).textTheme.titleSmall,
                         ),
                         const SizedBox(height: defaultPadding / 2),
                         const Text(
-                          "Use this flow later for local pickup, same-day grooming add-ons, or branch-wise stock availability.",
+                          "One-day delivery is available in Solhapur city. Choose your pack, add it to cart, and we will take care of the rest.",
+                        ),
+                        const SizedBox(height: defaultPadding),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(defaultPadding),
+                          decoration: BoxDecoration(
+                            color: primaryColor.withValues(alpha: 0.08),
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(defaultBorderRadious),
+                            ),
+                            border: Border.all(
+                              color: primaryColor.withValues(alpha: 0.18),
+                            ),
+                          ),
+                          child: const Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _FriendlyDeliveryPoint(
+                                icon: Icons.bolt_rounded,
+                                text:
+                                    'One-day delivery across eligible Solhapur orders',
+                              ),
+                              SizedBox(height: 10),
+                              _FriendlyDeliveryPoint(
+                                icon: Icons.payments_outlined,
+                                text:
+                                    'Cash on delivery and online payment available',
+                              ),
+                              SizedBox(height: 10),
+                              _FriendlyDeliveryPoint(
+                                icon: Icons.favorite_border_rounded,
+                                text:
+                                    'A simple, customer-friendly checkout experience',
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(vertical: defaultPadding),
-                  sliver: ProductListTile(
-                    title: "Check stores",
-                    svgSrc: "assets/icons/Stores.svg",
-                    isShowBottomBorder: true,
-                    press: () {
-                      customModalBottomSheet(
-                        context,
-                        height: MediaQuery.of(context).size.height * 0.92,
-                        child:
-                            const LocationPermissonStoreAvailabilityScreen(),
-                      );
-                    },
                   ),
                 ),
                 const SliverToBoxAdapter(
@@ -293,6 +315,33 @@ class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _FriendlyDeliveryPoint extends StatelessWidget {
+  const _FriendlyDeliveryPoint({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: primaryColor),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              height: 1.35,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

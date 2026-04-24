@@ -50,24 +50,22 @@ class ProductInfo extends StatelessWidget {
                     "$rating ",
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
-                  Text("($numOfReviews ratings)")
+                  Text("($numOfReviews ratings)"),
                 ],
               ],
             ),
-            const SizedBox(height: defaultPadding),
-            Text(
-              "About this product",
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium!
-                  .copyWith(fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: defaultPadding / 2),
-            Text(
-              description,
-              style: const TextStyle(height: 1.4),
-            ),
-            const SizedBox(height: defaultPadding / 2),
+            if (description.trim().isNotEmpty) ...[
+              const SizedBox(height: defaultPadding),
+              Text(
+                "About this product",
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: defaultPadding / 2),
+              Text(description, style: const TextStyle(height: 1.4)),
+              const SizedBox(height: defaultPadding / 2),
+            ],
           ],
         ),
       ),

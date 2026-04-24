@@ -3,15 +3,28 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shop/core/services/cloudinary_service.dart';
 import 'package:shop/models/category_model.dart';
+import 'package:shop/models/coupon_model.dart';
+import 'package:shop/models/delivery_settings_model.dart';
 import 'package:shop/models/home_banner_model.dart';
+import 'package:shop/models/home_section_model.dart';
 import 'package:shop/models/order_model.dart';
 import 'package:shop/models/product_model.dart';
+import 'package:shop/repositories/coupon_repository.dart';
 import 'package:shop/repositories/order_repository.dart';
+import 'package:shop/repositories/storefront_repository.dart';
 
 abstract class AdminRepository {
   Future<List<CategoryModel>> getCategories();
   Future<List<ProductModel>> getProducts();
   Future<List<OrderModel>> getOrders();
+  Future<List<CouponModel>> getCoupons();
+  Future<void> saveCoupon(CouponModel coupon);
+  Future<void> deleteCoupon(String couponId);
+  Future<DeliverySettingsModel> getDeliverySettings();
+  Future<void> saveDeliverySettings(DeliverySettingsModel settings);
+  Future<List<HomeSectionModel>> getHomeSections();
+  Future<void> saveHomeSection(HomeSectionModel section);
+  Future<void> deleteHomeSection(String sectionId);
   Future<void> saveCategory(CategoryModel category);
   Future<void> upsertCategories(List<CategoryModel> categories);
   Future<void> deleteCategory(String categoryId);
@@ -33,11 +46,17 @@ class FirestoreAdminRepository implements AdminRepository {
     CloudinaryService? cloudinaryService,
   }) : _firestore = firestore,
        _cloudinaryService = cloudinaryService ?? const CloudinaryService(),
-       _orderRepository = FirestoreOrderRepository(firestore: firestore);
+       _orderRepository = FirestoreOrderRepository(firestore: firestore),
+       _couponRepository = FirestoreCouponRepository(firestore: firestore),
+       _storefrontRepository = FirestoreStorefrontRepository(
+         firestore: firestore,
+       );
 
   final FirebaseFirestore? _firestore;
   final CloudinaryService _cloudinaryService;
   final OrderRepository _orderRepository;
+  final CouponRepository _couponRepository;
+  final StorefrontRepository _storefrontRepository;
 
   FirebaseFirestore get _db => _firestore ?? FirebaseFirestore.instance;
 
@@ -153,6 +172,51 @@ class FirestoreAdminRepository implements AdminRepository {
   }
 
   @override
+  Future<List<CouponModel>> getCoupons() {
+    return _couponRepository.getCoupons();
+  }
+
+  @override
+  Future<void> saveCoupon(CouponModel coupon) {
+    _ensureReady();
+    return _couponRepository.saveCoupon(coupon);
+  }
+
+  @override
+  Future<void> deleteCoupon(String couponId) {
+    _ensureReady();
+    return _couponRepository.deleteCoupon(couponId);
+  }
+
+  @override
+  Future<DeliverySettingsModel> getDeliverySettings() {
+    return _storefrontRepository.getDeliverySettings();
+  }
+
+  @override
+  Future<void> saveDeliverySettings(DeliverySettingsModel settings) {
+    _ensureReady();
+    return _storefrontRepository.saveDeliverySettings(settings);
+  }
+
+  @override
+  Future<List<HomeSectionModel>> getHomeSections() {
+    return _storefrontRepository.getHomeSections();
+  }
+
+  @override
+  Future<void> saveHomeSection(HomeSectionModel section) {
+    _ensureReady();
+    return _storefrontRepository.saveHomeSection(section);
+  }
+
+  @override
+  Future<void> deleteHomeSection(String sectionId) {
+    _ensureReady();
+    return _storefrontRepository.deleteHomeSection(sectionId);
+  }
+
+  @override
   Future<void> saveCategory(CategoryModel category) async {
     _ensureReady();
 
@@ -181,9 +245,9 @@ class FirestoreAdminRepository implements AdminRepository {
     await docRef.set(payload.toMap(), SetOptions(merge: true));
 
     if (previousCategory != null) {
-      final removedImages = _categoryImageUrls(previousCategory)
-          .where((image) => !_categoryImageUrls(payload).contains(image))
-          .toList();
+      final removedImages = _categoryImageUrls(
+        previousCategory,
+      ).where((image) => !_categoryImageUrls(payload).contains(image)).toList();
       await _cloudinaryService.deleteImagesByUrls(removedImages);
     }
   }
@@ -252,11 +316,12 @@ class FirestoreAdminRepository implements AdminRepository {
     if (!_isReady) return const <HomeBannerModel>[];
 
     final snapshot = await _db.collection('banners').get();
-    final banners = snapshot.docs
-        .map((doc) => HomeBannerModel.fromMap(doc.id, doc.data()))
-        .where((banner) => banner.imageUrl.trim().isNotEmpty)
-        .toList()
-      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    final banners =
+        snapshot.docs
+            .map((doc) => HomeBannerModel.fromMap(doc.id, doc.data()))
+            .where((banner) => banner.imageUrl.trim().isNotEmpty)
+            .toList()
+          ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
     return banners;
   }
 

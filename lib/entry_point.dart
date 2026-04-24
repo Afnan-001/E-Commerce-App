@@ -43,11 +43,8 @@ class _EntryPointState extends State<EntryPoint> {
     final pages = <Widget>[
       HomeScreen(
         onOpenDiscover: () => _openDiscover(),
-        onOpenCategory: (categoryTitle) => Navigator.pushNamed(
-          context,
-          categoryProductsScreenRoute,
-          arguments: categoryTitle,
-        ),
+        onOpenCategory: (categoryTitle) =>
+            _openDiscover(categoryTitle: categoryTitle),
       ),
       DiscoverScreen(
         initialCategoryTitle: _discoverCategoryTitle,
@@ -92,9 +89,7 @@ class _EntryPointState extends State<EntryPoint> {
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF1F2328)
-                    : Colors.white,
+                color: isDark ? const Color(0xFF1F2328) : Colors.white,
                 borderRadius: const BorderRadius.all(Radius.circular(24)),
                 boxShadow: [
                   BoxShadow(
@@ -123,7 +118,9 @@ class _EntryPointState extends State<EntryPoint> {
                     iconTheme: WidgetStateProperty.resolveWith((states) {
                       final selected = states.contains(WidgetState.selected);
                       return IconThemeData(
-                        color: selected ? const Color(0xFF1F2328) : (isDark ? Colors.white70 : Colors.black54),
+                        color: selected
+                            ? const Color(0xFF1F2328)
+                            : (isDark ? Colors.white70 : Colors.black54),
                       );
                     }),
                     labelTextStyle: WidgetStateProperty.resolveWith((states) {
@@ -133,8 +130,10 @@ class _EntryPointState extends State<EntryPoint> {
                             ? (isDark ? Colors.white : const Color(0xFF1F2328))
                             : (isDark ? Colors.white70 : Colors.black54),
                         fontSize: 12,
-                        fontFamily: 'Plus Jakarta',
-                        fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                        fontFamily: null,
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w600,
                       );
                     }),
                   ),
@@ -152,7 +151,8 @@ class _EntryPointState extends State<EntryPoint> {
                       }
                     },
                     height: 56,
-                    labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                    labelBehavior:
+                        NavigationDestinationLabelBehavior.alwaysShow,
                     destinations: [
                       NavigationDestination(
                         icon: svgIcon(
@@ -203,7 +203,7 @@ class _EntryPointState extends State<EntryPoint> {
                 ),
               ),
             );
-          }
+          },
         ),
       ),
     );

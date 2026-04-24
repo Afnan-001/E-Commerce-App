@@ -1,28 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../constants.dart';
 
-const AppBarTheme appBarLightTheme = AppBarTheme(
+final AppBarTheme appBarLightTheme = AppBarTheme(
   backgroundColor: Colors.white,
   elevation: 0,
-  iconTheme: IconThemeData(color: blackColor),
-  titleTextStyle: TextStyle(
+  iconTheme: const IconThemeData(color: blackColor),
+  titleTextStyle: GoogleFonts.sora(
     fontSize: 16,
     fontWeight: FontWeight.w700,
     color: blackColor,
-    fontFamily: grandisExtendedFont,
   ),
 );
 
-const AppBarTheme appBarDarkTheme = AppBarTheme(
+final AppBarTheme appBarDarkTheme = AppBarTheme(
   backgroundColor: blackColor,
   elevation: 0,
-  iconTheme: IconThemeData(color: Colors.white),
-  titleTextStyle: TextStyle(
+  iconTheme: const IconThemeData(color: Colors.white),
+  titleTextStyle: GoogleFonts.sora(
     fontSize: 16,
     fontWeight: FontWeight.w700,
     color: Colors.white,
-    fontFamily: grandisExtendedFont,
   ),
 );
 

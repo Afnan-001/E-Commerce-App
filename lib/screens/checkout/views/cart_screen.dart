@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shop/components/network_image_with_loader.dart';
 import 'package:shop/constants.dart';
+import 'package:shop/models/cart_pricing_summary_model.dart';
 import 'package:shop/providers/cart_provider.dart';
 import 'package:shop/route/route_constants.dart';
 
@@ -12,8 +13,7 @@ class CartScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final cartProvider = context.watch<CartProvider>();
     final items = cartProvider.items;
-    final deliveryFee = items.isEmpty ? 0.0 : 49.0;
-    final total = cartProvider.subtotal + deliveryFee;
+    final pricing = cartProvider.pricing;
 
     return Scaffold(
       appBar: AppBar(title: Text('Cart (${cartProvider.totalItems})')),
@@ -59,6 +59,16 @@ class CartScreen extends StatelessWidget {
             )
           : Column(
               children: [
+                if (items.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      defaultPadding,
+                      defaultPadding,
+                      defaultPadding,
+                      0,
+                    ),
+                    child: _FreeDeliveryBanner(pricing: pricing),
+                  ),
                 Expanded(
                   child: ListView.separated(
                     padding: const EdgeInsets.all(defaultPadding),
@@ -105,12 +115,16 @@ class CartScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: defaultPadding / 4),
                                   Text(item.product.brandName),
-                                  if (item.selectedOptionLabel.trim().isNotEmpty)
+                                  if (item.selectedOptionLabel
+                                      .trim()
+                                      .isNotEmpty)
                                     Padding(
                                       padding: const EdgeInsets.only(
                                         top: defaultPadding / 4,
                                       ),
-                                      child: Text('Pack: ${item.selectedOptionLabel}'),
+                                      child: Text(
+                                        'Pack: ${item.selectedOptionLabel}',
+                                      ),
                                     ),
                                   const SizedBox(height: defaultPadding / 4),
                                   Text(
@@ -219,17 +233,27 @@ class CartScreen extends StatelessWidget {
                     children: [
                       _PriceRow(
                         label: 'Subtotal',
-                        value: 'Rs ${cartProvider.subtotal.toStringAsFixed(0)}',
+                        value: 'Rs ${pricing.subtotal.toStringAsFixed(0)}',
                       ),
+                      if (pricing.productDiscount > 0) ...[
+                        const SizedBox(height: defaultPadding / 4),
+                        _PriceRow(
+                          label: 'Product savings',
+                          value:
+                              '-Rs ${pricing.productDiscount.toStringAsFixed(0)}',
+                        ),
+                      ],
                       const SizedBox(height: defaultPadding / 4),
                       _PriceRow(
                         label: 'Delivery',
-                        value: 'Rs ${deliveryFee.toStringAsFixed(0)}',
+                        value: pricing.deliveryCharge == 0
+                            ? 'Free'
+                            : 'Rs ${pricing.deliveryCharge.toStringAsFixed(0)}',
                       ),
                       const SizedBox(height: defaultPadding / 2),
                       _PriceRow(
                         label: 'Total',
-                        value: 'Rs ${total.toStringAsFixed(0)}',
+                        value: 'Rs ${pricing.total.toStringAsFixed(0)}',
                         isBold: true,
                       ),
                       const SizedBox(height: defaultPadding),
@@ -244,6 +268,52 @@ class CartScreen extends StatelessWidget {
                 ),
               ],
             ),
+    );
+  }
+}
+
+class _FreeDeliveryBanner extends StatelessWidget {
+  const _FreeDeliveryBanner({required this.pricing});
+
+  final CartPricingSummaryModel pricing;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = pricing.freeDeliveryThreshold <= 0
+        ? 1.0
+        : (pricing.subtotal / pricing.freeDeliveryThreshold)
+              .clamp(0.0, 1.0)
+              .toDouble();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(defaultPadding),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F0FF),
+        borderRadius: const BorderRadius.all(Radius.circular(18)),
+        border: Border.all(color: const Color(0xFFDCCFFF)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            pricing.qualifiesForFreeDelivery
+                ? 'Free delivery unlocked'
+                : 'Add Rs ${pricing.amountLeftForFreeDelivery.toStringAsFixed(0)} more for free delivery',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: const BorderRadius.all(Radius.circular(999)),
+            child: LinearProgressIndicator(
+              minHeight: 8,
+              value: progress,
+              backgroundColor: Colors.white,
+              valueColor: const AlwaysStoppedAnimation<Color>(primaryColor),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

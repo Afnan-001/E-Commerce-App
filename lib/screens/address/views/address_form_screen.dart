@@ -37,6 +37,14 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
 
   static const List<String> _presetLabels = <String>['Home', 'Work', 'Other'];
   static const Duration _pincodeDebounceDuration = Duration(milliseconds: 500);
+  static const Set<String> _supportedDistricts = <String>{
+    'solapur',
+    'solhapur',
+  };
+  static const Set<String> _supportedCityHints = <String>{
+    'solapur',
+    'solhapur',
+  };
 
   String _selectedLabel = 'Home';
   bool _isDefault = false;
@@ -44,6 +52,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
   String? _pincodeLookupError;
   String? _pincodeLookupErrorPin;
   String? _lastResolvedPincode;
+  bool _isServiceablePincode = true;
   int _pincodeLookupGeneration = 0;
   Timer? _pincodeDebounceTimer;
 
@@ -169,6 +178,16 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                   ),
                 ),
               ],
+              if (_isValidPincodeLength && !_isServiceablePincode) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Delivery is currently available only for Solhapur city pincodes.',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
               const SizedBox(height: defaultPadding),
               TextFormField(
                 controller: _districtController,
@@ -258,6 +277,8 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
   String get _normalizedPincode =>
       _pincodeController.text.replaceAll(RegExp(r'\D'), '');
 
+  bool get _isValidPincodeLength => _normalizedPincode.length == 6;
+
   void _handlePincodeChanged(String value) {
     final normalizedPincode = value.replaceAll(RegExp(r'\D'), '');
     final currentGeneration = ++_pincodeLookupGeneration;
@@ -265,6 +286,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
     setState(() {
       _pincodeLookupError = null;
       _pincodeLookupErrorPin = null;
+      _isServiceablePincode = true;
       if (normalizedPincode.length != 6) {
         _isLookingUpPincode = false;
       }
@@ -311,6 +333,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
       _isLookingUpPincode = true;
       _pincodeLookupError = null;
       _pincodeLookupErrorPin = null;
+      _isServiceablePincode = true;
     });
 
     try {
@@ -324,12 +347,17 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
 
       _pincodeCache[pincode] = result;
       _lastResolvedPincode = pincode;
+      final isServiceable = _isSolhapurServiceable(result);
       setState(() {
         _districtController.text = result.district;
+        if (result.city.trim().isNotEmpty) {
+          _cityController.text = result.city;
+        }
         _stateController.text = result.state;
         _isLookingUpPincode = false;
         _pincodeLookupError = null;
         _pincodeLookupErrorPin = null;
+        _isServiceablePincode = isServiceable;
       });
     } on PincodeLookupException catch (error) {
       if (!mounted) return;
@@ -344,6 +372,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
         _isLookingUpPincode = false;
         _pincodeLookupError = message;
         _pincodeLookupErrorPin = pincode;
+        _isServiceablePincode = false;
       });
     } catch (_) {
       if (!mounted) return;
@@ -359,6 +388,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
         _isLookingUpPincode = false;
         _pincodeLookupError = message;
         _pincodeLookupErrorPin = pincode;
+        _isServiceablePincode = false;
       });
     }
   }
@@ -376,17 +406,32 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
     }
 
     _lastResolvedPincode = pincode;
+    final isServiceable = _isSolhapurServiceable(result);
     setState(() {
       _districtController.text = result.district;
+      if (result.city.trim().isNotEmpty) {
+        _cityController.text = result.city;
+      }
       _stateController.text = result.state;
       _isLookingUpPincode = false;
       _pincodeLookupError = null;
       _pincodeLookupErrorPin = null;
+      _isServiceablePincode = isServiceable;
     });
   }
 
   void _saveAddress() {
     if (!_formKey.currentState!.validate()) return;
+    if (!_isServiceablePincode) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Sorry, we currently deliver only within Solhapur city.',
+          ),
+        ),
+      );
+      return;
+    }
 
     final label = _selectedLabel == 'Other'
         ? _customLabelController.text.trim()
@@ -414,6 +459,14 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
     );
 
     Navigator.of(context).pop(model);
+  }
+
+  bool _isSolhapurServiceable(PincodeLookupResult result) {
+    final district = result.district.trim().toLowerCase();
+    final city = result.city.trim().toLowerCase();
+
+    return _supportedDistricts.contains(district) ||
+        _supportedCityHints.contains(city);
   }
 
   String? _requiredValidator(String? value, {required String field}) {
@@ -445,6 +498,10 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
     final digits = value.replaceAll(RegExp(r'\D'), '');
     if (digits.length < 6) {
       return 'Enter a valid pincode';
+    }
+
+    if (!_isServiceablePincode && _normalizedPincode == digits) {
+      return 'We do not deliver to this pincode yet';
     }
 
     return null;

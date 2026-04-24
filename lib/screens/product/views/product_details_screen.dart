@@ -6,7 +6,6 @@ import 'package:shop/components/custom_modal_bottom_sheet.dart';
 import 'package:shop/components/product/product_card.dart';
 import 'package:shop/constants.dart';
 import 'package:shop/core/widgets/feature_placeholder_screen.dart';
-import 'package:shop/core/widgets/info_bottom_sheet.dart';
 import 'package:shop/models/product_model.dart';
 import 'package:shop/providers/product_provider.dart';
 import 'package:shop/route/route_constants.dart';
@@ -16,14 +15,10 @@ import 'components/notify_me_card.dart';
 import 'components/product_images.dart';
 import 'components/product_info.dart';
 import 'components/product_list_tile.dart';
-import 'components/product_reviews_section.dart';
 import 'product_buy_now_screen.dart';
 
 class ProductDetailsScreen extends StatelessWidget {
-  const ProductDetailsScreen({
-    super.key,
-    required this.product,
-  });
+  const ProductDetailsScreen({super.key, required this.product});
 
   final ProductModel? product;
 
@@ -46,8 +41,7 @@ class ProductDetailsScreen extends StatelessWidget {
     final totalStock = currentProduct.hasPackOptions
         ? currentProduct.totalPackStock
         : currentProduct.stockQuantity;
-    final isProductAvailable =
-        currentProduct.isActive && totalStock > 0;
+    final isProductAvailable = currentProduct.isActive && totalStock > 0;
     final relatedProducts = context
         .watch<ProductProvider>()
         .popularProducts
@@ -61,8 +55,9 @@ class ProductDetailsScreen extends StatelessWidget {
         currentProduct.defaultPackOption?.effectivePrice ??
         currentProduct.salePrice ??
         currentProduct.price;
-    final isBookmarked =
-        context.watch<ProductProvider>().isBookmarked(currentProduct.id);
+    final isBookmarked = context.watch<ProductProvider>().isBookmarked(
+      currentProduct.id,
+    );
 
     return Scaffold(
       bottomNavigationBar: isProductAvailable
@@ -76,10 +71,7 @@ class ProductDetailsScreen extends StatelessWidget {
                 );
               },
             )
-          : NotifyMeCard(
-              isNotify: false,
-              onChanged: (value) {},
-            ),
+          : NotifyMeCard(isNotify: false, onChanged: (value) {}),
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -90,8 +82,9 @@ class ProductDetailsScreen extends StatelessWidget {
                 IconButton(
                   onPressed: () async {
                     final productProvider = context.read<ProductProvider>();
-                    final success =
-                        await productProvider.toggleBookmark(currentProduct);
+                    final success = await productProvider.toggleBookmark(
+                      currentProduct,
+                    );
                     if (!context.mounted || success) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -108,7 +101,7 @@ class ProductDetailsScreen extends StatelessWidget {
                       isBookmarked
                           ? primaryColor
                           : (Theme.of(context).textTheme.bodyLarge?.color ??
-                              blackColor80),
+                                blackColor80),
                       BlendMode.srcIn,
                     ),
                   ),
@@ -122,42 +115,7 @@ class ProductDetailsScreen extends StatelessWidget {
                   : currentProduct.brandName,
               title: currentProduct.title,
               isAvailable: isProductAvailable,
-              description: currentProduct.description.isEmpty
-                  ? "Product details will appear here once the item description is available."
-                  : currentProduct.description,
-            ),
-            ProductListTile(
-              svgSrc: "assets/icons/Product.svg",
-              title: "Care details",
-              press: () {
-                customModalBottomSheet(
-                  context,
-                  height: MediaQuery.of(context).size.height * 0.78,
-                  child: InfoBottomSheet(
-                    title: "Care details",
-                    sections: [
-                      InfoSection(
-                        heading: "Best for",
-                        body:
-                            currentProduct.categoryName.isEmpty
-                                ? "Ideal for your pet care catalog."
-                                : "Built for the ${currentProduct.categoryName.toLowerCase()} section of your store.",
-                      ),
-                      InfoSection(
-                        heading: "Product notes",
-                        body: currentProduct.description.isEmpty
-                            ? "More details will appear here for ingredients, grooming directions, or usage tips."
-                            : currentProduct.description,
-                      ),
-                      const InfoSection(
-                        heading: "Need expert help?",
-                        body:
-                            "Use this section for pet-safe usage guidance, grooming suitability, and breed-specific recommendations.",
-                      ),
-                    ],
-                  ),
-                );
-              },
+              description: currentProduct.description,
             ),
             ProductListTile(
               svgSrc: "assets/icons/Delivery.svg",
@@ -166,26 +124,7 @@ class ProductDetailsScreen extends StatelessWidget {
                 customModalBottomSheet(
                   context,
                   height: MediaQuery.of(context).size.height * 0.72,
-                  child: const InfoBottomSheet(
-                    title: "Delivery information",
-                    sections: [
-                      InfoSection(
-                        heading: "Standard delivery",
-                        body:
-                            "Orders are usually packed within 24 hours and delivered in 2 to 5 business days depending on your location.",
-                      ),
-                      InfoSection(
-                        heading: "Store pickup",
-                        body:
-                            "Pickup can be offered for stocked pet products or bundled with nearby grooming service slots.",
-                      ),
-                      InfoSection(
-                        heading: "Before checkout",
-                        body:
-                            "Use this area later for shipping eligibility, grooming appointment notes, and delivery cut-off details.",
-                      ),
-                    ],
-                  ),
+                  child: const _DeliveryInformationSheet(),
                 );
               },
             ),
@@ -200,14 +139,6 @@ class ProductDetailsScreen extends StatelessWidget {
                   child: const ProductReturnsScreen(),
                 );
               },
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.only(top: defaultPadding),
-              sliver: SliverToBoxAdapter(
-                child: ProductReviewsSection(
-                  productId: currentProduct.id,
-                ),
-              ),
             ),
             if (relatedProducts.isNotEmpty) ...[
               SliverPadding(
@@ -228,8 +159,9 @@ class ProductDetailsScreen extends StatelessWidget {
                     itemBuilder: (context, index) => Padding(
                       padding: EdgeInsets.only(
                         left: defaultPadding,
-                        right:
-                            index == relatedProducts.length - 1 ? defaultPadding : 0,
+                        right: index == relatedProducts.length - 1
+                            ? defaultPadding
+                            : 0,
                       ),
                       child: ProductCard(
                         image: relatedProducts[index].image,
@@ -252,11 +184,57 @@ class ProductDetailsScreen extends StatelessWidget {
                 ),
               ),
             ],
-            const SliverToBoxAdapter(
-              child: SizedBox(height: defaultPadding),
-            ),
+            const SliverToBoxAdapter(child: SizedBox(height: defaultPadding)),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _DeliveryInformationSheet extends StatelessWidget {
+  const _DeliveryInformationSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final sections = const [
+      (
+        heading: "One-day delivery",
+        body:
+            "Orders inside Solhapur city are usually packed quickly and delivered within 1 day on eligible orders.",
+      ),
+      (
+        heading: "Cash on delivery",
+        body:
+            "You can place your order now and pay at your doorstep, or choose online payment during checkout.",
+      ),
+      (
+        heading: "Before checkout",
+        body:
+            "Delivery is currently available only for Solhapur city pincodes, so please add a serviceable address before ordering.",
+      ),
+    ];
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(defaultPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Delivery information",
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: defaultPadding),
+          for (final section in sections) ...[
+            Text(
+              section.heading,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 6),
+            Text(section.body),
+            const SizedBox(height: defaultPadding),
+          ],
+        ],
       ),
     );
   }

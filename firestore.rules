@@ -52,6 +52,37 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    match /home_sections/{sectionId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /store_config/{configId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /coupons/{couponId} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (
+        isSignedIn() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usageCount', 'updatedAt']) &&
+        request.resource.data.usageCount == resource.data.usageCount + 1 &&
+        request.resource.data.code == resource.data.code &&
+        request.resource.data.discountType == resource.data.discountType &&
+        request.resource.data.discountValue == resource.data.discountValue &&
+        request.resource.data.applicableCategoryIds == resource.data.applicableCategoryIds &&
+        request.resource.data.applicableProductIds == resource.data.applicableProductIds &&
+        request.resource.data.minCartValue == resource.data.minCartValue &&
+        request.resource.data.expiryDate == resource.data.expiryDate &&
+        request.resource.data.usageLimit == resource.data.usageLimit &&
+        request.resource.data.isActive == resource.data.isActive &&
+        request.resource.data.createdAt == resource.data.createdAt
+      );
+    }
+
     match /orders/{orderId} {
       allow create: if isSignedIn() &&
         request.resource.data.userId == request.auth.uid;

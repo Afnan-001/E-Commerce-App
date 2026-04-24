@@ -7,13 +7,10 @@ import 'package:shop/providers/order_provider.dart';
 import 'package:shop/providers/product_provider.dart';
 import 'package:shop/route/route_constants.dart';
 import 'package:shop/screens/auth/views/components/auth_feedback.dart';
+import 'package:shop/screens/auth/views/components/auth_shell.dart';
 
 class PhoneAuthScreen extends StatefulWidget {
-  const PhoneAuthScreen({
-    super.key,
-    this.isSignUp = false,
-    this.prefilledName,
-  });
+  const PhoneAuthScreen({super.key, this.isSignUp = false, this.prefilledName});
 
   final bool isSignUp;
   final String? prefilledName;
@@ -58,10 +55,9 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
     await orderProvider.syncForUser(userId);
 
     if (!mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      entryPointScreenRoute,
-      (route) => false,
-    );
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil(entryPointScreenRoute, (route) => false);
   }
 
   String _normalizePhoneNumber(String input) {
@@ -79,30 +75,45 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final otpRequested = authProvider.isPhoneOtpRequested;
+    final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.isSignUp ? 'Sign up with phone' : 'Sign in with phone'),
+    return AuthShell(
+      eyebrow: widget.isSignUp ? 'PHONE SIGN UP' : 'PHONE SIGN IN',
+      title: widget.isSignUp ? 'Create account with OTP' : 'Continue with OTP',
+      subtitle:
+          'Use your mobile number to receive a one-time code and continue securely.',
+      footer: Center(
+        child: TextButton.icon(
+          onPressed: () => Navigator.of(context).maybePop(),
+          icon: const Icon(Icons.arrow_back_rounded, size: 18),
+          label: Text(
+            widget.isSignUp
+                ? 'Back to sign up options'
+                : 'Back to login options',
+          ),
+        ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(defaultPadding),
-        child: SizedBox(
-          width: double.infinity,
-          child: Column(
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Use your mobile number and OTP to continue.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(color: Colors.black54),
+            _PhoneAuthInfoCard(
+              icon: otpRequested
+                  ? Icons.mark_chat_read_outlined
+                  : Icons.sms_outlined,
+              text: otpRequested
+                  ? 'OTP sent. Enter the 6-digit code to finish signing in.'
+                  : 'We will send a one-time code to your mobile number so you can continue securely.',
             ),
             const SizedBox(height: defaultPadding),
             if (widget.isSignUp) ...[
               TextFormField(
                 controller: _nameController,
                 textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(hintText: 'Full name (optional)'),
+                decoration: const InputDecoration(
+                  hintText: 'Full name (optional)',
+                ),
               ),
               const SizedBox(height: defaultPadding),
             ],
@@ -127,45 +138,80 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
             const SizedBox(height: defaultPadding),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
-                onPressed: authProvider.isLoading
-                    ? null
-                    : () async {
-                        final auth = context.read<AuthProvider>();
-                        final messenger = ScaffoldMessenger.of(context);
-                        if (!_phoneFormKey.currentState!.validate()) return;
-                        final normalizedPhone = _normalizePhoneNumber(
-                          _phoneController.text,
-                        );
-                        _phoneController.text = normalizedPhone;
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E242B),
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: ElevatedButton(
+                  onPressed: authProvider.isLoading
+                      ? null
+                      : () async {
+                          final auth = context.read<AuthProvider>();
+                          final messenger = ScaffoldMessenger.of(context);
+                          if (!_phoneFormKey.currentState!.validate()) return;
+                          final normalizedPhone = _normalizePhoneNumber(
+                            _phoneController.text,
+                          );
+                          _phoneController.text = normalizedPhone;
 
-                        final success = await auth.requestPhoneOtp(
-                          phoneNumber: normalizedPhone,
-                        );
-                        if (!context.mounted) return;
-                        if (!success) {
-                          final message =
-                              auth.errorMessage ??
-                              'Unable to send OTP right now.';
-                          await showAuthErrorDialog(context, message: message);
-                          auth.clearError();
-                          return;
-                        }
+                          final success = await auth.requestPhoneOtp(
+                            phoneNumber: normalizedPhone,
+                          );
+                          if (!context.mounted) return;
+                          if (!success) {
+                            final message =
+                                auth.errorMessage ??
+                                'Unable to send OTP right now.';
+                            await showAuthErrorDialog(
+                              context,
+                              message: message,
+                            );
+                            auth.clearError();
+                            return;
+                          }
 
-                        if (!auth.isPhoneOtpRequested) {
-                          await _syncAndOpenApp();
-                          return;
-                        }
+                          if (!auth.isPhoneOtpRequested) {
+                            await _syncAndOpenApp();
+                            return;
+                          }
 
-                        messenger.showSnackBar(
-                          const SnackBar(
-                            content: Text('OTP sent successfully.'),
-                          ),
-                        );
-                      },
-                child: Text(authProvider.isLoading ? 'Please wait...' : 'Send OTP'),
+                          messenger.showSnackBar(
+                            const SnackBar(
+                              content: Text('OTP sent successfully.'),
+                            ),
+                          );
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                  ),
+                  child: Text(
+                    authProvider.isLoading ? 'Please wait...' : 'Send OTP',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontFamily: null,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
               ),
             ),
+            if (!otpRequested) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Enter your number with +91 or just the 10-digit mobile number.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.textTheme.bodySmall?.color?.withValues(
+                    alpha: 0.7,
+                  ),
+                ),
+              ),
+            ],
             if (otpRequested) ...[
               const SizedBox(height: defaultPadding * 1.2),
               Form(
@@ -190,34 +236,55 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: ElevatedButton(
-                      onPressed: authProvider.isLoading
-                          ? null
-                          : () async {
-                              final auth = context.read<AuthProvider>();
-                              if (!_otpFormKey.currentState!.validate()) return;
-                              final success = await auth.verifyPhoneOtp(
-                                smsCode: _otpController.text,
-                                preferredName: _nameController.text,
-                              );
-                              if (!context.mounted) return;
-                              if (!success) {
-                                final message =
-                                    auth.errorMessage ??
-                                    'Unable to verify OTP right now.';
-                                await showAuthErrorDialog(
-                                  context,
-                                  message: message,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E242B),
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                      child: ElevatedButton(
+                        onPressed: authProvider.isLoading
+                            ? null
+                            : () async {
+                                final auth = context.read<AuthProvider>();
+                                if (!_otpFormKey.currentState!.validate()) {
+                                  return;
+                                }
+                                final success = await auth.verifyPhoneOtp(
+                                  smsCode: _otpController.text,
+                                  preferredName: _nameController.text,
                                 );
-                                auth.clearError();
-                                return;
-                              }
-                              await _syncAndOpenApp();
-                            },
-                      child: Text(
-                        authProvider.isLoading
-                            ? 'Verifying...'
-                            : 'Verify & continue',
+                                if (!context.mounted) return;
+                                if (!success) {
+                                  final message =
+                                      auth.errorMessage ??
+                                      'Unable to verify OTP right now.';
+                                  await showAuthErrorDialog(
+                                    context,
+                                    message: message,
+                                  );
+                                  auth.clearError();
+                                  return;
+                                }
+                                await _syncAndOpenApp();
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(22),
+                          ),
+                        ),
+                        child: Text(
+                          authProvider.isLoading
+                              ? 'Verifying...'
+                              : 'Verify & continue',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontFamily: null,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -227,15 +294,19 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
                       onPressed: authProvider.isLoading
                           ? null
                           : () async {
-                              if (!_phoneFormKey.currentState!.validate()) return;
+                              if (!_phoneFormKey.currentState!.validate()) {
+                                return;
+                              }
                               final normalizedPhone = _normalizePhoneNumber(
                                 _phoneController.text,
                               );
                               _phoneController.text = normalizedPhone;
-                              await context.read<AuthProvider>().requestPhoneOtp(
-                                phoneNumber: normalizedPhone,
-                                isResend: true,
-                              );
+                              await context
+                                  .read<AuthProvider>()
+                                  .requestPhoneOtp(
+                                    phoneNumber: normalizedPhone,
+                                    isResend: true,
+                                  );
                             },
                       child: const Text('Resend OTP'),
                     ),
@@ -245,14 +316,51 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
             ],
             const SizedBox(height: defaultPadding),
             Text(
-              'Note: Phone sign-in works best on a real device.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.black54),
+              'If the code does not arrive, wait a moment and try resending it.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.textTheme.bodySmall?.color?.withValues(
+                  alpha: 0.72,
+                ),
+                height: 1.4,
+              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PhoneAuthInfoCard extends StatelessWidget {
+  const _PhoneAuthInfoCard({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF202733) : const Color(0xFFF6F6F2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? const Color(0xFF2A333F) : const Color(0xFFE7E7E1),
         ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            size: 18,
+            color: isDark ? Colors.white70 : const Color(0xFF5D646E),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Text(text)),
+        ],
       ),
     );
   }

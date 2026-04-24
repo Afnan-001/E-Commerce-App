@@ -1,8 +1,8 @@
-export '/screens/onbording/views/onbording_screnn.dart';
 export '/screens/auth/views/login_screen.dart';
 export '/screens/auth/views/password_recovery_screen.dart';
 export '/screens/auth/views/phone_auth_screen.dart';
 export '/screens/auth/views/signup_screen.dart';
+export '/screens/auth/views/privacy_policy_screen.dart';
 
 export '/route/route_constants.dart';
 export '/screens/bookmark/views/bookmark_screen.dart';
@@ -13,6 +13,9 @@ export '/screens/admin/views/admin_orders_screen.dart';
 export '/screens/admin/views/admin_product_form_screen.dart';
 export '/screens/admin/views/admin_products_screen.dart';
 export '/screens/admin/views/admin_home_banner_screen.dart';
+export '/screens/admin/views/admin_coupons_screen.dart';
+export '/screens/admin/views/admin_store_settings_screen.dart';
+export '/screens/admin/views/admin_home_sections_screen.dart';
 export '/screens/discover/views/discover_screen.dart';
 export '/screens/discover/views/category_products_screen.dart';
 export '/screens/home/views/home_screen.dart';

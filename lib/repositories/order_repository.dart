@@ -11,10 +11,7 @@ abstract class OrderRepository {
   Future<List<OrderModel>> getUserOrders(String userId);
   Future<List<OrderModel>> getAllOrders();
   Future<void> updateOrderStatus(String orderId, OrderStatus status);
-  Future<void> cancelOrder({
-    required String orderId,
-    required String userId,
-  });
+  Future<void> cancelOrder({required String orderId, required String userId});
 }
 
 class FirestoreOrderRepository implements OrderRepository {
@@ -92,7 +89,9 @@ class FirestoreOrderRepository implements OrderRepository {
           );
 
           transaction.update(productRef, <String, dynamic>{
-            'packOptions': updatedOptions.map((option) => option.toMap()).toList(),
+            'packOptions': updatedOptions
+                .map((option) => option.toMap())
+                .toList(),
             'stockQuantity': updatedProduct.stockQuantity,
             'updatedAt': FieldValue.serverTimestamp(),
           });
@@ -133,7 +132,9 @@ class FirestoreOrderRepository implements OrderRepository {
     payload['createdAt'] = FieldValue.serverTimestamp();
     payload['updatedAt'] = FieldValue.serverTimestamp();
 
-    await docRef.set(payload, SetOptions(merge: true));
+    final batch = _db.batch();
+    batch.set(docRef, payload, SetOptions(merge: true));
+    await batch.commit();
 
     final savedDoc = await docRef.get();
     final data = savedDoc.data();
@@ -154,14 +155,15 @@ class FirestoreOrderRepository implements OrderRepository {
         .where('userId', isEqualTo: userId)
         .get();
 
-    final orders = snapshot.docs
-        .map((doc) => OrderModel.fromMap(doc.id, doc.data()))
-        .toList()
-      ..sort((a, b) {
-        final aDate = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        final bDate = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        return bDate.compareTo(aDate);
-      });
+    final orders =
+        snapshot.docs
+            .map((doc) => OrderModel.fromMap(doc.id, doc.data()))
+            .toList()
+          ..sort((a, b) {
+            final aDate = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+            final bDate = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+            return bDate.compareTo(aDate);
+          });
 
     return orders;
   }
@@ -174,14 +176,15 @@ class FirestoreOrderRepository implements OrderRepository {
 
     final snapshot = await _db.collection('orders').get();
 
-    final orders = snapshot.docs
-        .map((doc) => OrderModel.fromMap(doc.id, doc.data()))
-        .toList()
-      ..sort((a, b) {
-        final aDate = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        final bDate = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        return bDate.compareTo(aDate);
-      });
+    final orders =
+        snapshot.docs
+            .map((doc) => OrderModel.fromMap(doc.id, doc.data()))
+            .toList()
+          ..sort((a, b) {
+            final aDate = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+            final bDate = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+            return bDate.compareTo(aDate);
+          });
 
     return orders;
   }

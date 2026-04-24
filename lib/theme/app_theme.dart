@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shop/theme/button_theme.dart';
 import 'package:shop/theme/input_decoration_theme.dart';
 
@@ -9,14 +10,17 @@ import 'theme_data.dart';
 class AppTheme {
   static ThemeData lightTheme() {
     final baseTheme = ThemeData.light();
-    final baseTextTheme = baseTheme.textTheme.apply(
-      fontFamily: 'Plus Jakarta',
-      bodyColor: blackColor,
-      displayColor: blackColor,
-    );
+    final bodyFontFamily = GoogleFonts.manrope().fontFamily;
+    final headingFontFamily = GoogleFonts.sora().fontFamily;
+    final baseTextTheme = GoogleFonts.manropeTextTheme(baseTheme.textTheme)
+        .apply(
+          fontFamily: bodyFontFamily,
+          bodyColor: blackColor,
+          displayColor: blackColor,
+        );
     return ThemeData(
       brightness: Brightness.light,
-      fontFamily: 'Plus Jakarta',
+      fontFamily: bodyFontFamily,
       primarySwatch: primaryMaterialColor,
       primaryColor: primaryColor,
       scaffoldBackgroundColor: Colors.white,
@@ -33,44 +37,44 @@ class AppTheme {
           fontSize: 32,
           fontWeight: FontWeight.w800,
           letterSpacing: -1.2,
-          fontFamily: grandisExtendedFont,
+          fontFamily: headingFontFamily,
         ),
         displayMedium: baseTextTheme.displayMedium?.copyWith(
           fontSize: 28,
           fontWeight: FontWeight.w800,
           letterSpacing: -1.0,
-          fontFamily: grandisExtendedFont,
+          fontFamily: headingFontFamily,
         ),
         headlineMedium: baseTextTheme.headlineMedium?.copyWith(
           fontSize: 24,
           fontWeight: FontWeight.w800,
           letterSpacing: -0.8,
-          fontFamily: grandisExtendedFont,
+          fontFamily: headingFontFamily,
         ),
         headlineSmall: baseTextTheme.headlineSmall?.copyWith(
           fontSize: 20,
           fontWeight: FontWeight.w800,
           letterSpacing: -0.6,
-          fontFamily: grandisExtendedFont,
+          fontFamily: headingFontFamily,
         ),
         titleLarge: baseTextTheme.titleLarge?.copyWith(
           fontSize: 18,
           fontWeight: FontWeight.w700,
           letterSpacing: -0.3,
-          fontFamily: grandisExtendedFont,
+          fontFamily: headingFontFamily,
         ),
         titleMedium: baseTextTheme.titleMedium?.copyWith(
           fontSize: 16,
           color: blackColor,
           fontWeight: FontWeight.w700,
           letterSpacing: -0.2,
-          fontFamily: grandisExtendedFont,
+          fontFamily: headingFontFamily,
         ),
         titleSmall: baseTextTheme.titleSmall?.copyWith(
           fontSize: 14,
           fontWeight: FontWeight.w700,
           letterSpacing: 0,
-          fontFamily: grandisExtendedFont,
+          fontFamily: headingFontFamily,
         ),
         bodyLarge: baseTextTheme.bodyLarge?.copyWith(
           fontSize: 16,
@@ -118,14 +122,17 @@ class AppTheme {
 
   static ThemeData darkTheme() {
     final baseTheme = ThemeData.dark();
-    final baseTextTheme = baseTheme.textTheme.apply(
-      fontFamily: 'Plus Jakarta',
-      bodyColor: Colors.white,
-      displayColor: Colors.white,
-    );
+    final bodyFontFamily = GoogleFonts.manrope().fontFamily;
+    final headingFontFamily = GoogleFonts.sora().fontFamily;
+    final baseTextTheme = GoogleFonts.manropeTextTheme(baseTheme.textTheme)
+        .apply(
+          fontFamily: bodyFontFamily,
+          bodyColor: Colors.white,
+          displayColor: Colors.white,
+        );
     return ThemeData(
       brightness: Brightness.dark,
-      fontFamily: 'Plus Jakarta',
+      fontFamily: bodyFontFamily,
       primarySwatch: primaryMaterialColor,
       primaryColor: primaryColor,
       scaffoldBackgroundColor: const Color(0xFF0F1117),
@@ -142,44 +149,44 @@ class AppTheme {
           fontSize: 32,
           fontWeight: FontWeight.w800,
           letterSpacing: -1.2,
-          fontFamily: grandisExtendedFont,
+          fontFamily: headingFontFamily,
         ),
         displayMedium: baseTextTheme.displayMedium?.copyWith(
           fontSize: 28,
           fontWeight: FontWeight.w800,
           letterSpacing: -1.0,
-          fontFamily: grandisExtendedFont,
+          fontFamily: headingFontFamily,
         ),
         headlineMedium: baseTextTheme.headlineMedium?.copyWith(
           fontSize: 24,
           fontWeight: FontWeight.w800,
           letterSpacing: -0.8,
-          fontFamily: grandisExtendedFont,
+          fontFamily: headingFontFamily,
         ),
         headlineSmall: baseTextTheme.headlineSmall?.copyWith(
           fontSize: 20,
           fontWeight: FontWeight.w800,
           letterSpacing: -0.6,
-          fontFamily: grandisExtendedFont,
+          fontFamily: headingFontFamily,
         ),
         titleLarge: baseTextTheme.titleLarge?.copyWith(
           fontSize: 18,
           fontWeight: FontWeight.w700,
           letterSpacing: -0.3,
-          fontFamily: grandisExtendedFont,
+          fontFamily: headingFontFamily,
         ),
         titleMedium: baseTextTheme.titleMedium?.copyWith(
           fontSize: 16,
           color: Colors.white,
           fontWeight: FontWeight.w700,
           letterSpacing: -0.2,
-          fontFamily: grandisExtendedFont,
+          fontFamily: headingFontFamily,
         ),
         titleSmall: baseTextTheme.titleSmall?.copyWith(
           fontSize: 14,
           fontWeight: FontWeight.w700,
           letterSpacing: 0,
-          fontFamily: grandisExtendedFont,
+          fontFamily: headingFontFamily,
         ),
         bodyLarge: baseTextTheme.bodyLarge?.copyWith(
           fontSize: 16,

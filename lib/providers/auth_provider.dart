@@ -235,6 +235,27 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> deleteAccount() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _authRepository.deleteAccount();
+      _currentUser = null;
+      _phoneVerificationId = null;
+      _phoneResendToken = null;
+      _pendingPhoneNumber = null;
+      return true;
+    } catch (error) {
+      _errorMessage = _mapAuthError(error);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> signOut() async {
     _isLoading = true;
     _errorMessage = null;
@@ -285,18 +306,36 @@ class AuthProvider extends ChangeNotifier {
           return 'Google Sign-In could not be completed. Please try again.';
         case 'invalid-phone-number':
           return 'Please enter a valid phone number with country code.';
+        case 'missing-phone-number':
+          return 'Please enter your mobile number first.';
         case 'session-expired':
           return 'OTP expired. Please request a new OTP.';
         case 'invalid-verification-code':
           return 'Invalid OTP. Please enter the correct 6-digit code.';
         case 'invalid-verification-id':
           return 'Verification expired. Please request OTP again.';
+        case 'quota-exceeded':
+          return 'OTP limit reached for now. Please wait and try again later.';
+        case 'captcha-check-failed':
+          return 'Phone verification could not be completed on this device. Try again on a real phone with internet enabled.';
+        case 'app-not-authorized':
+          return 'This app build is not authorized for phone login yet. Please update the app verification setup and try again.';
+        case 'invalid-app-credential':
+          return 'This app could not be verified for phone login. Please check the Android/iOS app verification setup.';
+        case 'missing-client-identifier':
+          return 'This app is missing required phone login verification setup.';
         case 'email-not-verified':
           return 'Please verify your email address from your inbox before logging in.';
         case 'email-already-verified':
           return 'This email address is already verified. You can log in now.';
+        case 'requires-recent-login':
+          return 'Please log out and log back in, then try deleting your account again.';
         default:
-          return error.message ?? 'Authentication failed. Please try again.';
+          final rawMessage = (error.message ?? '').trim();
+          if (rawMessage.isNotEmpty) {
+            return rawMessage;
+          }
+          return 'Authentication failed. Please try again.';
       }
     }
 

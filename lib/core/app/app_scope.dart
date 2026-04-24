@@ -12,9 +12,11 @@ import 'package:shop/repositories/address_repository.dart';
 import 'package:shop/repositories/admin_repository.dart';
 import 'package:shop/repositories/auth_repository.dart';
 import 'package:shop/repositories/category_repository.dart';
+import 'package:shop/repositories/coupon_repository.dart';
 import 'package:shop/repositories/order_repository.dart';
 import 'package:shop/repositories/product_repository.dart';
 import 'package:shop/repositories/product_review_repository.dart';
+import 'package:shop/repositories/storefront_repository.dart';
 import 'package:shop/repositories/user_data_repository.dart';
 
 class AppScope extends StatelessWidget {
@@ -32,6 +34,10 @@ class AppScope extends StatelessWidget {
           create: (_) => FirebaseCategoryRepository(),
         ),
         Provider<AdminRepository>(create: (_) => FirestoreAdminRepository()),
+        Provider<CouponRepository>(create: (_) => FirestoreCouponRepository()),
+        Provider<StorefrontRepository>(
+          create: (_) => FirestoreStorefrontRepository(),
+        ),
         Provider<AddressRepository>(
           create: (_) => FirestoreAddressRepository(),
         ),
@@ -62,7 +68,9 @@ class AppScope extends StatelessWidget {
         ChangeNotifierProvider<CartProvider>(
           create: (context) => CartProvider(
             userDataRepository: context.read<UserDataRepository>(),
-          ),
+            couponRepository: context.read<CouponRepository>(),
+            storefrontRepository: context.read<StorefrontRepository>(),
+          )..initialize(),
         ),
         ChangeNotifierProvider<OrderProvider>(
           create: (context) =>

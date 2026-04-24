@@ -8,11 +8,7 @@ Future<String?> saveOrderExportFile({
   required Uint8List bytes,
   required String mimeType,
 }) async {
-  final baseDirectory = await getApplicationDocumentsDirectory();
-  final folderName = mimeType == 'application/pdf' ? 'invoices' : 'exports';
-  final directory = Directory(
-    '${baseDirectory.path}${Platform.pathSeparator}petsworld${Platform.pathSeparator}$folderName',
-  );
+  final directory = await _resolveDownloadDirectory();
   if (!await directory.exists()) {
     await directory.create(recursive: true);
   }
@@ -20,4 +16,25 @@ Future<String?> saveOrderExportFile({
   final file = File('${directory.path}${Platform.pathSeparator}$fileName');
   await file.writeAsBytes(bytes, flush: true);
   return file.path;
+}
+
+Future<Directory> _resolveDownloadDirectory() async {
+  final downloadsDirectory = await getDownloadsDirectory();
+  if (downloadsDirectory != null) {
+    return Directory(
+      '${downloadsDirectory.path}${Platform.pathSeparator}petsworld',
+    );
+  }
+
+  final externalDirectories = await getExternalStorageDirectories(
+    type: StorageDirectory.downloads,
+  );
+  if (externalDirectories != null && externalDirectories.isNotEmpty) {
+    return Directory(
+      '${externalDirectories.first.path}${Platform.pathSeparator}petsworld',
+    );
+  }
+
+  final appDirectory = await getApplicationDocumentsDirectory();
+  return Directory('${appDirectory.path}${Platform.pathSeparator}petsworld');
 }

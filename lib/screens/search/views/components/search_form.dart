@@ -28,6 +28,7 @@ class SearchForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Form(
+      key: formKey,
       child: TextFormField(
         autofocus: autofocus,
         focusNode: focusNode,
@@ -57,10 +58,7 @@ class SearchForm extends StatelessWidget {
             width: 40,
             child: Row(
               children: [
-                const SizedBox(
-                  height: 24,
-                  child: VerticalDivider(width: 1),
-                ),
+                const SizedBox(height: 24, child: VerticalDivider(width: 1)),
                 Expanded(
                   child: IconButton(
                     onPressed: onTabFilter,

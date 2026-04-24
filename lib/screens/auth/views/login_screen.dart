@@ -21,6 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _acceptedPrivacyPolicy = false;
 
   Future<void> _resendVerificationEmail(BuildContext context) async {
     final email = _emailController.text.trim();
@@ -173,6 +174,53 @@ class _LoginScreenState extends State<LoginScreen> {
               child: const Text('Resend verification email'),
             ),
           ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Checkbox(
+                value: _acceptedPrivacyPolicy,
+                onChanged: authProvider.isLoading
+                    ? null
+                    : (value) {
+                        setState(() {
+                          _acceptedPrivacyPolicy = value ?? false;
+                        });
+                      },
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text.rich(
+                    TextSpan(
+                      text: 'By logging in, you agree to the',
+                      style: theme.textTheme.bodyMedium,
+                      children: [
+                        WidgetSpan(
+                          child: GestureDetector(
+                            onTap: () => Navigator.pushNamed(
+                              context,
+                              privacyPolicyScreenRoute,
+                            ),
+                            child: Text(
+                              ' Privacy Policy.',
+                              style: TextStyle(
+                                color: theme.brightness == Brightness.dark
+                                    ? const Color(0xFFF6C667)
+                                    : const Color(0xFF18392F),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -200,7 +248,7 @@ class _LoginScreenState extends State<LoginScreen> {
             authProvider.isLoading ? 'Please wait...' : 'Log in',
             style: const TextStyle(
               color: Colors.white,
-              fontFamily: 'Plus Jakarta',
+              fontFamily: null,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -235,6 +283,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _signIn(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
+    if (!_acceptedPrivacyPolicy) {
+      await showAuthErrorDialog(
+        context,
+        message: 'Please agree to the Privacy Policy to continue.',
+      );
+      return;
+    }
 
     final auth = context.read<AuthProvider>();
     final cartProvider = context.read<CartProvider>();
@@ -333,7 +388,7 @@ class _AuthActionButton extends StatelessWidget {
         label: Text(
           label,
           style: TextStyle(
-            fontFamily: 'Plus Jakarta',
+            fontFamily: null,
             fontWeight: FontWeight.w600,
             fontSize: 14,
             color: foregroundColor,

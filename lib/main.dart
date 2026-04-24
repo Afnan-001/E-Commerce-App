@@ -99,6 +99,6 @@ class _SessionSyncGateState extends State<_SessionSyncGate> {
       return const EntryPoint();
     }
 
-    return const OnBordingScreen();
+    return const LoginScreen();
   }
 }

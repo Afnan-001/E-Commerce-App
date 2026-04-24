@@ -8,6 +8,7 @@ import 'package:shop/components/product/product_card.dart';
 import 'package:shop/constants.dart';
 import 'package:shop/core/widgets/section_empty_state.dart';
 import 'package:shop/models/category_model.dart';
+import 'package:shop/models/coupon_model.dart';
 import 'package:shop/models/home_banner_model.dart';
 import 'package:shop/models/product_model.dart';
 import 'package:shop/providers/cart_provider.dart';
@@ -47,6 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final newArrivals = productProvider.newArrivals;
     final allProducts = productProvider.catalogProducts;
     final banners = productProvider.homeBanners;
+    final homeSections = productProvider.homeSections;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     _syncBannerAutoplay(banners.length);
@@ -56,7 +58,11 @@ class _HomeScreenState extends State<HomeScreen> {
         color: isDark ? null : Colors.white,
         gradient: isDark
             ? const LinearGradient(
-                colors: [Color(0xFF0C1017), Color(0xFF151B24), Color(0xFF1B202A)],
+                colors: [
+                  Color(0xFF0C1017),
+                  Color(0xFF151B24),
+                  Color(0xFF1B202A),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               )
@@ -74,13 +80,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 defaultPadding,
               ),
               child: _SearchStrip(
-                onOpenCart: () =>
-                    Navigator.pushNamed(context, cartScreenRoute),
+                onOpenCart: () => Navigator.pushNamed(context, cartScreenRoute),
               ),
             ),
           ),
 
           // ── Banner carousel ────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                defaultPadding,
+                0,
+                defaultPadding,
+                defaultPadding,
+              ),
+              child: const _DeliveryHighlightCard(),
+            ),
+          ),
           if (banners.isNotEmpty)
             SliverToBoxAdapter(
               child: Padding(
@@ -98,11 +114,34 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (_currentBannerIndex == index) return;
                     setState(() => _currentBannerIndex = index);
                   },
-                  onTapBanner: (banner) =>
-                      _handleBannerTap(context, banner),
+                  onTapBanner: (banner) => _handleBannerTap(context, banner),
                 ),
               ),
             ),
+
+          for (final section in homeSections)
+            if (productProvider.productsForHomeSection(section).isNotEmpty)
+              SliverToBoxAdapter(
+                child: _ProductRailSection(
+                  title: section.title,
+                  leading: const Icon(
+                    Icons.local_offer_outlined,
+                    color: Color(0xFFE0953D),
+                    size: 18,
+                  ),
+                  badge: section.hasSectionDiscount
+                      ? section.sectionDiscountType ==
+                                CouponDiscountType.flatAmount
+                            ? 'SAVE Rs ${section.sectionDiscountValue?.toStringAsFixed(0) ?? '0'}'
+                            : '${section.sectionDiscountValue?.toStringAsFixed(0) ?? '0'}% OFF'
+                      : null,
+                  badgeColor: const Color(0xFFFFF0D9),
+                  badgeTextColor: const Color(0xFFC66A0A),
+                  actionText: 'Shop all',
+                  products: productProvider.productsForHomeSection(section),
+                  onTapAction: () => _openDiscover(context),
+                ),
+              ),
 
           // ── Shop by pet ────────────────────────────────────────────────
           if (categories.isNotEmpty)
@@ -130,9 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           onTap: () => _openDiscover(context),
                           child: Text(
                             'See all',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
+                            style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   color: const Color(0xFFE0953D),
                                   fontWeight: FontWeight.w700,
@@ -152,8 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           final category = categories[index];
                           return _CategoryAvatarItem(
                             category: category,
-                            onTap: () =>
-                                _openCategory(context, category.title),
+                            onTap: () => _openCategory(context, category.title),
                           );
                         },
                       ),
@@ -228,26 +264,27 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Text(
                     'Everything in store',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w800),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: Theme.of(context).cardColor,
-                      borderRadius:
-                          const BorderRadius.all(Radius.circular(999)),
-                      border:
-                          Border.all(color: Theme.of(context).dividerColor),
+                      borderRadius: const BorderRadius.all(
+                        Radius.circular(999),
+                      ),
+                      border: Border.all(color: Theme.of(context).dividerColor),
                     ),
                     child: Text(
                       '${allProducts.length} items',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ],
@@ -264,42 +301,86 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             )
           else
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(
-                defaultPadding,
-                0,
-                defaultPadding,
-                defaultPadding * 1.5,
-              ),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: defaultPadding,
-                  crossAxisSpacing: defaultPadding,
-                  childAspectRatio: 0.7,
-                ),
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final product = allProducts[index];
-                  return ProductCard(
-                    image: product.image,
-                    brandName: product.brandName,
-                    title: product.title,
-                    price: product.price,
-                    priceAfetDiscount: product.priceAfetDiscount,
-                    dicountpercent: product.dicountpercent,
-                    isSaved: productProvider.isBookmarked(product.id),
-                    onToggleSaved: () {
-                      context.read<ProductProvider>().toggleBookmark(product);
-                    },
-                    press: () {
-                      Navigator.pushNamed(
-                        context,
-                        productDetailsScreenRoute,
-                        arguments: product,
-                      );
-                    },
-                  );
-                }, childCount: allProducts.length),
+            SliverToBoxAdapter(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      defaultPadding,
+                      0,
+                      defaultPadding,
+                      defaultPadding,
+                    ),
+                    child: GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: defaultPadding,
+                            crossAxisSpacing: defaultPadding,
+                            childAspectRatio: 0.7,
+                          ),
+                      itemCount: allProducts.length > 6
+                          ? 6
+                          : allProducts.length,
+                      itemBuilder: (context, index) {
+                        final product = allProducts[index];
+                        return ProductCard(
+                          image: product.image,
+                          brandName: product.brandName,
+                          title: product.title,
+                          price: product.price,
+                          priceAfetDiscount: product.priceAfetDiscount,
+                          dicountpercent: product.dicountpercent,
+                          isSaved: productProvider.isBookmarked(product.id),
+                          onToggleSaved: () {
+                            context.read<ProductProvider>().toggleBookmark(
+                              product,
+                            );
+                          },
+                          press: () {
+                            Navigator.pushNamed(
+                              context,
+                              productDetailsScreenRoute,
+                              arguments: product,
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                  if (allProducts.length > 6)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        defaultPadding,
+                        0,
+                        defaultPadding,
+                        defaultPadding * 1.5,
+                      ),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () => _openDiscover(context),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            backgroundColor: const Color(0xFFE0953D),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'View More',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
         ],
@@ -401,9 +482,7 @@ class _SearchStrip extends StatelessWidget {
                 children: [
                   Icon(
                     Icons.search_rounded,
-                    color: isDark
-                        ? Colors.white54
-                        : const Color(0xFF9E8672),
+                    color: isDark ? Colors.white54 : const Color(0xFF9E8672),
                     size: 20,
                   ),
                   const SizedBox(width: 10),
@@ -411,11 +490,11 @@ class _SearchStrip extends StatelessWidget {
                     child: Text(
                       'Search food, treats, toys, care...',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: isDark
-                                ? Colors.white30
-                                : const Color(0xFF9E8672),
-                            fontWeight: FontWeight.w500,
-                          ),
+                        color: isDark
+                            ? Colors.white30
+                            : const Color(0xFF9E8672),
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],
@@ -425,10 +504,7 @@ class _SearchStrip extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         // Cart button
-        _CartActionButton(
-          count: cartProvider.totalItems,
-          onTap: onOpenCart,
-        ),
+        _CartActionButton(count: cartProvider.totalItems, onTap: onOpenCart),
       ],
     );
   }
@@ -456,9 +532,7 @@ class _CartActionButton extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF171D27)
-                  : const Color(0xFFFFFCF8),
+              color: isDark ? const Color(0xFF171D27) : const Color(0xFFFFFCF8),
               borderRadius: const BorderRadius.all(Radius.circular(999)),
               border: Border.all(
                 color: isDark
@@ -482,8 +556,7 @@ class _CartActionButton extends StatelessWidget {
             right: -2,
             top: -4,
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: const BoxDecoration(
                 color: errorColor,
                 borderRadius: BorderRadius.all(Radius.circular(999)),
@@ -557,11 +630,8 @@ class _BannerCarousel extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: currentIndex == index
                       ? const Color(0xFFE0953D)
-                      : Theme.of(context)
-                          .dividerColor
-                          .withValues(alpha: 0.6),
-                  borderRadius:
-                      const BorderRadius.all(Radius.circular(999)),
+                      : Theme.of(context).dividerColor.withValues(alpha: 0.6),
+                  borderRadius: const BorderRadius.all(Radius.circular(999)),
                 ),
               ),
             ),
@@ -576,10 +646,7 @@ class _BannerCarousel extends StatelessWidget {
 // CATEGORY AVATAR ITEM  — compact, image + label only
 // ─────────────────────────────────────────────────────────────────────────────
 class _CategoryAvatarItem extends StatelessWidget {
-  const _CategoryAvatarItem({
-    required this.category,
-    required this.onTap,
-  });
+  const _CategoryAvatarItem({required this.category, required this.onTap});
 
   final CategoryModel category;
   final VoidCallback onTap;
@@ -602,14 +669,11 @@ class _CategoryAvatarItem extends StatelessWidget {
                 : Colors.white.withValues(alpha: 0.85),
             borderRadius: const BorderRadius.all(Radius.circular(24)),
             border: Border.all(
-              color: isDark
-                  ? const Color(0xFF2A323F)
-                  : const Color(0xFFE7DBCD),
+              color: isDark ? const Color(0xFF2A323F) : const Color(0xFFE7DBCD),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(
-                    alpha: isDark ? 0.12 : 0.05),
+                color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.05),
                 blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
@@ -645,9 +709,9 @@ class _CategoryAvatarItem extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
               ),
             ],
           ),
@@ -704,28 +768,32 @@ class _ProductRailSection extends StatelessWidget {
           // Minimal header
           Padding(
             padding: const EdgeInsets.fromLTRB(
-                defaultPadding, 0, defaultPadding, 12),
+              defaultPadding,
+              0,
+              defaultPadding,
+              12,
+            ),
             child: Row(
               children: [
-                if (leading != null) ...[
-                  leading!,
-                  const SizedBox(width: 6),
-                ],
+                if (leading != null) ...[leading!, const SizedBox(width: 6)],
                 Text(
                   title,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 if (badge != null) ...[
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: badgeColor ?? const Color(0xFFF4EAFD),
-                      borderRadius:
-                          const BorderRadius.all(Radius.circular(999)),
+                      borderRadius: const BorderRadius.all(
+                        Radius.circular(999),
+                      ),
                     ),
                     child: Text(
                       badge!,
@@ -743,9 +811,9 @@ class _ProductRailSection extends StatelessWidget {
                   child: Text(
                     actionText,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFFE0953D),
-                          fontWeight: FontWeight.w700,
-                        ),
+                      color: const Color(0xFFE0953D),
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],
@@ -755,8 +823,7 @@ class _ProductRailSection extends StatelessWidget {
           SizedBox(
             height: 268,
             child: ListView.separated(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: defaultPadding),
+              padding: const EdgeInsets.symmetric(horizontal: defaultPadding),
               scrollDirection: Axis.horizontal,
               itemCount: products.length,
               separatorBuilder: (_, _) => const SizedBox(width: 12),
@@ -774,9 +841,7 @@ class _ProductRailSection extends StatelessWidget {
                     dicountpercent: product.dicountpercent,
                     isSaved: productProvider.isBookmarked(product.id),
                     onToggleSaved: () {
-                      context
-                          .read<ProductProvider>()
-                          .toggleBookmark(product);
+                      context.read<ProductProvider>().toggleBookmark(product);
                     },
                     press: () {
                       Navigator.pushNamed(
@@ -788,6 +853,82 @@ class _ProductRailSection extends StatelessWidget {
                   ),
                 );
               },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DeliveryHighlightCard extends StatelessWidget {
+  const _DeliveryHighlightCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(defaultPadding),
+      decoration: BoxDecoration(
+        gradient: isDark
+            ? const LinearGradient(
+                colors: [Color(0xFF2A234D), Color(0xFF171D27)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : const LinearGradient(
+                colors: [Color(0xFF7B61FF), Color(0xFF9A7CFF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+        borderRadius: const BorderRadius.all(Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF7B61FF).withValues(alpha: 0.18),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.16),
+              borderRadius: const BorderRadius.all(Radius.circular(18)),
+            ),
+            child: const Icon(
+              Icons.delivery_dining_rounded,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 14),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Same day delivery',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Fast doorstep delivery across Solhapur city.',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    height: 1.35,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

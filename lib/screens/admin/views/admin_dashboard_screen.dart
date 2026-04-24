@@ -29,7 +29,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     final authProvider = context.read<AuthProvider>();
     final adminProvider = context.read<AdminProvider>();
-    if (!authProvider.isAdmin || adminProvider.hasLoadedData || adminProvider.isLoading) {
+    if (!authProvider.isAdmin ||
+        adminProvider.hasLoadedData ||
+        adminProvider.isLoading) {
       return;
     }
 
@@ -85,13 +87,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final averageDeliveredOrderValue = deliveredOrders.isEmpty
         ? 0.0
         : deliveredRevenue / deliveredOrders.length;
-    final featuredProducts = products.where((product) => product.isFeatured).length;
+    final featuredProducts = products
+        .where((product) => product.isFeatured)
+        .length;
     final activeProducts = products.where((product) => product.isActive).length;
     final activeBanners = banners.where((banner) => banner.isActive).length;
 
     final categoryBreakdown = <String, int>{};
     for (final product in products) {
-      final key = product.category.trim().isEmpty ? 'Unassigned' : product.category.trim();
+      final key = product.category.trim().isEmpty
+          ? 'Unassigned'
+          : product.category.trim();
       categoryBreakdown[key] = (categoryBreakdown[key] ?? 0) + 1;
     }
     final categoryEntries = categoryBreakdown.entries.toList()
@@ -131,7 +137,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           deliveredOrders: deliveredOrders.length,
                           deliveredRevenue: deliveredRevenue,
                           outstandingRevenue: outstandingRevenue,
-                          averageDeliveredOrderValue: averageDeliveredOrderValue,
+                          averageDeliveredOrderValue:
+                              averageDeliveredOrderValue,
                           categoryEntries: categoryEntries,
                           adminError: adminProvider.errorMessage,
                         ),
@@ -314,9 +321,7 @@ class _DashboardContent extends StatelessWidget {
                 children: [
                   const Expanded(child: _QuickActionsPanel()),
                   const SizedBox(width: 16),
-                  Expanded(
-                    child: _SystemHealthPanel(adminError: adminError),
-                  ),
+                  Expanded(child: _SystemHealthPanel(adminError: adminError)),
                 ],
               )
             : Column(
@@ -337,7 +342,11 @@ class _AdminSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      _SidebarItem(icon: Icons.dashboard_outlined, label: 'Dashboard', active: true),
+      _SidebarItem(
+        icon: Icons.dashboard_outlined,
+        label: 'Dashboard',
+        active: true,
+      ),
       _SidebarItem(
         icon: Icons.receipt_long_outlined,
         label: 'Orders',
@@ -357,6 +366,22 @@ class _AdminSidebar extends StatelessWidget {
         icon: Icons.view_carousel_outlined,
         label: 'Banners',
         onTap: () => Navigator.pushNamed(context, adminHomeBannerScreenRoute),
+      ),
+      _SidebarItem(
+        icon: Icons.discount_outlined,
+        label: 'Coupons',
+        onTap: () => Navigator.pushNamed(context, adminCouponsScreenRoute),
+      ),
+      _SidebarItem(
+        icon: Icons.local_shipping_outlined,
+        label: 'Delivery',
+        onTap: () =>
+            Navigator.pushNamed(context, adminStoreSettingsScreenRoute),
+      ),
+      _SidebarItem(
+        icon: Icons.view_stream_outlined,
+        label: 'Home sections',
+        onTap: () => Navigator.pushNamed(context, adminHomeSectionsScreenRoute),
       ),
     ];
 
@@ -405,10 +430,8 @@ class _AdminSidebar extends StatelessWidget {
           const _DashboardHeadline(compact: true),
           const SizedBox(height: 20),
           ...items.map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: item,
-            ),
+            (item) =>
+                Padding(padding: const EdgeInsets.only(bottom: 8), child: item),
           ),
         ],
       ),
@@ -494,7 +517,8 @@ class _DashboardTopBar extends StatelessWidget {
               ),
             ),
             OutlinedButton.icon(
-              onPressed: () => Navigator.pushNamed(context, adminOrdersScreenRoute),
+              onPressed: () =>
+                  Navigator.pushNamed(context, adminOrdersScreenRoute),
               icon: const Icon(Icons.receipt_long_outlined),
               label: const Text('Orders'),
             ),
@@ -506,10 +530,7 @@ class _DashboardTopBar extends StatelessWidget {
 }
 
 class _ResponsiveMetricGrid extends StatelessWidget {
-  const _ResponsiveMetricGrid({
-    required this.cards,
-    required this.isDesktop,
-  });
+  const _ResponsiveMetricGrid({required this.cards, required this.isDesktop});
 
   final List<Widget> cards;
   final bool isDesktop;
@@ -766,7 +787,8 @@ class _RecentOrdersPanel extends StatelessWidget {
             child: Consumer<AdminProvider>(
               builder: (context, adminProvider, _) {
                 return TextButton.icon(
-                  onPressed: adminProvider.orders.isEmpty || adminProvider.isSaving
+                  onPressed:
+                      adminProvider.orders.isEmpty || adminProvider.isSaving
                       ? null
                       : () async {
                           final result = await adminProvider.exportOrders();
@@ -775,13 +797,13 @@ class _RecentOrdersPanel extends StatelessWidget {
                           }
                           final message = result == null
                               ? adminProvider.errorMessage ??
-                                  'Unable to export orders.'
+                                    'Unable to export orders.'
                               : result.location == null
                               ? 'Orders exported as ${result.fileName}.'
                               : 'Orders exported to ${result.location}.';
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(message)),
-                          );
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text(message)));
                         },
                   icon: const Icon(Icons.download_rounded),
                   label: const Text('Export Excel'),
@@ -805,7 +827,9 @@ class _RecentOrdersPanel extends StatelessWidget {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: Theme.of(context).brightness == Brightness.dark
-                        ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.7)
+                        ? Theme.of(
+                            context,
+                          ).colorScheme.surface.withValues(alpha: 0.7)
                         : _DashboardPalette.softSurface,
                     borderRadius: const BorderRadius.all(Radius.circular(16)),
                   ),
@@ -831,7 +855,9 @@ class _RecentOrdersPanel extends StatelessWidget {
                             Text(
                               order.customerName,
                               style: TextStyle(
-                                color: Theme.of(context).textTheme.titleSmall?.color,
+                                color: Theme.of(
+                                  context,
+                                ).textTheme.titleSmall?.color,
                                 fontWeight: FontWeight.w700,
                                 fontFamily: grandisExtendedFont,
                               ),
@@ -840,7 +866,9 @@ class _RecentOrdersPanel extends StatelessWidget {
                             Text(
                               'Order #${order.id}',
                               style: TextStyle(
-                                color: Theme.of(context).textTheme.bodySmall?.color,
+                                color: Theme.of(
+                                  context,
+                                ).textTheme.bodySmall?.color,
                               ),
                             ),
                           ],
@@ -896,7 +924,9 @@ class _CategoryBreakdownPanel extends StatelessWidget {
                             child: Text(
                               entry.key,
                               style: TextStyle(
-                                color: Theme.of(context).textTheme.titleSmall?.color,
+                                color: Theme.of(
+                                  context,
+                                ).textTheme.titleSmall?.color,
                                 fontWeight: FontWeight.w700,
                                 fontFamily: grandisExtendedFont,
                               ),
@@ -905,7 +935,9 @@ class _CategoryBreakdownPanel extends StatelessWidget {
                           Text(
                             '${entry.value}',
                             style: TextStyle(
-                              color: Theme.of(context).textTheme.bodySmall?.color,
+                              color: Theme.of(
+                                context,
+                              ).textTheme.bodySmall?.color,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -913,7 +945,9 @@ class _CategoryBreakdownPanel extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       ClipRRect(
-                        borderRadius: const BorderRadius.all(Radius.circular(999)),
+                        borderRadius: const BorderRadius.all(
+                          Radius.circular(999),
+                        ),
                         child: LinearProgressIndicator(
                           minHeight: 10,
                           value: progress,
@@ -957,6 +991,21 @@ class _QuickActionsPanel extends StatelessWidget {
         icon: Icons.view_carousel_outlined,
         label: 'Edit banners',
         route: adminHomeBannerScreenRoute,
+      ),
+      (
+        icon: Icons.discount_outlined,
+        label: 'Manage coupons',
+        route: adminCouponsScreenRoute,
+      ),
+      (
+        icon: Icons.local_shipping_outlined,
+        label: 'Delivery settings',
+        route: adminStoreSettingsScreenRoute,
+      ),
+      (
+        icon: Icons.view_stream_outlined,
+        label: 'Home sections',
+        route: adminHomeSectionsScreenRoute,
       ),
     ];
 
@@ -1290,11 +1339,7 @@ class _RevenueChartPainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round;
     final fillPaint = Paint()
       ..shader = const LinearGradient(
-        colors: [
-          Color(0x44FF8C21),
-          Color(0x10FF8C21),
-          Color(0x00FF8C21),
-        ],
+        colors: [Color(0x44FF8C21), Color(0x10FF8C21), Color(0x00FF8C21)],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
       ).createShader(Offset.zero & size);
@@ -1332,7 +1377,14 @@ class _RevenueChartPainter extends CustomPainter {
       final previous = points[i - 1];
       final current = points[i];
       final controlX = (previous.dx + current.dx) / 2;
-      path.cubicTo(controlX, previous.dy, controlX, current.dy, current.dx, current.dy);
+      path.cubicTo(
+        controlX,
+        previous.dy,
+        controlX,
+        current.dy,
+        current.dx,
+        current.dy,
+      );
     }
 
     final fillPath = Path.from(path)
@@ -1364,8 +1416,15 @@ class _OrderStatusRingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     const stroke = 18.0;
-    final rect = Rect.fromLTWH(0, 0, size.width, size.height).deflate(stroke / 2);
-    final total = math.max(1, openOrders + deliveredOrders + cancelledOrders).toDouble();
+    final rect = Rect.fromLTWH(
+      0,
+      0,
+      size.width,
+      size.height,
+    ).deflate(stroke / 2);
+    final total = math
+        .max(1, openOrders + deliveredOrders + cancelledOrders)
+        .toDouble();
     final basePaint = Paint()
       ..color = _DashboardPalette.border
       ..style = PaintingStyle.stroke

@@ -38,6 +38,7 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final RazorpayCheckoutService _razorpayService = RazorpayCheckoutService();
   final Random _random = Random();
+  final TextEditingController _couponController = TextEditingController();
 
   bool _isProcessing = false;
   _CheckoutPaymentMethod _selectedPaymentMethod =
@@ -45,6 +46,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   void dispose() {
+    _couponController.dispose();
     _razorpayService.dispose();
     super.dispose();
   }
@@ -57,10 +59,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final AppUserModel? user = authProvider.currentUser;
     final items = cartProvider.items;
     final selectedAddress = addressProvider.selectedAddress;
-    final pricing = _buildPricing(items);
-    final deliveryCharge = pricing.deliveryCharge;
-    final discount = pricing.discount;
-    final totalAmount = pricing.totalAmount;
+    final pricing = cartProvider.pricing;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Checkout')),
@@ -141,6 +140,94 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ),
                   const SizedBox(height: defaultPadding),
                   _SectionCard(
+                    title: 'Coupon',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _couponController,
+                                textCapitalization:
+                                    TextCapitalization.characters,
+                                decoration: const InputDecoration(
+                                  hintText: 'Enter coupon code',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            FilledButton(
+                              onPressed: cartProvider.isApplyingCoupon
+                                  ? null
+                                  : () async {
+                                      final success = await context
+                                          .read<CartProvider>()
+                                          .applyCoupon(_couponController.text);
+                                      if (!context.mounted) return;
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            context
+                                                    .read<CartProvider>()
+                                                    .couponMessage ??
+                                                (success
+                                                    ? 'Coupon applied.'
+                                                    : 'Could not apply coupon.'),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                              child: Text(
+                                cartProvider.isApplyingCoupon ? '...' : 'Apply',
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (cartProvider.appliedCoupon != null) ...[
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Applied: ${cartProvider.appliedCoupon!.code}',
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  context
+                                      .read<CartProvider>()
+                                      .clearAppliedCoupon();
+                                  _couponController.clear();
+                                },
+                                child: const Text('Remove'),
+                              ),
+                            ],
+                          ),
+                        ],
+                        if ((cartProvider.couponMessage ?? '')
+                            .trim()
+                            .isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              cartProvider.couponMessage!,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: cartProvider.appliedCoupon != null
+                                        ? successColor
+                                        : Theme.of(context).colorScheme.error,
+                                  ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: defaultPadding),
+                  _SectionCard(
                     title: 'Payment method',
                     child: Column(
                       children: [
@@ -194,23 +281,33 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           label: 'Subtotal',
                           value: _formatMoney(pricing.subtotal),
                         ),
+                        if (pricing.productDiscount > 0) ...[
+                          const SizedBox(height: defaultPadding / 4),
+                          _PriceRow(
+                            label: 'Product savings',
+                            value: '-${_formatMoney(pricing.productDiscount)}',
+                            valueStyle: const TextStyle(color: successColor),
+                          ),
+                        ],
                         const SizedBox(height: defaultPadding / 4),
                         _PriceRow(
                           label: 'Delivery charges',
-                          value: _formatMoney(deliveryCharge),
+                          value: pricing.deliveryCharge == 0
+                              ? 'Free'
+                              : _formatMoney(pricing.deliveryCharge),
                         ),
-                        if (discount > 0) ...[
+                        if (pricing.couponDiscount > 0) ...[
                           const SizedBox(height: defaultPadding / 4),
                           _PriceRow(
-                            label: 'Discount',
-                            value: '-${_formatMoney(discount)}',
+                            label: 'Coupon discount',
+                            value: '-${_formatMoney(pricing.couponDiscount)}',
                             valueStyle: const TextStyle(color: successColor),
                           ),
                         ],
                         const Divider(height: defaultPadding * 1.5),
                         _PriceRow(
                           label: 'Total amount',
-                          value: _formatMoney(totalAmount),
+                          value: _formatMoney(pricing.total),
                           isBold: true,
                         ),
                       ],
@@ -280,7 +377,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
 
     final orderId = _generateOrderId();
-    final pricing = _buildPricing(items);
+    final cartPricing = cartProvider.pricing;
+    final pricing = OrderPricingModel(
+      subtotal: cartPricing.subtotal,
+      deliveryCharge: cartPricing.deliveryCharge,
+      discount: cartPricing.totalDiscount,
+      totalAmount: cartPricing.total,
+      productDiscount: cartPricing.productDiscount,
+      couponDiscount: cartPricing.couponDiscount,
+      couponCode: cartProvider.appliedCoupon?.code,
+    );
     final deliveryAddress = OrderDeliveryAddressModel.fromAddress(
       selectedAddress,
     );
@@ -311,10 +417,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       if (paymentMethod == PaymentMethod.cod) {
         final confirmed = await _confirmCashOnDelivery(
           totalAmount: pricing.totalAmount,
-          itemCount: items.fold<int>(
-            0,
-            (total, item) => total + item.quantity,
-          ),
+          itemCount: items.fold<int>(0, (total, item) => total + item.quantity),
           addressLabel: deliveryAddress.shortAddress,
         );
         if (!mounted || !confirmed) {
@@ -429,6 +532,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     await orderRepository.saveOrder(order);
     orderProvider.addOrder(order);
     final invoiceResult = await orderProvider.saveInvoice(order);
+    cartProvider.markCouponUsed();
     await productProvider.loadInitialData();
     await cartProvider.clear();
     _razorpayService.dispose();
@@ -446,10 +550,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => OrderSuccessScreen(
-          order: order,
-          invoiceMessage: invoiceMessage,
-        ),
+        builder: (_) =>
+            OrderSuccessScreen(order: order, invoiceMessage: invoiceMessage),
       ),
     );
   }
@@ -472,78 +574,88 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       builder: (sheetContext) {
         return SafeArea(
           top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              defaultPadding,
-              defaultPadding,
-              defaultPadding,
-              defaultPadding * 1.25,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 44,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: Theme.of(sheetContext).dividerColor,
-                      borderRadius: const BorderRadius.all(
-                        Radius.circular(999),
+          child: DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.52,
+            minChildSize: 0.4,
+            maxChildSize: 0.85,
+            builder: (context, scrollController) {
+              return SingleChildScrollView(
+                controller: scrollController,
+                padding: EdgeInsets.fromLTRB(
+                  defaultPadding,
+                  defaultPadding,
+                  defaultPadding,
+                  defaultPadding +
+                      MediaQuery.of(sheetContext).viewInsets.bottom,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 44,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Theme.of(sheetContext).dividerColor,
+                          borderRadius: const BorderRadius.all(
+                            Radius.circular(999),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: defaultPadding),
-                Text(
-                  'Confirm cash on delivery',
-                  style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Please review the order details before placing it.',
-                  style: Theme.of(sheetContext).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: defaultPadding),
-                _SectionCard(
-                  title: 'Order summary',
-                  child: Column(
-                    children: [
-                      _PriceRow(label: 'Items', value: '$itemCount'),
-                      const SizedBox(height: defaultPadding / 3),
-                      _PriceRow(
-                        label: 'Payment',
-                        value: 'Cash on Delivery',
+                    const SizedBox(height: defaultPadding),
+                    Text(
+                      'Confirm cash on delivery',
+                      style: Theme.of(sheetContext).textTheme.titleLarge
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Please review the order details before placing it.',
+                      style: Theme.of(sheetContext).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: defaultPadding),
+                    _SectionCard(
+                      title: 'Order summary',
+                      child: Column(
+                        children: [
+                          _PriceRow(label: 'Items', value: '$itemCount'),
+                          const SizedBox(height: defaultPadding / 3),
+                          _PriceRow(
+                            label: 'Payment',
+                            value: 'Cash on Delivery',
+                          ),
+                          const SizedBox(height: defaultPadding / 3),
+                          _PriceRow(
+                            label: 'Deliver to',
+                            value: addressLabel,
+                            allowWrap: true,
+                          ),
+                          const SizedBox(height: defaultPadding / 3),
+                          _PriceRow(
+                            label: 'Total',
+                            value: _formatMoney(totalAmount),
+                            isBold: true,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: defaultPadding / 3),
-                      _PriceRow(
-                        label: 'Deliver to',
-                        value: addressLabel,
-                      ),
-                      const SizedBox(height: defaultPadding / 3),
-                      _PriceRow(
-                        label: 'Total',
-                        value: _formatMoney(totalAmount),
-                        isBold: true,
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: defaultPadding),
+                    OutlinedButton(
+                      onPressed: () => Navigator.of(sheetContext).pop(false),
+                      child: const Text('Review again'),
+                    ),
+                    const SizedBox(height: defaultPadding / 2),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(sheetContext).pop(true),
+                      child: const Text('Confirm order'),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: defaultPadding),
-                OutlinedButton(
-                  onPressed: () => Navigator.of(sheetContext).pop(false),
-                  child: const Text('Review again'),
-                ),
-                const SizedBox(height: defaultPadding / 2),
-                ElevatedButton(
-                  onPressed: () => Navigator.of(sheetContext).pop(true),
-                  child: const Text('Confirm order'),
-                ),
-              ],
-            ),
+              );
+            },
           ),
         );
       },
@@ -577,30 +689,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       orderStatus: OrderStatus.placed,
       createdAt: now,
       updatedAt: now,
-    );
-  }
-
-  OrderPricingModel _buildPricing(List<CartItemModel> items) {
-    final subtotal = items.fold<double>(
-      0,
-      (total, item) =>
-          total + ((item.originalUnitPrice ?? item.unitPrice) * item.quantity),
-    );
-    final saleTotal = items.fold<double>(
-      0,
-      (total, item) => total + item.totalPrice,
-    );
-    final discount = (subtotal - saleTotal)
-        .clamp(0.0, double.infinity)
-        .toDouble();
-    final deliveryCharge = items.isEmpty ? 0.0 : 49.0;
-    final totalAmount = subtotal - discount + deliveryCharge;
-
-    return OrderPricingModel(
-      subtotal: subtotal,
-      deliveryCharge: deliveryCharge,
-      discount: discount,
-      totalAmount: totalAmount,
     );
   }
 
@@ -888,24 +976,43 @@ class _PriceRow extends StatelessWidget {
     required this.value,
     this.isBold = false,
     this.valueStyle,
+    this.allowWrap = false,
   });
 
   final String label;
   final String value;
   final bool isBold;
   final TextStyle? valueStyle;
+  final bool allowWrap;
 
   @override
   Widget build(BuildContext context) {
     final baseStyle = isBold
         ? Theme.of(context).textTheme.titleSmall
         : Theme.of(context).textTheme.bodyLarge;
+    final resolvedValueStyle = valueStyle ?? baseStyle;
 
     return Row(
+      crossAxisAlignment: allowWrap
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.center,
       children: [
-        Text(label, style: baseStyle),
-        const Spacer(),
-        Text(value, style: valueStyle ?? baseStyle),
+        Expanded(
+          flex: allowWrap ? 2 : 1,
+          child: Text(label, style: baseStyle),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          flex: allowWrap ? 3 : 1,
+          child: Text(
+            value,
+            style: resolvedValueStyle,
+            textAlign: TextAlign.right,
+            softWrap: allowWrap,
+            overflow: allowWrap ? TextOverflow.visible : TextOverflow.ellipsis,
+            maxLines: allowWrap ? null : 1,
+          ),
+        ),
       ],
     );
   }

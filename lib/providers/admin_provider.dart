@@ -6,7 +6,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shop/core/services/order_invoice_service.dart';
 import 'package:shop/core/services/order_export_service.dart';
 import 'package:shop/models/category_model.dart';
+import 'package:shop/models/coupon_model.dart';
+import 'package:shop/models/delivery_settings_model.dart';
 import 'package:shop/models/home_banner_model.dart';
+import 'package:shop/models/home_section_model.dart';
 import 'package:shop/models/order_model.dart';
 import 'package:shop/models/product_model.dart';
 import 'package:shop/repositories/admin_repository.dart';
@@ -32,6 +35,9 @@ class AdminProvider extends ChangeNotifier {
   List<OrderModel> _orders = const <OrderModel>[];
   List<CategoryModel> _categories = const <CategoryModel>[];
   List<HomeBannerModel> _homeBanners = const <HomeBannerModel>[];
+  List<CouponModel> _coupons = const <CouponModel>[];
+  List<HomeSectionModel> _homeSections = const <HomeSectionModel>[];
+  DeliverySettingsModel _deliverySettings = const DeliverySettingsModel();
 
   static const List<_SeedCategory> _discoverCategorySeed = <_SeedCategory>[
     _SeedCategory(id: 'dogs', title: 'Dogs', sortOrder: 0),
@@ -202,6 +208,9 @@ class AdminProvider extends ChangeNotifier {
   List<OrderModel> get orders => _orders;
   List<CategoryModel> get categories => _categories;
   List<HomeBannerModel> get homeBanners => _homeBanners;
+  List<CouponModel> get coupons => _coupons;
+  List<HomeSectionModel> get homeSections => _homeSections;
+  DeliverySettingsModel get deliverySettings => _deliverySettings;
 
   Future<void> loadAdminData() async {
     _isLoading = true;
@@ -214,6 +223,9 @@ class AdminProvider extends ChangeNotifier {
         _adminRepository.getProducts(),
         _adminRepository.getOrders(),
         _adminRepository.getHomeBanners(),
+        _adminRepository.getCoupons(),
+        _adminRepository.getHomeSections(),
+        _adminRepository.getDeliverySettings(),
       ]);
 
       _categories = results[0] as List<CategoryModel>;
@@ -221,6 +233,9 @@ class AdminProvider extends ChangeNotifier {
       _orders = results[2] as List<OrderModel>;
       final loadedBanners = results[3] as List<HomeBannerModel>;
       _homeBanners = loadedBanners;
+      _coupons = results[4] as List<CouponModel>;
+      _homeSections = results[5] as List<HomeSectionModel>;
+      _deliverySettings = results[6] as DeliverySettingsModel;
       _hasLoadedData = true;
     } catch (error) {
       _errorMessage = error.toString();
@@ -493,6 +508,96 @@ class AdminProvider extends ChangeNotifier {
 
     try {
       await _adminRepository.deleteHomeBanner(bannerId);
+      await loadAdminData();
+      return true;
+    } catch (error) {
+      _errorMessage = error.toString();
+      return false;
+    } finally {
+      _isSaving = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> saveCoupon(CouponModel coupon) async {
+    _isSaving = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _adminRepository.saveCoupon(coupon);
+      await loadAdminData();
+      return true;
+    } catch (error) {
+      _errorMessage = error.toString();
+      return false;
+    } finally {
+      _isSaving = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> deleteCoupon(String couponId) async {
+    _isSaving = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _adminRepository.deleteCoupon(couponId);
+      await loadAdminData();
+      return true;
+    } catch (error) {
+      _errorMessage = error.toString();
+      return false;
+    } finally {
+      _isSaving = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> saveDeliverySettings(DeliverySettingsModel settings) async {
+    _isSaving = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _adminRepository.saveDeliverySettings(settings);
+      await loadAdminData();
+      return true;
+    } catch (error) {
+      _errorMessage = error.toString();
+      return false;
+    } finally {
+      _isSaving = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> saveHomeSection(HomeSectionModel section) async {
+    _isSaving = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _adminRepository.saveHomeSection(section);
+      await loadAdminData();
+      return true;
+    } catch (error) {
+      _errorMessage = error.toString();
+      return false;
+    } finally {
+      _isSaving = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> deleteHomeSection(String sectionId) async {
+    _isSaving = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _adminRepository.deleteHomeSection(sectionId);
       await loadAdminData();
       return true;
     } catch (error) {

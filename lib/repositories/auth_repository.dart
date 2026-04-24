@@ -36,6 +36,7 @@ abstract class AuthRepository {
   });
   Future<void> sendPasswordResetEmail(String email);
   Future<AppUserModel> updateProfile({required String name});
+  Future<void> deleteAccount();
   Future<void> signOut();
 }
 
@@ -210,10 +211,14 @@ class FirebaseAuthRepository implements AuthRepository {
         }
       },
       verificationFailed: (FirebaseAuthException exception) {
+        debugPrint(
+          'Phone auth failed [${exception.code}]: ${exception.message}',
+        );
         if (completer.isCompleted) return;
         completer.completeError(exception);
       },
       codeSent: (String verificationId, int? resendToken) {
+        debugPrint('Phone auth code sent for $phoneNumber');
         if (completer.isCompleted) return;
         completer.complete(
           PhoneAuthRequestResult.codeSent(
@@ -223,6 +228,7 @@ class FirebaseAuthRepository implements AuthRepository {
         );
       },
       codeAutoRetrievalTimeout: (String verificationId) {
+        debugPrint('Phone auth auto retrieval timed out for $phoneNumber');
         if (completer.isCompleted) return;
         completer.complete(
           PhoneAuthRequestResult.codeSent(verificationId: verificationId),
@@ -311,6 +317,36 @@ class FirebaseAuthRepository implements AuthRepository {
     }, SetOptions(merge: true));
 
     return _loadUserProfile(user);
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    _ensureReady();
+
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw StateError('Please log in to delete your account.');
+    }
+
+    final lastSignIn = user.metadata.lastSignInTime;
+    final needsFreshLogin =
+        lastSignIn == null ||
+        DateTime.now().difference(lastSignIn) > const Duration(minutes: 10);
+    if (needsFreshLogin) {
+      throw FirebaseAuthException(
+        code: 'requires-recent-login',
+        message:
+            'For security, please log out and log back in before deleting your account.',
+      );
+    }
+
+    final userId = user.uid;
+    await _deleteUserData(userId);
+    await user.delete();
+
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {}
   }
 
   @override
@@ -417,6 +453,43 @@ class FirebaseAuthRepository implements AuthRepository {
   String? _nonEmpty(String? value) {
     final trimmed = value?.trim() ?? '';
     return trimmed.isEmpty ? null : trimmed;
+  }
+
+  Future<void> _deleteUserData(String userId) async {
+    final userRef = _db.collection('users').doc(userId);
+
+    await _deleteCollection(userRef.collection('cartItems'));
+    await _deleteCollection(userRef.collection('savedItems'));
+    await _deleteCollection(userRef.collection('addresses'));
+
+    final ordersSnapshot = await _db
+        .collection('orders')
+        .where('userId', isEqualTo: userId)
+        .get();
+    if (ordersSnapshot.docs.isNotEmpty) {
+      final batch = _db.batch();
+      for (final doc in ordersSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    }
+
+    await userRef.delete();
+  }
+
+  Future<void> _deleteCollection(
+    CollectionReference<Map<String, dynamic>> collection,
+  ) async {
+    final snapshot = await collection.get();
+    if (snapshot.docs.isEmpty) {
+      return;
+    }
+
+    final batch = _db.batch();
+    for (final doc in snapshot.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
   }
 }
 

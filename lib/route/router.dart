@@ -66,8 +66,6 @@ import 'package:shop/route/screen_export.dart';
 
 Route<dynamic> generateRoute(RouteSettings settings) {
   switch (settings.name) {
-    case onbordingScreenRoute:
-      return MaterialPageRoute(builder: (context) => const OnBordingScreen());
     case logInScreenRoute:
       return MaterialPageRoute(builder: (context) => const LoginScreen());
     case signUpScreenRoute:
@@ -85,6 +83,10 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     case passwordRecoveryScreenRoute:
       return MaterialPageRoute(
         builder: (context) => const PasswordRecoveryScreen(),
+      );
+    case privacyPolicyScreenRoute:
+      return MaterialPageRoute(
+        builder: (context) => const PrivacyPolicyScreen(),
       );
     case productDetailsScreenRoute:
       return MaterialPageRoute(
@@ -147,6 +149,18 @@ Route<dynamic> generateRoute(RouteSettings settings) {
       return MaterialPageRoute(
         builder: (context) => const AdminHomeBannerScreen(),
       );
+    case adminCouponsScreenRoute:
+      return MaterialPageRoute(
+        builder: (context) => const AdminCouponsScreen(),
+      );
+    case adminStoreSettingsScreenRoute:
+      return MaterialPageRoute(
+        builder: (context) => const AdminStoreSettingsScreen(),
+      );
+    case adminHomeSectionsScreenRoute:
+      return MaterialPageRoute(
+        builder: (context) => const AdminHomeSectionsScreen(),
+      );
     case entryPointScreenRoute:
       return MaterialPageRoute(builder: (context) => const EntryPoint());
     case profileScreenRoute:
@@ -175,6 +189,6 @@ Route<dynamic> generateRoute(RouteSettings settings) {
         },
       );
     default:
-      return MaterialPageRoute(builder: (context) => const OnBordingScreen());
+      return MaterialPageRoute(builder: (context) => const LoginScreen());
   }
 }

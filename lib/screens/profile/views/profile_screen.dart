@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:shop/constants.dart';
+import 'package:shop/providers/address_provider.dart';
 import 'package:shop/providers/auth_provider.dart';
 import 'package:shop/providers/cart_provider.dart';
 import 'package:shop/providers/order_provider.dart';
@@ -13,9 +14,9 @@ class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   void _showComingSoon(BuildContext context, String label) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$label will be connected soon.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$label will be connected soon.')));
   }
 
   @override
@@ -133,12 +134,18 @@ class ProfileScreen extends StatelessWidget {
                 title: 'Customer support',
                 iconPath: 'assets/icons/Help.svg',
                 onTap: () => _showComingSoon(context, 'Customer support'),
-              ),
-              _ActionTile(
-                title: 'Grooming assistance',
-                iconPath: 'assets/icons/Return.svg',
-                onTap: () => _showComingSoon(context, 'Grooming assistance'),
                 isLast: true,
+              ),
+            ],
+          ),
+          const SizedBox(height: defaultPadding),
+          _GroupCard(
+            title: 'Account',
+            children: [
+              _DangerActionTile(
+                title: 'Delete account',
+                icon: Icons.delete_forever_outlined,
+                onTap: () => _confirmDeleteAccount(context),
               ),
             ],
           ),
@@ -192,6 +199,78 @@ class ProfileScreen extends StatelessWidget {
     if (words.isEmpty) return 'PP';
     if (words.length == 1) return words.first.substring(0, 1).toUpperCase();
     return '${words.first[0]}${words.last[0]}'.toUpperCase();
+  }
+
+  Future<void> _confirmDeleteAccount(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete account?'),
+          content: const Text(
+            'This will permanently delete your profile, saved items, cart, addresses, and orders. This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFC73D4C),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+
+    final auth = context.read<AuthProvider>();
+    final cart = context.read<CartProvider>();
+    final products = context.read<ProductProvider>();
+    final orders = context.read<OrderProvider>();
+    final addresses = context.read<AddressProvider>();
+
+    final success = await auth.deleteAccount();
+    if (!context.mounted) {
+      return;
+    }
+
+    if (!success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            auth.errorMessage ??
+                'Unable to delete your account right now. Please try again.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    await cart.syncForUser(null);
+    await products.syncUserData(null);
+    await orders.syncForUser(null);
+    await addresses.loadAddresses();
+    if (!context.mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Your account has been deleted.')),
+    );
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      logInScreenRoute,
+      (route) => false,
+    );
   }
 }
 
@@ -541,7 +620,10 @@ class _ActionTile extends StatelessWidget {
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             Icon(
@@ -549,6 +631,57 @@ class _ActionTile extends StatelessWidget {
               color: Theme.of(
                 context,
               ).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DangerActionTile extends StatelessWidget {
+  const _DangerActionTile({
+    required this.title,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: defaultPadding,
+          vertical: defaultPadding * 0.8,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFEEF0),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 20, color: const Color(0xFFC73D4C)),
+            ),
+            const SizedBox(width: defaultPadding * 0.7),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFFC73D4C),
+                ),
+              ),
             ),
           ],
         ),
