@@ -7,15 +7,17 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import 'package:shop/constants.dart';
 import 'package:shop/core/config/payment_config.dart';
+import 'package:shop/core/services/checkout_api_service.dart';
 import 'package:shop/core/services/razorpay_checkout_service.dart';
 import 'package:shop/models/app_user_model.dart';
-import 'package:shop/models/cart_item_model.dart';
 import 'package:shop/models/address_model.dart';
+import 'package:shop/models/cart_item_model.dart';
 import 'package:shop/models/order_delivery_address_model.dart';
 import 'package:shop/models/order_item_model.dart';
 import 'package:shop/models/order_model.dart';
 import 'package:shop/models/order_payment_model.dart';
 import 'package:shop/models/order_pricing_model.dart';
+import 'package:shop/models/product_model.dart';
 import 'package:shop/providers/address_provider.dart';
 import 'package:shop/providers/auth_provider.dart';
 import 'package:shop/providers/cart_provider.dart';
@@ -35,6 +37,7 @@ class CheckoutScreen extends StatefulWidget {
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
+  final CheckoutApiService _checkoutApiService = CheckoutApiService();
   final RazorpayCheckoutService _razorpayService = RazorpayCheckoutService();
   final Random _random = Random();
 
@@ -174,7 +177,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           },
                           leadingIcon: Icons.local_shipping_outlined,
                         ),
-                        if (razorpayOrderCreationUrl.isEmpty) ...[
+                        if (!isRazorpayConfigured) ...[
                           const SizedBox(height: defaultPadding / 2),
                           Text(
                             'Razorpay needs a secure backend order endpoint before it can be used.',
@@ -227,8 +230,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   const SizedBox(height: defaultPadding / 2),
                   Text(
                     _selectedPaymentMethod == _CheckoutPaymentMethod.cod
-                        ? 'Cash on delivery orders will be saved to Firestore with a pending payment status.'
-                        : 'Secure Razorpay checkout opens after the backend creates the order id.',
+                        ? 'Cash on delivery orders are confirmed only after the backend order API succeeds.'
+                        : 'Secure Razorpay checkout opens only after the backend creates the Razorpay order id.',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
@@ -271,9 +274,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       return;
     }
 
-    if (isRazorpayFlow && razorpayOrderCreationUrl.isEmpty) {
+    if (!_hasValidEmail(user.email)) {
       _showSnackBar(
-        'Razorpay is not configured yet. Add a secure backend order-creation endpoint first, or choose Cash on Delivery.',
+        'Add a valid email in your profile before placing the order. The backend needs it to confirm the order and send your invoice.',
+      );
+      await Navigator.pushNamed(context, userInfoScreenRoute);
+      return;
+    }
+
+    if (isRazorpayFlow && !isRazorpayConfigured) {
+      _showSnackBar(
+        'Razorpay is not configured yet. Add the Razorpay key and backend base URL through dart-define, or choose Cash on Delivery.',
       );
       return;
     }
@@ -308,37 +319,49 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     try {
       if (paymentMethod == PaymentMethod.cod) {
-        final order = draftOrder.copyWith(
-          payment: pendingPayment,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+        await _placeCashOnDeliveryOrder(
+          draftOrder: draftOrder,
+          user: user,
+          selectedAddress: selectedAddress,
         );
-        await _saveOrder(order);
         return;
       }
 
-      final razorpayOrderId = await _razorpayService.createOrderId(
+      final razorpayOrder = await _checkoutApiService.createRazorpayOrder(
         amountInPaise: (pricing.totalAmount * 100).round(),
         receiptId: orderId,
-        notes: <String, dynamic>{'userId': user.uid, 'orderId': orderId},
+        customerName: user.name,
+        customerEmail: user.email,
+        userId: user.uid,
+        items: items,
+        address: selectedAddress,
       );
 
       final razorpayDraft = draftOrder.copyWith(
         payment: OrderPaymentModel(
           paymentMethod: PaymentMethod.razorpay,
           paymentStatus: PaymentStatus.pending,
-          razorpayOrderId: razorpayOrderId,
+          razorpayOrderId: razorpayOrder.orderId,
         ),
       );
 
       _razorpayService.openCheckout(
-        orderId: razorpayOrderId,
-        amountInPaise: (pricing.totalAmount * 100).round(),
+        orderId: razorpayOrder.orderId,
+        amountInPaise: razorpayOrder.amountInPaise,
+        keyId: razorpayOrder.keyId,
+        merchantName: checkoutMerchantName,
+        description: checkoutDescription,
         userName: user.name,
         userEmail: user.email,
         userPhone: user.phoneNumber ?? selectedAddress.phoneNumber,
         onSuccess: (response) {
-          unawaited(_handleRazorpaySuccess(response, razorpayDraft));
+          unawaited(
+            _handleRazorpaySuccess(
+              response,
+              draftOrder: razorpayDraft,
+              selectedAddress: selectedAddress,
+            ),
+          );
         },
         onFailure: (response) {
           unawaited(_handleRazorpayFailure(response));
@@ -353,54 +376,154 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           );
         },
       );
-
-      if (mounted) {
-        setState(() {
-          _isProcessing = false;
-        });
-      }
     } catch (error) {
       if (!mounted) return;
       setState(() {
         _isProcessing = false;
       });
-      _showSnackBar(error.toString());
+      _showSnackBar(_describeCheckoutError(error));
     }
   }
 
   Future<void> _handleRazorpaySuccess(
-    PaymentSuccessResponse response,
-    OrderModel draftOrder,
-  ) async {
-    final paidOrder = draftOrder.copyWith(
-      payment: OrderPaymentModel(
-        paymentMethod: PaymentMethod.razorpay,
-        paymentStatus: PaymentStatus.paid,
-        razorpayPaymentId: response.paymentId,
-        razorpayOrderId: response.orderId ?? draftOrder.payment.razorpayOrderId,
-        razorpaySignature: response.signature,
-      ),
-      updatedAt: DateTime.now(),
-    );
+    PaymentSuccessResponse response, {
+    required OrderModel draftOrder,
+    required AddressModel selectedAddress,
+  }) async {
+    final verifiedPaymentId = response.paymentId;
+    final verifiedOrderId = response.orderId;
+    final verifiedSignature = response.signature;
 
     try {
-      await _saveOrder(paidOrder);
+      if (mounted) {
+        setState(() {
+          _isProcessing = true;
+        });
+      }
+
+      if (verifiedPaymentId == null ||
+          verifiedOrderId == null ||
+          verifiedSignature == null) {
+        throw const CheckoutApiException(
+          message:
+              'Razorpay did not return the payment details needed for verification.',
+        );
+      }
+
+      final verificationResult = await _checkoutApiService
+          .verifyRazorpayPayment(
+            razorpayOrderId: verifiedOrderId,
+            razorpayPaymentId: verifiedPaymentId,
+            razorpaySignature: verifiedSignature,
+            receiptId: draftOrder.orderId,
+            userId: draftOrder.userId,
+            customerEmail: draftOrder.userEmail,
+            customerName: draftOrder.userName,
+            amountInPaise: (draftOrder.totalPrice * 100).round(),
+            items: _buildCartItemsFromOrder(draftOrder.items),
+            address: selectedAddress,
+          );
+
+      final confirmedOrderId =
+          verificationResult.backendOrderId?.trim().isNotEmpty == true
+          ? verificationResult.backendOrderId!.trim()
+          : draftOrder.orderId;
+
+      final paidOrder = draftOrder.copyWith(
+        orderId: confirmedOrderId,
+        payment: OrderPaymentModel(
+          paymentMethod: PaymentMethod.razorpay,
+          paymentStatus: PaymentStatus.paid,
+          razorpayPaymentId: verifiedPaymentId,
+          razorpayOrderId: verifiedOrderId,
+          razorpaySignature: verifiedSignature,
+        ),
+        updatedAt: DateTime.now(),
+      );
+
+      await _finalizeSuccessfulOrder(
+        order: paidOrder,
+        successMessage:
+            '${verificationResult.message} Order ID: ${paidOrder.orderId}. Confirmation email will be sent by the backend to ${draftOrder.userEmail}.',
+      );
     } catch (error) {
+      final errorDetails = _describeCheckoutError(error);
+      debugPrint('[checkout] Razorpay success follow-up failed: $errorDetails');
+
       if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Payment verification failed on the backend, so the order was not confirmed. Details: $errorDetails',
+          ),
+        ),
+      );
       setState(() {
         _isProcessing = false;
       });
-      _showSnackBar('Payment succeeded, but order save failed: $error');
     }
   }
 
   Future<void> _handleRazorpayFailure(PaymentFailureResponse response) async {
     _razorpayService.dispose();
+    debugPrint(
+      '[checkout] Razorpay payment failure code=${response.code} message=${response.message}',
+    );
     if (!mounted) return;
     setState(() {
       _isProcessing = false;
     });
-    _showSnackBar(response.message ?? 'Payment failed. Please try again.');
+    _showSnackBar(
+      'Payment failed. Code: ${response.code}. Message: '
+      '${response.message ?? 'No message from Razorpay.'}',
+    );
+  }
+
+  Future<void> _placeCashOnDeliveryOrder({
+    required OrderModel draftOrder,
+    required AppUserModel user,
+    required AddressModel selectedAddress,
+  }) async {
+    final confirmation = await _checkoutApiService.createCashOnDeliveryOrder(
+      receiptId: draftOrder.orderId,
+      amountInPaise: (draftOrder.totalPrice * 100).round(),
+      customerName: user.name,
+      customerEmail: user.email,
+      userId: user.uid,
+      items: _buildCartItemsFromOrder(draftOrder.items),
+      address: selectedAddress,
+    );
+
+    final confirmedOrder = draftOrder.copyWith(
+      orderId: confirmation.backendOrderId?.trim().isNotEmpty == true
+          ? confirmation.backendOrderId!.trim()
+          : draftOrder.orderId,
+      payment: const OrderPaymentModel(
+        paymentMethod: PaymentMethod.cod,
+        paymentStatus: PaymentStatus.pending,
+      ),
+      orderStatus: OrderStatus.confirmed,
+      updatedAt: DateTime.now(),
+    );
+
+    await _finalizeSuccessfulOrder(
+      order: confirmedOrder,
+      successMessage:
+          '${confirmation.message} Order ID: ${confirmedOrder.orderId}. Confirmation email will be sent by the backend to ${draftOrder.userEmail}.',
+    );
+  }
+
+  Future<void> _finalizeSuccessfulOrder({
+    required OrderModel order,
+    required String successMessage,
+  }) async {
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(successMessage)));
+    }
+
+    await _saveOrder(order);
   }
 
   Future<void> _saveOrder(OrderModel order) async {
@@ -409,8 +532,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final cartProvider = context.read<CartProvider>();
     final navigator = Navigator.of(context);
 
-    await orderRepository.saveOrder(order);
-    orderProvider.addOrder(order);
+    try {
+      await orderRepository.saveOrder(order);
+      orderProvider.addOrder(order);
+    } catch (error) {
+      debugPrint('[checkout] Local order sync failed: $error');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Order confirmed, but local order sync failed. The backend has already created the order.',
+            ),
+          ),
+        );
+      }
+    }
+
     await cartProvider.clear();
     _razorpayService.dispose();
 
@@ -482,6 +619,40 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   String _formatMoney(double amount) => 'Rs ${amount.toStringAsFixed(0)}';
+
+  List<CartItemModel> _buildCartItemsFromOrder(List<OrderItemModel> items) {
+    return items
+        .map(
+          (item) => CartItemModel(
+            product: ProductModel(
+              id: item.productId,
+              name: item.productName,
+              price: item.productPrice,
+              imageUrl: item.imageUrl,
+              brandName: '',
+              salePrice: item.productPrice,
+              stockQuantity: item.quantity,
+            ),
+            quantity: item.quantity,
+          ),
+        )
+        .toList();
+  }
+
+  bool _hasValidEmail(String email) {
+    final trimmed = email.trim();
+    return trimmed.isNotEmpty && trimmed.contains('@') && trimmed.contains('.');
+  }
+
+  String _describeCheckoutError(Object error) {
+    if (error is CheckoutApiException) {
+      return error.toDisplayMessage();
+    }
+    if (error is StateError) {
+      return error.message;
+    }
+    return error.toString();
+  }
 
   void _showSnackBar(String message) {
     if (!mounted) return;

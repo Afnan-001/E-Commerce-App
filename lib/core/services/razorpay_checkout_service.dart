@@ -1,7 +1,3 @@
-import 'dart:async';
-import 'dart:convert';
-
-import 'package:http/http.dart' as http;
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import 'package:shop/core/config/payment_config.dart';
@@ -11,59 +7,12 @@ class RazorpayCheckoutService {
 
   final Razorpay _razorpay;
 
-  Future<String> createOrderId({
-    required int amountInPaise,
-    required String receiptId,
-    Map<String, dynamic>? notes,
-  }) async {
-    if (razorpayOrderCreationUrl.isEmpty) {
-      throw StateError(
-        'Configure a secure backend endpoint for Razorpay order creation. '
-        'The Razorpay secret key must never live in the Flutter client.',
-      );
-    }
-
-    final configuredUri = Uri.parse(razorpayOrderCreationUrl);
-    final requestUri = _normalizeOrderCreationUri(configuredUri);
-
-    http.Response response = await http
-        .post(
-          requestUri,
-          headers: const <String, String>{'Content-Type': 'application/json'},
-          body: jsonEncode(<String, dynamic>{
-            'amount': amountInPaise,
-            'currency': razorpayCurrency,
-            'receipt': receiptId,
-            'notes': notes ?? <String, dynamic>{},
-          }),
-        )
-        .timeout(const Duration(seconds: 15));
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw StateError(
-        'Unable to create Razorpay order right now. '
-        'Status: ${response.statusCode}.',
-      );
-    }
-
-    final decodedBody = jsonDecode(response.body);
-    if (decodedBody is! Map<String, dynamic>) {
-      throw StateError('Backend returned an invalid Razorpay order response.');
-    }
-
-    final orderId =
-        decodedBody['orderId'] as String? ?? decodedBody['id'] as String?;
-
-    if (orderId == null || orderId.isEmpty) {
-      throw StateError('Backend did not return a Razorpay order id.');
-    }
-
-    return orderId;
-  }
-
   void openCheckout({
     required String orderId,
     required int amountInPaise,
+    String? keyId,
+    required String merchantName,
+    required String description,
     required String userName,
     required String userEmail,
     required String userPhone,
@@ -71,6 +20,16 @@ class RazorpayCheckoutService {
     required void Function(PaymentFailureResponse response) onFailure,
     void Function(dynamic response)? onExternalWallet,
   }) {
+    final resolvedKeyId = (keyId?.trim().isNotEmpty == true)
+        ? keyId!.trim()
+        : razorpayKeyId.trim();
+
+    if (resolvedKeyId.isEmpty) {
+      throw StateError(
+        'Razorpay key ID is unavailable. Make sure the backend returns keyId or set RAZORPAY_KEY_ID.',
+      );
+    }
+
     _razorpay.clear();
     _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, onSuccess);
     _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, onFailure);
@@ -79,18 +38,26 @@ class RazorpayCheckoutService {
     }
 
     final options = <String, dynamic>{
-      'key': razorpayKeyId,
+      'key': resolvedKeyId,
       'amount': amountInPaise,
       'currency': razorpayCurrency,
       'order_id': orderId,
-      'name': 'PawCare Store',
-      'description': 'Checkout payment',
+      'name': merchantName,
+      'description': description,
       'prefill': <String, dynamic>{
         'contact': userPhone,
         'email': userEmail,
         'name': userName,
       },
-      'theme': <String, dynamic>{'color': '#7B61FF'},
+      'retry': <String, dynamic>{'enabled': true, 'max_count': 1},
+      'send_sms_hash': true,
+      'method': <String, dynamic>{
+        'upi': true,
+        'card': true,
+        'netbanking': true,
+        'wallet': true,
+      },
+      'theme': <String, dynamic>{'color': '#0C7D69'},
     };
 
     _razorpay.open(options);
@@ -98,13 +65,5 @@ class RazorpayCheckoutService {
 
   void dispose() {
     _razorpay.clear();
-  }
-
-  Uri _normalizeOrderCreationUri(Uri configuredUri) {
-    final normalizedPath = configuredUri.path.trim();
-    if (normalizedPath.isEmpty || normalizedPath == '/') {
-      return configuredUri.replace(path: '/create-order');
-    }
-    return configuredUri;
   }
 }
