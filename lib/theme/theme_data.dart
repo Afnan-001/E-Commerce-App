@@ -7,7 +7,7 @@ final AppBarTheme appBarLightTheme = AppBarTheme(
   backgroundColor: Colors.white,
   elevation: 0,
   iconTheme: const IconThemeData(color: blackColor),
-  titleTextStyle: GoogleFonts.sora(
+  titleTextStyle: GoogleFonts.spaceGrotesk(
     fontSize: 16,
     fontWeight: FontWeight.w700,
     color: blackColor,
@@ -18,7 +18,7 @@ final AppBarTheme appBarDarkTheme = AppBarTheme(
   backgroundColor: blackColor,
   elevation: 0,
   iconTheme: const IconThemeData(color: Colors.white),
-  titleTextStyle: GoogleFonts.sora(
+  titleTextStyle: GoogleFonts.spaceGrotesk(
     fontSize: 16,
     fontWeight: FontWeight.w700,
     color: Colors.white,

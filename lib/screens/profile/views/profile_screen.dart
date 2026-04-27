@@ -9,14 +9,131 @@ import 'package:shop/providers/order_provider.dart';
 import 'package:shop/providers/product_provider.dart';
 import 'package:shop/providers/theme_provider.dart';
 import 'package:shop/route/screen_export.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
-  void _showComingSoon(BuildContext context, String label) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$label will be connected soon.')));
+  Future<void> _showSupportSheet(BuildContext context) async {
+    final configuredNumber = _resolvedSupportWhatsAppNumber(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.all(defaultPadding),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 46,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Theme.of(sheetContext).dividerColor,
+                      borderRadius: const BorderRadius.all(
+                        Radius.circular(999),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: defaultPadding),
+                Text(
+                  'Customer support',
+                  style: Theme.of(
+                    sheetContext,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Need help with your order, payment, or delivery? Start a WhatsApp chat with our support team.',
+                  style: Theme.of(sheetContext).textTheme.bodyMedium,
+                ),
+                if (configuredNumber.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    'WhatsApp: +$configuredNumber',
+                    style: Theme.of(sheetContext).textTheme.bodySmall,
+                  ),
+                ],
+                const SizedBox(height: defaultPadding),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () async {
+                      Navigator.of(sheetContext).pop();
+                      await _openWhatsAppSupport(context);
+                    },
+                    icon: const Icon(Icons.chat_bubble_outline_rounded),
+                    label: const Text('Chat on WhatsApp'),
+                  ),
+                ),
+                const SizedBox(height: defaultPadding / 2),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _resolvedSupportWhatsAppNumber(BuildContext context) {
+    final adminConfigured = context
+        .read<CartProvider>()
+        .deliverySettings
+        .supportWhatsAppNumber
+        .replaceAll(RegExp(r'[^0-9]'), '');
+    if (adminConfigured.isNotEmpty) {
+      return adminConfigured;
+    }
+    return supportWhatsAppNumber.replaceAll(RegExp(r'[^0-9]'), '');
+  }
+
+  Future<void> _openWhatsAppSupport(BuildContext context) async {
+    final normalizedNumber = _resolvedSupportWhatsAppNumber(context);
+    if (normalizedNumber.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Add a WhatsApp support number in the admin panel to enable support chat.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final encodedMessage = Uri.encodeComponent(supportWhatsAppMessage);
+    final whatsappUri = Uri.parse(
+      'whatsapp://send?phone=$normalizedNumber&text=$encodedMessage',
+    );
+    final fallbackUri = Uri.parse(
+      'https://wa.me/$normalizedNumber?text=$encodedMessage',
+    );
+
+    final openedWhatsapp = await launchUrl(
+      whatsappUri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (openedWhatsapp) return;
+
+    final openedFallback = await launchUrl(
+      fallbackUri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (openedFallback) return;
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Could not open WhatsApp on this device right now.'),
+      ),
+    );
   }
 
   @override
@@ -133,7 +250,7 @@ class ProfileScreen extends StatelessWidget {
               _ActionTile(
                 title: 'Customer support',
                 iconPath: 'assets/icons/Help.svg',
-                onTap: () => _showComingSoon(context, 'Customer support'),
+                onTap: () => _showSupportSheet(context),
                 isLast: true,
               ),
             ],

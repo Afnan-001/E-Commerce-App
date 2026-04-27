@@ -265,7 +265,7 @@ class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
                         ),
                         const SizedBox(height: defaultPadding / 2),
                         const Text(
-                          "One-day delivery is available in Solhapur city. Choose your pack, add it to cart, and we will take care of the rest.",
+                          "One-day delivery is available in Solapur city. Choose your pack, add it to cart, and we will take care of the rest.",
                         ),
                         const SizedBox(height: defaultPadding),
                         Container(
@@ -286,7 +286,7 @@ class _ProductBuyNowScreenState extends State<ProductBuyNowScreen> {
                               _FriendlyDeliveryPoint(
                                 icon: Icons.bolt_rounded,
                                 text:
-                                    'One-day delivery across eligible Solhapur orders',
+                                    'One-day delivery across eligible Solapur orders',
                               ),
                               SizedBox(height: 10),
                               _FriendlyDeliveryPoint(

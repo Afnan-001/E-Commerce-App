@@ -201,7 +201,7 @@ class _DeliveryInformationSheet extends StatelessWidget {
       (
         heading: "One-day delivery",
         body:
-            "Orders inside Solhapur city are usually packed quickly and delivered within 1 day on eligible orders.",
+            "Orders inside Solapur city are usually packed quickly and delivered within 1 day on eligible orders.",
       ),
       (
         heading: "Cash on delivery",
@@ -211,7 +211,7 @@ class _DeliveryInformationSheet extends StatelessWidget {
       (
         heading: "Before checkout",
         body:
-            "Delivery is currently available only for Solhapur city pincodes, so please add a serviceable address before ordering.",
+            "Delivery is currently available only for Solapur city pincodes, so please add a serviceable address before ordering.",
       ),
     ];
 

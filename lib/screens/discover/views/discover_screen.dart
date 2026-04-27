@@ -341,13 +341,13 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     }
 
     final sections = <_PetSection>[];
+    if (food.isNotEmpty) {
+      sections.add(_PetSection(title: 'Food Essentials', categories: food));
+    }
     if (lifestyle.isNotEmpty) {
       sections.add(
         _PetSection(title: 'Lifestyle & Accessories', categories: lifestyle),
       );
-    }
-    if (food.isNotEmpty) {
-      sections.add(_PetSection(title: 'Food Essentials', categories: food));
     }
     if (grooming.isNotEmpty) {
       sections.add(_PetSection(title: 'Grooming', categories: grooming));

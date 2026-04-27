@@ -56,6 +56,14 @@ const Color errorColor = Color(0xFFEA5B5B);
 const double defaultPadding = 16.0;
 const double defaultBorderRadious = 12.0;
 const Duration defaultDuration = Duration(milliseconds: 300);
+const String supportWhatsAppNumber = String.fromEnvironment(
+  '917028521360',
+  defaultValue: '',
+);
+const String supportWhatsAppMessage = String.fromEnvironment(
+  'SUPPORT_WHATSAPP_MESSAGE',
+  defaultValue: 'Hello PetsWorld, I need help with my order.',
+);
 
 final passwordValidator = MultiValidator([
   RequiredValidator(errorText: 'Password is required'),

@@ -282,7 +282,7 @@ class _CouponEditorSheetState extends State<_CouponEditorSheet> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<CouponDiscountType>(
-                    value: _discountType,
+                    initialValue: _discountType,
                     decoration: const InputDecoration(
                       labelText: 'Discount type',
                     ),

@@ -19,6 +19,7 @@ class _AdminStoreSettingsScreenState extends State<AdminStoreSettingsScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _thresholdController;
   late final TextEditingController _feeController;
+  late final TextEditingController _whatsAppController;
 
   @override
   void initState() {
@@ -30,12 +31,16 @@ class _AdminStoreSettingsScreenState extends State<AdminStoreSettingsScreen> {
     _feeController = TextEditingController(
       text: settings.deliveryFee.toStringAsFixed(0),
     );
+    _whatsAppController = TextEditingController(
+      text: settings.supportWhatsAppNumber,
+    );
   }
 
   @override
   void dispose() {
     _thresholdController.dispose();
     _feeController.dispose();
+    _whatsAppController.dispose();
     super.dispose();
   }
 
@@ -61,12 +66,48 @@ class _AdminStoreSettingsScreenState extends State<AdminStoreSettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Free delivery rule',
+                    'Store settings',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Customers unlock free delivery when their cart subtotal before coupon discounts crosses the configured threshold.',
+                    'Manage free delivery and customer support contact details from one place.',
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'WhatsApp support',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'This number is used by the Customer support > Chat on WhatsApp button in the app.',
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _whatsAppController,
+                    keyboardType: TextInputType.phone,
+                    validator: (value) {
+                      final digits = (value ?? '').replaceAll(
+                        RegExp(r'[^0-9]'),
+                        '',
+                      );
+                      if (digits.isEmpty) {
+                        return 'Enter a WhatsApp number';
+                      }
+                      if (digits.length < 10) {
+                        return 'Enter a valid WhatsApp number with country code';
+                      }
+                      return null;
+                    },
+                    decoration: const InputDecoration(
+                      labelText: 'WhatsApp support number',
+                      hintText: 'Example: 919876543210',
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Free delivery rule',
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -117,11 +158,14 @@ class _AdminStoreSettingsScreenState extends State<AdminStoreSettingsScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    final productProvider = context.read<ProductProvider>();
+    final cartProvider = context.read<CartProvider>();
 
     final settings = DeliverySettingsModel(
       freeDeliveryThreshold:
           double.tryParse(_thresholdController.text.trim()) ?? 999,
       deliveryFee: double.tryParse(_feeController.text.trim()) ?? 49,
+      supportWhatsAppNumber: _whatsAppController.text.trim(),
     );
 
     final adminProvider = context.read<AdminProvider>();
@@ -137,8 +181,8 @@ class _AdminStoreSettingsScreenState extends State<AdminStoreSettingsScreen> {
       );
       return;
     }
-    await context.read<ProductProvider>().loadInitialData();
-    await context.read<CartProvider>().loadPricingConfig();
+    await productProvider.loadInitialData();
+    await cartProvider.loadPricingConfig();
     if (!mounted) return;
     ScaffoldMessenger.of(
       context,

@@ -307,7 +307,7 @@ class _HomeSectionEditorSheetState extends State<_HomeSectionEditorSheet> {
                   ),
                   if (_hasDiscount) ...[
                     DropdownButtonFormField<CouponDiscountType>(
-                      value: _discountType,
+                      initialValue: _discountType,
                       decoration: const InputDecoration(
                         labelText: 'Section discount type',
                       ),

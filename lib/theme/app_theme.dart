@@ -11,7 +11,7 @@ class AppTheme {
   static ThemeData lightTheme() {
     final baseTheme = ThemeData.light();
     final bodyFontFamily = GoogleFonts.manrope().fontFamily;
-    final headingFontFamily = GoogleFonts.sora().fontFamily;
+    final headingFontFamily = GoogleFonts.spaceGrotesk().fontFamily;
     final baseTextTheme = GoogleFonts.manropeTextTheme(baseTheme.textTheme)
         .apply(
           fontFamily: bodyFontFamily,
@@ -123,7 +123,7 @@ class AppTheme {
   static ThemeData darkTheme() {
     final baseTheme = ThemeData.dark();
     final bodyFontFamily = GoogleFonts.manrope().fontFamily;
-    final headingFontFamily = GoogleFonts.sora().fontFamily;
+    final headingFontFamily = GoogleFonts.spaceGrotesk().fontFamily;
     final baseTextTheme = GoogleFonts.manropeTextTheme(baseTheme.textTheme)
         .apply(
           fontFamily: bodyFontFamily,

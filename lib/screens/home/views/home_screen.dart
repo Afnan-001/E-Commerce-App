@@ -921,7 +921,7 @@ class _DeliveryHighlightCard extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Fast doorstep delivery across Solhapur city.',
+                  'Fast doorstep delivery across Solapur city.',
                   style: TextStyle(
                     color: Colors.white70,
                     height: 1.35,

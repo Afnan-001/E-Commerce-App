@@ -39,11 +39,9 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
   static const Duration _pincodeDebounceDuration = Duration(milliseconds: 500);
   static const Set<String> _supportedDistricts = <String>{
     'solapur',
-    'solhapur',
   };
   static const Set<String> _supportedCityHints = <String>{
     'solapur',
-    'solhapur',
   };
 
   String _selectedLabel = 'Home';
@@ -181,7 +179,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
               if (_isValidPincodeLength && !_isServiceablePincode) ...[
                 const SizedBox(height: 8),
                 Text(
-                  'Delivery is currently available only for Solhapur city pincodes.',
+                  'Delivery is currently available only for Solapur city pincodes.',
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.error,
                     fontSize: 12,
@@ -426,7 +424,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Sorry, we currently deliver only within Solhapur city.',
+            'Sorry, we currently deliver only within Solapur city.',
           ),
         ),
       );
