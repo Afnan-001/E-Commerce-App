@@ -1,21 +1,54 @@
+const String fallbackRazorpayKeyId = 'rzp_test_SbNb9Ak1AfEHen';
+
 const String razorpayKeyId = String.fromEnvironment(
   'RAZORPAY_KEY_ID',
-  defaultValue: '',
+  defaultValue: fallbackRazorpayKeyId,
 );
 
-const String razorpayKeySecret = String.fromEnvironment(
-  'RAZORPAY_KEY_SECRET',
-  defaultValue: '',
+String get razorpayBackendBaseUrl {
+  final configuredUrl = String.fromEnvironment(
+    'RAZORPAY_BACKEND_BASE_URL',
+    defaultValue: '',
+  ).trim();
+  if (configuredUrl.isNotEmpty) {
+    return configuredUrl;
+  }
+
+  return 'https://petstore-razorpay-backend.onrender.com';
+}
+
+const String razorpayCurrency = String.fromEnvironment(
+  'RAZORPAY_CURRENCY',
+  defaultValue: 'INR',
 );
 
-/// Replace this placeholder with a secure backend endpoint that creates
-/// Razorpay orders using the secret key server-side.
-const String razorpayOrderCreationUrl = String.fromEnvironment(
-  'RAZORPAY_ORDER_CREATION_URL',
-  defaultValue: '',
+const String checkoutMerchantName = String.fromEnvironment(
+  'CHECKOUT_MERCHANT_NAME',
+  defaultValue: 'Store Checkout',
 );
 
-const String razorpayCurrency = 'INR';
+const String checkoutDescription = String.fromEnvironment(
+  'CHECKOUT_DESCRIPTION',
+  defaultValue: 'Order payment',
+);
 
-bool get isRazorpayConfigured =>
-    razorpayKeyId.trim().isNotEmpty && razorpayOrderCreationUrl.trim().isNotEmpty;
+bool get isRazorpayConfigured => razorpayBackendBaseUrl.trim().isNotEmpty;
+
+String get razorpayOrderCreationUrl => _resolveBackendPath('/create-order');
+
+String get razorpayPaymentVerificationUrl =>
+    _resolveBackendPath('/verify-payment');
+
+String get codOrderCreationUrl => _resolveBackendPath('/orders');
+
+String _resolveBackendPath(String path) {
+  final baseUrl = razorpayBackendBaseUrl.trim();
+  if (baseUrl.isEmpty) {
+    return '';
+  }
+
+  final normalizedBaseUrl = baseUrl.endsWith('/')
+      ? baseUrl.substring(0, baseUrl.length - 1)
+      : baseUrl;
+  return '$normalizedBaseUrl$path';
+}

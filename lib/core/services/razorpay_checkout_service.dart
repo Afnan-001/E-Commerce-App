@@ -1,6 +1,3 @@
-import 'dart:convert';
-
-import 'package:http/http.dart' as http;
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import 'package:shop/core/config/payment_config.dart';
@@ -10,81 +7,57 @@ class RazorpayCheckoutService {
 
   final Razorpay _razorpay;
 
-  Future<String> createOrderId({
-    required int amountInPaise,
-    required String receiptId,
-    Map<String, dynamic>? notes,
-  }) async {
-    if (!isRazorpayConfigured) {
-      throw StateError(
-        'Razorpay is not configured. Provide RAZORPAY_KEY_ID and '
-        'RAZORPAY_ORDER_CREATION_URL as dart-defines, and keep the secret key '
-        'only on your backend.',
-      );
-    }
-
-    final response = await http.post(
-      Uri.parse(razorpayOrderCreationUrl),
-      headers: const <String, String>{'Content-Type': 'application/json'},
-      body: jsonEncode(<String, dynamic>{
-        'amount': amountInPaise,
-        'currency': razorpayCurrency,
-        'receipt': receiptId,
-        'notes': notes ?? <String, dynamic>{},
-      }),
-    );
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw StateError('Unable to create Razorpay order right now.');
-    }
-
-    final payload = jsonDecode(response.body) as Map<String, dynamic>;
-    final orderId = payload['orderId'] as String? ?? payload['id'] as String?;
-
-    if (orderId == null || orderId.isEmpty) {
-      throw StateError('Backend did not return a Razorpay order id.');
-    }
-
-    return orderId;
-  }
-
   void openCheckout({
     required String orderId,
     required int amountInPaise,
+    String? keyId,
+    required String merchantName,
+    required String description,
     required String userName,
     required String userEmail,
     required String userPhone,
     required void Function(PaymentSuccessResponse response) onSuccess,
     required void Function(PaymentFailureResponse response) onFailure,
-    required void Function(ExternalWalletResponse response) onExternalWallet,
+    void Function(dynamic response)? onExternalWallet,
   }) {
-    if (razorpayKeyId.trim().isEmpty) {
+    final resolvedKeyId = (keyId?.trim().isNotEmpty == true)
+        ? keyId!.trim()
+        : razorpayKeyId.trim();
+
+    if (resolvedKeyId.isEmpty) {
       throw StateError(
-        'Missing Razorpay key id. Add RAZORPAY_KEY_ID before opening checkout.',
+        'Razorpay key ID is unavailable. Make sure the backend returns keyId or set RAZORPAY_KEY_ID.',
       );
     }
 
     _razorpay.clear();
     _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, onSuccess);
     _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, onFailure);
-    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, onExternalWallet);
+    if (onExternalWallet != null) {
+      _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, onExternalWallet);
+    }
 
     final options = <String, dynamic>{
-      'key': razorpayKeyId,
+      'key': resolvedKeyId,
       'amount': amountInPaise,
       'currency': razorpayCurrency,
       'order_id': orderId,
-      'name': 'PawCare Store',
-      'description': 'Checkout payment',
+      'name': merchantName,
+      'description': description,
       'prefill': <String, dynamic>{
         'contact': userPhone,
         'email': userEmail,
         'name': userName,
       },
-      'external': <String, dynamic>{
-        'wallets': <String>['paytm', 'gpay', 'phonepe'],
+      'retry': <String, dynamic>{'enabled': true, 'max_count': 1},
+      'send_sms_hash': true,
+      'method': <String, dynamic>{
+        'upi': true,
+        'card': true,
+        'netbanking': true,
+        'wallet': true,
       },
-      'theme': <String, dynamic>{'color': '#7B61FF'},
+      'theme': <String, dynamic>{'color': '#0C7D69'},
     };
 
     _razorpay.open(options);
