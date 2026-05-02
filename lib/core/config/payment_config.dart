@@ -14,7 +14,7 @@ String get razorpayBackendBaseUrl {
     return configuredUrl;
   }
 
-  return 'http://192.168.29.36:5000';
+  return 'https://petstore-razorpay-backend.onrender.com/';
 }
 
 const String razorpayCurrency = String.fromEnvironment(
