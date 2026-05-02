@@ -1,6 +1,10 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:http/http.dart' as http;
 
+import 'package:shop/core/config/payment_config.dart';
 import 'package:shop/models/order_model.dart';
 import 'package:shop/models/product_model.dart';
 import 'package:shop/models/product_option_model.dart';
@@ -15,14 +19,17 @@ abstract class OrderRepository {
 }
 
 class FirestoreOrderRepository implements OrderRepository {
-  FirestoreOrderRepository({FirebaseFirestore? firestore})
-    : _firestore = firestore;
+  FirestoreOrderRepository({FirebaseFirestore? firestore, http.Client? client})
+    : _firestore = firestore,
+      _client = client ?? http.Client();
 
   final FirebaseFirestore? _firestore;
+  final http.Client _client;
 
   FirebaseFirestore get _db => _firestore ?? FirebaseFirestore.instance;
 
   bool get _isReady => Firebase.apps.isNotEmpty;
+  bool get _hasBackendConfigured => razorpayBackendBaseUrl.trim().isNotEmpty;
 
   @override
   Future<void> saveOrder(OrderModel order) async {
@@ -89,9 +96,7 @@ class FirestoreOrderRepository implements OrderRepository {
           );
 
           transaction.update(productRef, <String, dynamic>{
-            'packOptions': updatedOptions
-                .map((option) => option.toMap())
-                .toList(),
+            'packOptions': updatedOptions.map((option) => option.toMap()).toList(),
             'stockQuantity': updatedProduct.stockQuantity,
             'updatedAt': FieldValue.serverTimestamp(),
           });
@@ -146,51 +151,126 @@ class FirestoreOrderRepository implements OrderRepository {
 
   @override
   Future<List<OrderModel>> getUserOrders(String userId) async {
-    if (!_isReady || userId.trim().isEmpty) {
+    if (userId.trim().isEmpty) {
       return const <OrderModel>[];
     }
 
+    final firestoreFuture = _isReady
+        ? _safeFetchOrders(() => _getFirestoreUserOrders(userId))
+        : Future.value(const <OrderModel>[]);
+    final backendFuture = _hasBackendConfigured
+        ? _safeFetchOrders(() => _getBackendUserOrders(userId))
+        : Future.value(const <OrderModel>[]);
+
+    final results = await Future.wait<List<OrderModel>>([
+      firestoreFuture,
+      backendFuture,
+    ]);
+    return _mergeOrders(results[0], results[1]);
+  }
+
+  @override
+  Future<List<OrderModel>> getAllOrders() async {
+    final firestoreFuture = _isReady
+        ? _safeFetchOrders(_getFirestoreOrders)
+        : Future.value(const <OrderModel>[]);
+    final backendFuture = _hasBackendConfigured
+        ? _safeFetchOrders(_getBackendOrders)
+        : Future.value(const <OrderModel>[]);
+
+    final results = await Future.wait<List<OrderModel>>([
+      firestoreFuture,
+      backendFuture,
+    ]);
+    return _mergeOrders(results[0], results[1]);
+  }
+
+  @override
+  Future<void> updateOrderStatus(String orderId, OrderStatus status) async {
+    Object? lastError;
+    var updated = false;
+
+    if (_isReady) {
+      try {
+        await _updateFirestoreOrderStatus(orderId, status);
+        updated = true;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    if (_hasBackendConfigured) {
+      try {
+        await _updateBackendOrderStatus(orderId, status);
+        updated = true;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    if (!updated) {
+      throw lastError ?? StateError('Order not found.');
+    }
+  }
+
+  @override
+  Future<void> cancelOrder({
+    required String orderId,
+    required String userId,
+  }) async {
+    Object? lastError;
+    var updated = false;
+
+    if (_isReady) {
+      try {
+        await _cancelFirestoreOrder(orderId: orderId, userId: userId);
+        updated = true;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    if (_hasBackendConfigured) {
+      try {
+        final userOrders = await _getBackendUserOrders(userId);
+        final ownsOrder = userOrders.any((order) => order.id == orderId);
+        if (!ownsOrder) {
+          throw StateError('You can only cancel your own orders.');
+        }
+        await _updateBackendOrderStatus(orderId, OrderStatus.cancelled);
+        updated = true;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    if (!updated) {
+      throw lastError ?? StateError('Order not found.');
+    }
+  }
+
+  Future<List<OrderModel>> _getFirestoreUserOrders(String userId) async {
     final snapshot = await _db
         .collection('orders')
         .where('userId', isEqualTo: userId)
         .get();
 
-    final orders =
-        snapshot.docs
-            .map((doc) => OrderModel.fromMap(doc.id, doc.data()))
-            .toList()
-          ..sort((a, b) {
-            final aDate = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-            final bDate = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-            return bDate.compareTo(aDate);
-          });
-
-    return orders;
+    return snapshot.docs
+        .map((doc) => OrderModel.fromMap(doc.id, doc.data()))
+        .toList();
   }
 
-  @override
-  Future<List<OrderModel>> getAllOrders() async {
-    if (!_isReady) {
-      return const <OrderModel>[];
-    }
-
+  Future<List<OrderModel>> _getFirestoreOrders() async {
     final snapshot = await _db.collection('orders').get();
-
-    final orders =
-        snapshot.docs
-            .map((doc) => OrderModel.fromMap(doc.id, doc.data()))
-            .toList()
-          ..sort((a, b) {
-            final aDate = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-            final bDate = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-            return bDate.compareTo(aDate);
-          });
-
-    return orders;
+    return snapshot.docs
+        .map((doc) => OrderModel.fromMap(doc.id, doc.data()))
+        .toList();
   }
 
-  @override
-  Future<void> updateOrderStatus(String orderId, OrderStatus status) async {
+  Future<void> _updateFirestoreOrderStatus(
+    String orderId,
+    OrderStatus status,
+  ) async {
     _ensureReady();
     await _db.runTransaction((transaction) async {
       final docRef = _db.collection('orders').doc(orderId);
@@ -211,8 +291,7 @@ class FirestoreOrderRepository implements OrderRepository {
     });
   }
 
-  @override
-  Future<void> cancelOrder({
+  Future<void> _cancelFirestoreOrder({
     required String orderId,
     required String userId,
   }) async {
@@ -238,6 +317,110 @@ class FirestoreOrderRepository implements OrderRepository {
         'updatedAt': FieldValue.serverTimestamp(),
       });
     });
+  }
+
+  Future<List<OrderModel>> _getBackendUserOrders(String userId) async {
+    final uri = Uri.parse(backendUserOrdersUrl(userId));
+    final data = await _getBackendJson(uri);
+    final rawOrders = data['orders'];
+    if (rawOrders is! List) {
+      return const <OrderModel>[];
+    }
+
+    return rawOrders
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .map((item) => OrderModel.fromMap(item['orderId'] as String? ?? '', item))
+        .toList();
+  }
+
+  Future<List<OrderModel>> _getBackendOrders() async {
+    final uri = Uri.parse(backendAdminOrdersUrl);
+    final data = await _getBackendJson(uri);
+    final rawOrders = data['orders'];
+    if (rawOrders is! List) {
+      return const <OrderModel>[];
+    }
+
+    return rawOrders
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .map((item) => OrderModel.fromMap(item['orderId'] as String? ?? '', item))
+        .toList();
+  }
+
+  Future<void> _updateBackendOrderStatus(
+    String orderId,
+    OrderStatus status,
+  ) async {
+    final uri = Uri.parse(backendAdminOrderStatusUrl(orderId));
+    final response = await _client.patch(
+      uri,
+      headers: const <String, String>{'Content-Type': 'application/json'},
+      body: jsonEncode(<String, dynamic>{'status': status.name}),
+    );
+
+    final data = _decodeJsonObject(response.body);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw StateError(
+        data['error'] as String? ?? 'Unable to update backend order status.',
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> _getBackendJson(Uri uri) async {
+    final response = await _client.get(uri);
+    final data = _decodeJsonObject(response.body);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw StateError(
+        data['error'] as String? ?? 'Backend order request failed.',
+      );
+    }
+    return data;
+  }
+
+  Map<String, dynamic> _decodeJsonObject(String body) {
+    if (body.trim().isEmpty) {
+      return const <String, dynamic>{};
+    }
+
+    final decoded = jsonDecode(body);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('JSON response is not an object');
+    }
+    return decoded;
+  }
+
+  List<OrderModel> _mergeOrders(
+    List<OrderModel> primary,
+    List<OrderModel> secondary,
+  ) {
+    final merged = <String, OrderModel>{};
+
+    for (final order in secondary) {
+      merged[order.id] = order;
+    }
+    for (final order in primary) {
+      merged[order.id] = order;
+    }
+
+    final orders = merged.values.toList()
+      ..sort((a, b) {
+        final aDate = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bDate = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bDate.compareTo(aDate);
+      });
+    return orders;
+  }
+
+  Future<List<OrderModel>> _safeFetchOrders(
+    Future<List<OrderModel>> Function() loader,
+  ) async {
+    try {
+      return await loader();
+    } catch (_) {
+      return const <OrderModel>[];
+    }
   }
 
   void _ensureReady() {

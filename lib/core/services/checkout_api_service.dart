@@ -236,9 +236,17 @@ class CheckoutApiService {
         .map(
           (item) => <String, dynamic>{
             'name': item.product.name,
+            'productName': item.product.name,
             'quantity': item.quantity,
             'price': (item.unitPrice * 100).round(),
+            'productPrice': (item.unitPrice * 100).round(),
+            'originalProductPrice': item.originalUnitPrice == null
+                ? null
+                : (item.originalUnitPrice! * 100).round(),
             'productId': item.product.id,
+            'imageUrl': item.product.imageUrl,
+            'selectedOptionId': item.selectedOptionId,
+            'selectedOptionLabel': item.selectedOptionLabel,
           },
         )
         .toList();
@@ -314,8 +322,9 @@ class CheckoutOrderConfirmation {
     return CheckoutOrderConfirmation(
       message: data['message'] as String? ?? 'Order confirmed successfully.',
       backendOrderId:
-          data['orderId'] as String? ??
+          data['backendOrderId'] as String? ??
           order?['orderId'] as String? ??
+          data['orderId'] as String? ??
           order?['razorpayOrderId'] as String?,
       paymentId: data['paymentId'] as String?,
       order: order,

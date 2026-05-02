@@ -104,9 +104,18 @@ class OrderModel {
       userId: data['userId'] as String? ?? '',
       userName:
           data['userName'] as String? ?? data['customerName'] as String? ?? '',
-      userEmail: data['userEmail'] as String? ?? '',
+      userEmail:
+          data['userEmail'] as String? ??
+          data['customerEmail'] as String? ??
+          '',
       userPhone:
-          data['userPhone'] as String? ?? data['phoneNumber'] as String? ?? '',
+          data['userPhone'] as String? ??
+          data['phoneNumber'] as String? ??
+          (deliveryAddressData is Map
+              ? (Map<String, dynamic>.from(deliveryAddressData))['phone']
+                    as String? ??
+                ''
+              : ''),
       deliveryAddress: deliveryAddressData is Map
           ? OrderDeliveryAddressModel.fromMap(
               Map<String, dynamic>.from(deliveryAddressData),
@@ -142,8 +151,8 @@ class OrderModel {
               ),
             ),
       orderStatus: _orderStatusFromString(data['orderStatus'] as String?),
-      createdAt: _parseDate(data['createdAt']),
-      updatedAt: _parseDate(data['updatedAt']),
+      createdAt: _parseDate(data['createdAt']) ?? _parseDate(data['orderDate']),
+      updatedAt: _parseDate(data['updatedAt']) ?? _parseDate(data['orderDate']),
     );
   }
 

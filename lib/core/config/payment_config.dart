@@ -14,7 +14,7 @@ String get razorpayBackendBaseUrl {
     return configuredUrl;
   }
 
-  return 'https://petstore-razorpay-backend.onrender.com';
+  return 'http://192.168.29.36:5000';
 }
 
 const String razorpayCurrency = String.fromEnvironment(
@@ -40,6 +40,16 @@ String get razorpayPaymentVerificationUrl =>
     _resolveBackendPath('/verify-payment');
 
 String get codOrderCreationUrl => _resolveBackendPath('/orders');
+
+String get backendOrdersUrl => _resolveBackendPath('/orders');
+
+String backendUserOrdersUrl(String userId) =>
+    _resolveBackendPath('/admin/users/$userId/orders');
+
+String get backendAdminOrdersUrl => _resolveBackendPath('/admin/orders');
+
+String backendAdminOrderStatusUrl(String orderId) =>
+    _resolveBackendPath('/admin/orders/$orderId');
 
 String _resolveBackendPath(String path) {
   final baseUrl = razorpayBackendBaseUrl.trim();

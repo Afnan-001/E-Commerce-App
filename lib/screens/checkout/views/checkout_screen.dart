@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:shop/constants.dart';
 import 'package:shop/core/config/payment_config.dart';
@@ -37,21 +39,41 @@ class CheckoutScreen extends StatefulWidget {
   State<CheckoutScreen> createState() => _CheckoutScreenState();
 }
 
-class _CheckoutScreenState extends State<CheckoutScreen> {
+class _CheckoutScreenState extends State<CheckoutScreen>
+    with WidgetsBindingObserver {
+  static const String _pendingRazorpaySessionKey =
+      'pending_razorpay_checkout_session';
+
   final CheckoutApiService _checkoutApiService = CheckoutApiService();
   final RazorpayCheckoutService _razorpayService = RazorpayCheckoutService();
   final Random _random = Random();
   final TextEditingController _couponController = TextEditingController();
 
   bool _isProcessing = false;
+  bool _isRecoveringPendingPayment = false;
   _CheckoutPaymentMethod _selectedPaymentMethod =
       _CheckoutPaymentMethod.razorpay;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    unawaited(_recoverPendingRazorpayVerification());
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _couponController.dispose();
     _razorpayService.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_recoverPendingRazorpayVerification());
+    }
   }
 
   @override
@@ -464,6 +486,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
       );
 
+      await _persistPendingRazorpaySession(
+        _PendingRazorpaySession(
+          draftOrder: razorpayDraft,
+          selectedAddress: selectedAddress,
+        ),
+      );
+
       _razorpayService.openCheckout(
         orderId: razorpayOrder.orderId,
         amountInPaise: razorpayOrder.amountInPaise,
@@ -529,41 +558,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         );
       }
 
-      final verificationResult = await _checkoutApiService
-          .verifyRazorpayPayment(
-            razorpayOrderId: verifiedOrderId,
-            razorpayPaymentId: verifiedPaymentId,
-            razorpaySignature: verifiedSignature,
-            receiptId: draftOrder.orderId,
-            userId: draftOrder.userId,
-            customerEmail: draftOrder.userEmail,
-            customerName: draftOrder.userName,
-            amountInPaise: (draftOrder.totalPrice * 100).round(),
-            items: _buildCartItemsFromOrder(draftOrder.items),
-            address: selectedAddress,
-          );
-
-      final confirmedOrderId =
-          verificationResult.backendOrderId?.trim().isNotEmpty == true
-          ? verificationResult.backendOrderId!.trim()
-          : draftOrder.orderId;
-
-      final paidOrder = draftOrder.copyWith(
-        orderId: confirmedOrderId,
-        payment: OrderPaymentModel(
-          paymentMethod: PaymentMethod.razorpay,
-          paymentStatus: PaymentStatus.paid,
-          razorpayPaymentId: verifiedPaymentId,
-          razorpayOrderId: verifiedOrderId,
-          razorpaySignature: verifiedSignature,
-        ),
-        updatedAt: DateTime.now(),
+      final session = _PendingRazorpaySession(
+        draftOrder: draftOrder,
+        selectedAddress: selectedAddress,
+        razorpayOrderId: verifiedOrderId,
+        razorpayPaymentId: verifiedPaymentId,
+        razorpaySignature: verifiedSignature,
       );
+      await _persistPendingRazorpaySession(session);
 
-      await _finalizeSuccessfulOrder(
-        order: paidOrder,
-        successMessage:
-            '${verificationResult.message} Order ID: ${paidOrder.orderId}. Confirmation email will be sent by the backend to ${draftOrder.userEmail}.',
+      await _verifyAndFinalizePendingRazorpayOrder(
+        session,
+        source: 'success_callback',
       );
     } catch (error) {
       final errorDetails = _describeCheckoutError(error);
@@ -584,6 +590,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> _handleRazorpayFailure(PaymentFailureResponse response) async {
+    await _clearPendingRazorpaySession();
     _razorpayService.dispose();
     debugPrint(
       '[checkout] Razorpay payment failure code=${response.code} message=${response.message}',
@@ -595,6 +602,122 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _showSnackBar(
       'Payment failed. Code: ${response.code}. Message: ${response.message ?? 'No message from Razorpay.'}',
     );
+  }
+
+  Future<void> _recoverPendingRazorpayVerification() async {
+    if (_isRecoveringPendingPayment) {
+      return;
+    }
+
+    final session = await _readPendingRazorpaySession();
+    if (session == null || !session.hasVerificationPayload) {
+      return;
+    }
+
+    _isRecoveringPendingPayment = true;
+    try {
+      await _verifyAndFinalizePendingRazorpayOrder(
+        session,
+        source: 'app_resume',
+      );
+    } finally {
+      _isRecoveringPendingPayment = false;
+    }
+  }
+
+  Future<void> _verifyAndFinalizePendingRazorpayOrder(
+    _PendingRazorpaySession session, {
+    required String source,
+  }) async {
+    final razorpayOrderId = session.razorpayOrderId;
+    final razorpayPaymentId = session.razorpayPaymentId;
+    final razorpaySignature = session.razorpaySignature;
+
+    if (razorpayOrderId == null ||
+        razorpayPaymentId == null ||
+        razorpaySignature == null) {
+      throw const CheckoutApiException(
+        message: 'Stored Razorpay verification details are incomplete.',
+      );
+    }
+
+    debugPrint(
+      '[checkout] Verifying Razorpay payment from $source for receipt=${session.draftOrder.orderId} razorpayOrderId=$razorpayOrderId paymentId=$razorpayPaymentId',
+    );
+
+    if (mounted) {
+      setState(() {
+        _isProcessing = true;
+      });
+    }
+
+    final verificationResult = await _checkoutApiService.verifyRazorpayPayment(
+      razorpayOrderId: razorpayOrderId,
+      razorpayPaymentId: razorpayPaymentId,
+      razorpaySignature: razorpaySignature,
+      receiptId: session.draftOrder.orderId,
+      userId: session.draftOrder.userId,
+      customerEmail: session.draftOrder.userEmail,
+      customerName: session.draftOrder.userName,
+      amountInPaise: (session.draftOrder.totalPrice * 100).round(),
+      items: _buildCartItemsFromOrder(session.draftOrder.items),
+      address: session.selectedAddress,
+    );
+
+    final confirmedOrderId =
+        verificationResult.backendOrderId?.trim().isNotEmpty == true
+        ? verificationResult.backendOrderId!.trim()
+        : session.draftOrder.orderId;
+
+    final paidOrder = session.draftOrder.copyWith(
+      orderId: confirmedOrderId,
+      payment: OrderPaymentModel(
+        paymentMethod: PaymentMethod.razorpay,
+        paymentStatus: PaymentStatus.paid,
+        razorpayPaymentId: razorpayPaymentId,
+        razorpayOrderId: razorpayOrderId,
+        razorpaySignature: razorpaySignature,
+      ),
+      updatedAt: DateTime.now(),
+    );
+
+    await _clearPendingRazorpaySession();
+    await _finalizeSuccessfulOrder(
+      order: paidOrder,
+      successMessage:
+          '${verificationResult.message} Order ID: ${paidOrder.orderId}. Confirmation email will be sent by the backend to ${session.draftOrder.userEmail}.',
+    );
+  }
+
+  Future<void> _persistPendingRazorpaySession(
+    _PendingRazorpaySession session,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _pendingRazorpaySessionKey,
+      jsonEncode(session.toMap()),
+    );
+  }
+
+  Future<_PendingRazorpaySession?> _readPendingRazorpaySession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rawValue = prefs.getString(_pendingRazorpaySessionKey);
+    if (rawValue == null || rawValue.trim().isEmpty) {
+      return null;
+    }
+
+    final decoded = jsonDecode(rawValue);
+    if (decoded is! Map) {
+      await prefs.remove(_pendingRazorpaySessionKey);
+      return null;
+    }
+
+    return _PendingRazorpaySession.fromMap(Map<String, dynamic>.from(decoded));
+  }
+
+  Future<void> _clearPendingRazorpaySession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_pendingRazorpaySessionKey);
   }
 
   Future<void> _placeCashOnDeliveryOrder({
@@ -635,6 +758,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     required OrderModel order,
     required String successMessage,
   }) async {
+    await _clearPendingRazorpaySession();
+
     if (mounted) {
       ScaffoldMessenger.of(
         context,
@@ -878,6 +1003,62 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+class _PendingRazorpaySession {
+  const _PendingRazorpaySession({
+    required this.draftOrder,
+    required this.selectedAddress,
+    this.razorpayOrderId,
+    this.razorpayPaymentId,
+    this.razorpaySignature,
+  });
+
+  final OrderModel draftOrder;
+  final AddressModel selectedAddress;
+  final String? razorpayOrderId;
+  final String? razorpayPaymentId;
+  final String? razorpaySignature;
+
+  bool get hasVerificationPayload =>
+      razorpayOrderId?.trim().isNotEmpty == true &&
+      razorpayPaymentId?.trim().isNotEmpty == true &&
+      razorpaySignature?.trim().isNotEmpty == true;
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'draftOrder': draftOrder.toMap(),
+      'selectedAddress': <String, dynamic>{
+        'id': selectedAddress.id,
+        ...selectedAddress.toMap(),
+      },
+      'razorpayOrderId': razorpayOrderId,
+      'razorpayPaymentId': razorpayPaymentId,
+      'razorpaySignature': razorpaySignature,
+    };
+  }
+
+  factory _PendingRazorpaySession.fromMap(Map<String, dynamic> data) {
+    final orderData = Map<String, dynamic>.from(
+      data['draftOrder'] as Map<dynamic, dynamic>? ?? const <String, dynamic>{},
+    );
+    final orderId = orderData['orderId'] as String? ?? '';
+    final addressData = Map<String, dynamic>.from(
+      data['selectedAddress'] as Map<dynamic, dynamic>? ??
+          const <String, dynamic>{},
+    );
+    final addressId = addressData['id'] as String? ?? '';
+    final normalizedAddressData = Map<String, dynamic>.from(addressData)
+      ..remove('id');
+
+    return _PendingRazorpaySession(
+      draftOrder: OrderModel.fromMap(orderId, orderData),
+      selectedAddress: AddressModel.fromMap(addressId, normalizedAddressData),
+      razorpayOrderId: data['razorpayOrderId'] as String?,
+      razorpayPaymentId: data['razorpayPaymentId'] as String?,
+      razorpaySignature: data['razorpaySignature'] as String?,
+    );
   }
 }
 
