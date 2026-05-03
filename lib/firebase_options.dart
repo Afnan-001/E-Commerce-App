@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -49,14 +46,21 @@ class DefaultFirebaseOptions {
     }
   }
 
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyB-UqDxJADf56zCsgXtY7ioaZYUtCrkgQg',
+    appId: '1:119947379250:web:23c47903302b25eaa7722b',
+    messagingSenderId: '119947379250',
+    projectId: 'pet-shop-app-ee6f2',
+    authDomain: 'pet-shop-app-ee6f2.firebaseapp.com',
+    storageBucket: 'pet-shop-app-ee6f2.firebasestorage.app',
+  );
+
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBbmlg1unkeV09_qMSXXtBIBy8r_tuftq0',
-    appId: '1:119947379250:android:8841f53f01206c26a7722b',
+    appId: '1:119947379250:android:27bc0755d2439af2a7722b',
     messagingSenderId: '119947379250',
     projectId: 'pet-shop-app-ee6f2',
     storageBucket: 'pet-shop-app-ee6f2.firebasestorage.app',
-    androidClientId:
-        '119947379250-u2ehvus4ldmn50ol5bm8or0du1bf4amr.apps.googleusercontent.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
@@ -67,6 +71,6 @@ class DefaultFirebaseOptions {
     storageBucket: 'pet-shop-app-ee6f2.firebasestorage.app',
     iosClientId:
         '119947379250-1bisfc4st0srheld5qnav2m50tpbafai.apps.googleusercontent.com',
-    iosBundleId: 'com.example.shop',
+    iosBundleId: 'com.petsworld.shop',
   );
 }

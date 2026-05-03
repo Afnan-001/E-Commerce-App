@@ -279,19 +279,33 @@ class _FreeDeliveryBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final progress = pricing.freeDeliveryThreshold <= 0
         ? 1.0
         : (pricing.subtotal / pricing.freeDeliveryThreshold)
               .clamp(0.0, 1.0)
               .toDouble();
+    final backgroundColor = isDark
+        ? const Color(0xFF1B2130)
+        : const Color(0xFFF5F0FF);
+    final borderColor = isDark
+        ? const Color(0xFF31384A)
+        : const Color(0xFFDCCFFF);
+    final trackColor = isDark
+        ? Colors.white.withValues(alpha: 0.12)
+        : Colors.white;
+    final titleColor = isDark ? Colors.white : const Color(0xFF2B2145);
+    final bodyColor = isDark
+        ? Colors.white.withValues(alpha: 0.78)
+        : const Color(0xFF5B4C7A);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(defaultPadding),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F0FF),
+        color: backgroundColor,
         borderRadius: const BorderRadius.all(Radius.circular(18)),
-        border: Border.all(color: const Color(0xFFDCCFFF)),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,7 +314,18 @@ class _FreeDeliveryBanner extends StatelessWidget {
             pricing.qualifiesForFreeDelivery
                 ? 'Free delivery unlocked'
                 : 'Add Rs ${pricing.amountLeftForFreeDelivery.toStringAsFixed(0)} more for free delivery',
-            style: Theme.of(context).textTheme.titleSmall,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: titleColor,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            pricing.qualifiesForFreeDelivery
+                ? 'Your order now qualifies for free delivery.'
+                : 'Cross Rs ${pricing.freeDeliveryThreshold.toStringAsFixed(0)} to remove delivery charges.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: bodyColor,
+            ),
           ),
           const SizedBox(height: 8),
           ClipRRect(
@@ -308,7 +333,7 @@ class _FreeDeliveryBanner extends StatelessWidget {
             child: LinearProgressIndicator(
               minHeight: 8,
               value: progress,
-              backgroundColor: Colors.white,
+              backgroundColor: trackColor,
               valueColor: const AlwaysStoppedAnimation<Color>(primaryColor),
             ),
           ),

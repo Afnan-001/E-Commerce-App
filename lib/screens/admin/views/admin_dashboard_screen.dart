@@ -1039,6 +1039,11 @@ class _SystemHealthPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final adminProvider = context.watch<AdminProvider>();
+    final paymentSettings = adminProvider.paymentSettings.mergeWith(
+      currentPaymentSettings,
+    );
+
     return _Panel(
       title: 'System health',
       subtitle: 'Configuration checks for the admin workspace',
@@ -1062,10 +1067,12 @@ class _SystemHealthPanel extends StatelessWidget {
           const SizedBox(height: 12),
           _HealthTile(
             title: 'Razorpay',
-            description: isRazorpayConfigured
-                ? 'Client-side checkout is configured and ready for a secure backend order endpoint.'
-                : 'Add RAZORPAY_KEY_ID and RAZORPAY_ORDER_CREATION_URL as dart-defines.',
-            healthy: isRazorpayConfigured,
+            description: paymentSettings.hasBackendBaseUrl
+                ? paymentSettings.hasPublicKey
+                    ? 'Runtime checkout settings are stored in the admin panel. Keep the matching Razorpay secret on your backend.'
+                    : 'Backend checkout URL is saved. Add the public key ID here or return it from your backend order API.'
+                : 'Add the Razorpay backend URL in Store settings so checkout can create and verify orders.',
+            healthy: paymentSettings.hasBackendBaseUrl,
           ),
         ],
       ),

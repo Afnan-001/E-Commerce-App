@@ -42,10 +42,20 @@ class HomeBannerCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  NetworkImageWithLoader(
-                    banner.imageUrl,
-                    fit: BoxFit.cover,
-                    radius: 30,
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF131922)
+                          : const Color(0xFFF4ECE2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(6, 8, 6, 16),
+                    child: NetworkImageWithLoader(
+                      banner.imageUrl,
+                      fit: BoxFit.fitWidth,
+                      radius: 24,
+                    ),
                   ),
                   DecoratedBox(
                     decoration: BoxDecoration(

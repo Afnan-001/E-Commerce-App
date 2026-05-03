@@ -402,6 +402,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     for (final parent in categories) {
       final parentKey = _normalizedCategoryKey(parent.title);
       if (parentKey == 'dogs' || parentKey == 'cats') {
+        if (parentKey == normalized ||
+            parentKey.replaceAll('s', '') == normalized) {
+          return parentKey;
+        }
         final hasMatch = parent.subCategories.any(
           (category) =>
               _normalizedCategoryKey(category.title) == normalized ||

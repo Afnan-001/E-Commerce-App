@@ -32,7 +32,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.example.shop"
+    namespace = "com.petsworld.shop"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -60,7 +60,7 @@ android {
         }
     }
     defaultConfig {
-        applicationId = "com.example.shop"
+        applicationId = "com.petsworld.shop"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()

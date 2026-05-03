@@ -57,7 +57,7 @@ const double defaultPadding = 16.0;
 const double defaultBorderRadious = 12.0;
 const Duration defaultDuration = Duration(milliseconds: 300);
 const String supportWhatsAppNumber = String.fromEnvironment(
-  '917028521360',
+  'SUPPORT_WHATSAPP_NUMBER',
   defaultValue: '',
 );
 const String supportWhatsAppMessage = String.fromEnvironment(

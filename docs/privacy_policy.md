@@ -47,8 +47,6 @@ This app is not intended for children to make purchases without supervision.
 
 ## Contact
 
-Store operator contact email: replace-with-your-support-email@example.com
+Store operator contact email: petshopapp6@gmail.com
 
-## Publishing note
 
-Host this policy on a public URL such as Firebase Hosting, your website, or GitHub Pages, then use that URL in Google Play Console.

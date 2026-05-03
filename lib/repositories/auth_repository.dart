@@ -444,7 +444,7 @@ class FirebaseAuthRepository implements AuthRepository {
       case TargetPlatform.macOS:
         return _nonEmpty(options.iosClientId);
       case TargetPlatform.android:
-        return _nonEmpty(options.androidClientId);
+        return null;
       default:
         return null;
     }

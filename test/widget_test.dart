@@ -11,11 +11,11 @@ import 'package:shop/core/app/app_scope.dart';
 import 'package:shop/main.dart';
 
 void main() {
-  testWidgets('App boots into onboarding flow', (WidgetTester tester) async {
+  testWidgets('App boots into login flow', (WidgetTester tester) async {
     await tester.pumpWidget(const AppScope(child: MyApp()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Later'), findsOneWidget);
-    expect(find.textContaining('Find trusted products'), findsOneWidget);
+    expect(find.text('Sign in to your account'), findsOneWidget);
+    expect(find.text('Continue with Google'), findsOneWidget);
   });
 }

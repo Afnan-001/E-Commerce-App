@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shop/core/widgets/app_loading_indicator.dart';
 
 import '../constants.dart';
 
@@ -149,10 +150,11 @@ Widget statusWidget(BuildContext context, OrderProcessStatus status) {
         radius: 12,
         backgroundColor: successColor,
         child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: CircularProgressIndicator(
+          padding: const EdgeInsets.all(2),
+          child: AppLoadingIndicator(
+            size: 10,
             color: Theme.of(context).scaffoldBackgroundColor,
-            strokeWidth: 2,
+            center: false,
           ),
         ),
       );

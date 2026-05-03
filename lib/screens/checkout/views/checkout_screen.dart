@@ -9,6 +9,7 @@ import 'package:shop/constants.dart';
 import 'package:shop/core/config/payment_config.dart';
 import 'package:shop/core/services/checkout_api_service.dart';
 import 'package:shop/core/services/razorpay_checkout_service.dart';
+import 'package:shop/core/widgets/app_loading_indicator.dart';
 import 'package:shop/models/address_model.dart';
 import 'package:shop/models/app_user_model.dart';
 import 'package:shop/models/cart_item_model.dart';
@@ -24,6 +25,7 @@ import 'package:shop/providers/cart_provider.dart';
 import 'package:shop/providers/order_provider.dart';
 import 'package:shop/providers/product_provider.dart';
 import 'package:shop/repositories/order_repository.dart';
+import 'package:shop/repositories/storefront_repository.dart';
 import 'package:shop/route/route_constants.dart';
 import 'package:shop/screens/address/views/address_form_screen.dart';
 import 'package:shop/screens/order/views/order_success_screen.dart';
@@ -44,8 +46,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final TextEditingController _couponController = TextEditingController();
 
   bool _isProcessing = false;
+  String? _activeRazorpayOrderId;
+  bool _razorpaySessionResolved = false;
+  bool _isRefreshingPaymentConfig = false;
   _CheckoutPaymentMethod _selectedPaymentMethod =
       _CheckoutPaymentMethod.razorpay;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(_refreshPaymentConfig);
+  }
 
   @override
   void dispose() {
@@ -63,6 +74,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final items = cartProvider.items;
     final selectedAddress = addressProvider.selectedAddress;
     final pricing = cartProvider.pricing;
+    final onlinePaymentAvailable = isOnlinePaymentAvailable;
+
+    if (!onlinePaymentAvailable &&
+        _selectedPaymentMethod == _CheckoutPaymentMethod.razorpay) {
+      _selectedPaymentMethod = _CheckoutPaymentMethod.cod;
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Checkout')),
@@ -108,7 +125,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     child: addressProvider.isLoading
                         ? const Padding(
                             padding: EdgeInsets.symmetric(vertical: 20),
-                            child: Center(child: CircularProgressIndicator()),
+                            child: AppLoadingIndicator(
+                              size: 20,
+                              message: 'Loading addresses...',
+                            ),
                           )
                         : _AddressSection(
                             selectedAddress: selectedAddress,
@@ -234,22 +254,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     title: 'Payment method',
                     child: Column(
                       children: [
-                        _PaymentMethodTile(
-                          title: 'Razorpay',
-                          subtitle:
-                              'UPI, Google Pay, PhonePe, cards, and wallets',
-                          isSelected:
-                              _selectedPaymentMethod ==
-                              _CheckoutPaymentMethod.razorpay,
-                          onTap: () {
-                            setState(() {
-                              _selectedPaymentMethod =
-                                  _CheckoutPaymentMethod.razorpay;
-                            });
-                          },
-                          leadingIcon: Icons.account_balance_wallet_outlined,
-                        ),
-                        const SizedBox(height: defaultPadding / 2),
+                        if (onlinePaymentAvailable) ...[
+                          _PaymentMethodTile(
+                            title: 'Razorpay',
+                            subtitle:
+                                'UPI, Google Pay, PhonePe, cards, and wallets',
+                            isSelected:
+                                _selectedPaymentMethod ==
+                                _CheckoutPaymentMethod.razorpay,
+                            onTap: () {
+                              setState(() {
+                                _selectedPaymentMethod =
+                                    _CheckoutPaymentMethod.razorpay;
+                              });
+                            },
+                            leadingIcon:
+                                Icons.account_balance_wallet_outlined,
+                          ),
+                          const SizedBox(height: defaultPadding / 2),
+                        ],
                         _PaymentMethodTile(
                           title: 'Cash on Delivery',
                           subtitle:
@@ -265,12 +288,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           },
                           leadingIcon: Icons.local_shipping_outlined,
                         ),
-                        if (!isRazorpayConfigured) ...[
+                        if (!onlinePaymentAvailable) ...[
                           const SizedBox(height: defaultPadding / 2),
                           Text(
-                            'Online payment will be available soon. You can still place your order with cash on delivery.',
+                            isOnlinePaymentEnabled
+                                ? 'Online payment will be available soon. You can still place your order with cash on delivery.'
+                                : 'Online payment is currently turned off. You can still place your order with cash on delivery.',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
+                        ],
+                        if (_isRefreshingPaymentConfig) ...[
+                          const SizedBox(height: defaultPadding / 2),
+                          const Text('Refreshing payment settings...'),
                         ],
                       ],
                     ),
@@ -340,7 +369,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             Positioned.fill(
               child: Container(
                 color: Colors.black.withValues(alpha: 0.18),
-                child: const Center(child: CircularProgressIndicator()),
+                child: const AppLoadingIndicator(
+                  message: 'Processing your order...',
+                ),
               ),
             ),
         ],
@@ -381,8 +412,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
 
     if (isRazorpayFlow && !isRazorpayConfigured) {
+      await _refreshPaymentConfig();
+    }
+
+    if (isRazorpayFlow && !isRazorpayConfigured) {
       _showSnackBar(
-        'Razorpay is not configured yet. Add the Razorpay key and backend base URL through dart-define, or choose Cash on Delivery.',
+        'Razorpay is not configured yet. Ask the admin to update the payment settings, or choose Cash on Delivery.',
       );
       return;
     }
@@ -440,8 +475,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
         await _placeCashOnDeliveryOrder(
           draftOrder: draftOrder,
-          user: user,
-          selectedAddress: selectedAddress,
         );
         return;
       }
@@ -463,6 +496,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           razorpayOrderId: razorpayOrder.orderId,
         ),
       );
+
+      _activeRazorpayOrderId = razorpayOrder.orderId;
+      _razorpaySessionResolved = false;
 
       _razorpayService.openCheckout(
         orderId: razorpayOrder.orderId,
@@ -496,6 +532,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         },
       );
     } catch (error) {
+      _resetRazorpaySession();
       if (!mounted) return;
       setState(() {
         _isProcessing = false;
@@ -512,6 +549,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final verifiedPaymentId = response.paymentId;
     final verifiedOrderId = response.orderId;
     final verifiedSignature = response.signature;
+
+    if (!_tryResolveRazorpaySession(orderId: verifiedOrderId)) {
+      debugPrint(
+        '[checkout] Ignoring stale Razorpay success for orderId=$verifiedOrderId active=$_activeRazorpayOrderId',
+      );
+      return;
+    }
 
     try {
       if (mounted) {
@@ -566,6 +610,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             '${verificationResult.message} Order ID: ${paidOrder.orderId}. Confirmation email will be sent by the backend to ${draftOrder.userEmail}.',
       );
     } catch (error) {
+      _razorpaySessionResolved = false;
       final errorDetails = _describeCheckoutError(error);
       debugPrint('[checkout] Razorpay success follow-up failed: $errorDetails');
 
@@ -583,7 +628,37 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
   }
 
+  Future<void> _refreshPaymentConfig() async {
+    if (_isRefreshingPaymentConfig) {
+      return;
+    }
+
+    _isRefreshingPaymentConfig = true;
+    if (mounted) {
+      setState(() {});
+    }
+
+    try {
+      final repository = context.read<StorefrontRepository>();
+      final settings = await repository.getPaymentSettings();
+      setRuntimePaymentSettings(settings);
+    } catch (_) {
+      // Keep the current fallback config if the runtime fetch fails.
+    } finally {
+      _isRefreshingPaymentConfig = false;
+      if (mounted) {
+        setState(() {});
+      }
+    }
+  }
+
   Future<void> _handleRazorpayFailure(PaymentFailureResponse response) async {
+    if (!_tryResolveRazorpaySession()) {
+      debugPrint(
+        '[checkout] Ignoring duplicate Razorpay failure code=${response.code} message=${response.message}',
+      );
+      return;
+    }
     _razorpayService.dispose();
     debugPrint(
       '[checkout] Razorpay payment failure code=${response.code} message=${response.message}',
@@ -599,23 +674,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   Future<void> _placeCashOnDeliveryOrder({
     required OrderModel draftOrder,
-    required AppUserModel user,
-    required AddressModel selectedAddress,
   }) async {
-    final confirmation = await _checkoutApiService.createCashOnDeliveryOrder(
-      receiptId: draftOrder.orderId,
-      amountInPaise: (draftOrder.totalPrice * 100).round(),
-      customerName: user.name,
-      customerEmail: user.email,
-      userId: user.uid,
-      items: _buildCartItemsFromOrder(draftOrder.items),
-      address: selectedAddress,
-    );
-
     final confirmedOrder = draftOrder.copyWith(
-      orderId: confirmation.backendOrderId?.trim().isNotEmpty == true
-          ? confirmation.backendOrderId!.trim()
-          : draftOrder.orderId,
       payment: const OrderPaymentModel(
         paymentMethod: PaymentMethod.cod,
         paymentStatus: PaymentStatus.pending,
@@ -627,7 +687,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     await _finalizeSuccessfulOrder(
       order: confirmedOrder,
       successMessage:
-          '${confirmation.message} Order ID: ${confirmedOrder.orderId}. Confirmation email will be sent by the backend to ${draftOrder.userEmail}.',
+          'Cash on Delivery order placed successfully. Order ID: ${confirmedOrder.orderId}.',
     );
   }
 
@@ -671,6 +731,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     await productProvider.loadInitialData();
     await cartProvider.clear();
     _razorpayService.dispose();
+    _resetRazorpaySession();
 
     if (!mounted) return;
     setState(() {
@@ -689,6 +750,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             OrderSuccessScreen(order: order, invoiceMessage: invoiceMessage),
       ),
     );
+  }
+
+  bool _tryResolveRazorpaySession({String? orderId}) {
+    if (_razorpaySessionResolved) {
+      return false;
+    }
+    if (orderId != null &&
+        _activeRazorpayOrderId != null &&
+        orderId.trim().isNotEmpty &&
+        orderId.trim() != _activeRazorpayOrderId) {
+      return false;
+    }
+    _razorpaySessionResolved = true;
+    return true;
+  }
+
+  void _resetRazorpaySession() {
+    _activeRazorpayOrderId = null;
+    _razorpaySessionResolved = false;
   }
 
   Future<bool> _confirmCashOnDelivery({

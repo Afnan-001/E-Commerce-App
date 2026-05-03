@@ -45,11 +45,11 @@ class PrivacyPolicyScreen extends StatelessWidget {
           _PolicySection(
             title: 'Contact',
             body:
-                'Replace the support contact in docs/privacy_policy.md with your real support email before publishing.',
+                'For privacy-related questions, please use the support contact information provided by the store operator or in the app listing.',
           ),
           SizedBox(height: defaultPadding),
           Text(
-            'Publishing note: host the privacy policy text from docs/privacy_policy.md on a public URL and submit that URL in Google Play Console.',
+            'Before publishing, host this privacy policy on a public web URL and submit that same URL in Google Play Console.',
           ),
         ],
       ),

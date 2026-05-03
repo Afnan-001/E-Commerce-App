@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'package:shop/constants.dart';
 import 'package:shop/models/delivery_settings_model.dart';
+import 'package:shop/models/payment_settings_model.dart';
 import 'package:shop/providers/admin_provider.dart';
 import 'package:shop/providers/cart_provider.dart';
 import 'package:shop/providers/product_provider.dart';
@@ -20,11 +21,19 @@ class _AdminStoreSettingsScreenState extends State<AdminStoreSettingsScreen> {
   late final TextEditingController _thresholdController;
   late final TextEditingController _feeController;
   late final TextEditingController _whatsAppController;
+  late final TextEditingController _razorpayKeyIdController;
+  late final TextEditingController _razorpayBackendUrlController;
+  late final TextEditingController _razorpayCurrencyController;
+  late final TextEditingController _merchantNameController;
+  late final TextEditingController _checkoutDescriptionController;
+  bool _isOnlinePaymentEnabled = true;
 
   @override
   void initState() {
     super.initState();
-    final settings = context.read<AdminProvider>().deliverySettings;
+    final adminProvider = context.read<AdminProvider>();
+    final settings = adminProvider.deliverySettings;
+    final paymentSettings = adminProvider.paymentSettings;
     _thresholdController = TextEditingController(
       text: settings.freeDeliveryThreshold.toStringAsFixed(0),
     );
@@ -34,6 +43,22 @@ class _AdminStoreSettingsScreenState extends State<AdminStoreSettingsScreen> {
     _whatsAppController = TextEditingController(
       text: settings.supportWhatsAppNumber,
     );
+    _razorpayKeyIdController = TextEditingController(
+      text: paymentSettings.keyId,
+    );
+    _razorpayBackendUrlController = TextEditingController(
+      text: paymentSettings.backendBaseUrl,
+    );
+    _razorpayCurrencyController = TextEditingController(
+      text: paymentSettings.currency,
+    );
+    _merchantNameController = TextEditingController(
+      text: paymentSettings.merchantName,
+    );
+    _checkoutDescriptionController = TextEditingController(
+      text: paymentSettings.checkoutDescription,
+    );
+    _isOnlinePaymentEnabled = paymentSettings.isOnlinePaymentEnabled;
   }
 
   @override
@@ -41,6 +66,11 @@ class _AdminStoreSettingsScreenState extends State<AdminStoreSettingsScreen> {
     _thresholdController.dispose();
     _feeController.dispose();
     _whatsAppController.dispose();
+    _razorpayKeyIdController.dispose();
+    _razorpayBackendUrlController.dispose();
+    _razorpayCurrencyController.dispose();
+    _merchantNameController.dispose();
+    _checkoutDescriptionController.dispose();
     super.dispose();
   }
 
@@ -49,7 +79,7 @@ class _AdminStoreSettingsScreenState extends State<AdminStoreSettingsScreen> {
     final adminProvider = context.watch<AdminProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Delivery settings')),
+      appBar: AppBar(title: const Text('Store settings')),
       body: ListView(
         padding: const EdgeInsets.all(defaultPadding),
         children: [
@@ -106,6 +136,101 @@ class _AdminStoreSettingsScreenState extends State<AdminStoreSettingsScreen> {
                   ),
                   const SizedBox(height: 20),
                   Text(
+                    'Razorpay checkout',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'These values are safe to manage from the admin app. Keep the Razorpay secret only on your backend server.',
+                  ),
+                  const SizedBox(height: 16),
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    value: _isOnlinePaymentEnabled,
+                    onChanged: (value) {
+                      setState(() {
+                        _isOnlinePaymentEnabled = value;
+                      });
+                    },
+                    title: const Text('Enable online payment'),
+                    subtitle: const Text(
+                      'Turn this off to hide Razorpay from checkout and allow only Cash on Delivery.',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _razorpayKeyIdController,
+                    decoration: const InputDecoration(
+                      labelText: 'Razorpay key ID',
+                      hintText: 'Example: rzp_live_xxxxxxxx',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _razorpayBackendUrlController,
+                    keyboardType: TextInputType.url,
+                    validator: (value) {
+                      final trimmed = (value ?? '').trim();
+                      if (trimmed.isEmpty) {
+                        return 'Enter the backend base URL';
+                      }
+                      final uri = Uri.tryParse(trimmed);
+                      if (uri == null ||
+                          !(uri.hasScheme && (uri.isScheme('http') || uri.isScheme('https')))) {
+                        return 'Enter a valid backend URL';
+                      }
+                      return null;
+                    },
+                    decoration: const InputDecoration(
+                      labelText: 'Backend base URL',
+                      hintText: 'Example: https://your-backend.example.com',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _razorpayCurrencyController,
+                    textCapitalization: TextCapitalization.characters,
+                    validator: (value) {
+                      final trimmed = (value ?? '').trim();
+                      if (trimmed.isEmpty) {
+                        return 'Enter a currency code';
+                      }
+                      if (trimmed.length != 3) {
+                        return 'Use a 3-letter currency code';
+                      }
+                      return null;
+                    },
+                    decoration: const InputDecoration(
+                      labelText: 'Currency',
+                      hintText: 'INR',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _merchantNameController,
+                    validator: (value) =>
+                        (value ?? '').trim().isEmpty ? 'Enter a merchant name' : null,
+                    decoration: const InputDecoration(
+                      labelText: 'Checkout merchant name',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _checkoutDescriptionController,
+                    validator: (value) => (value ?? '').trim().isEmpty
+                        ? 'Enter a checkout description'
+                        : null,
+                    decoration: const InputDecoration(
+                      labelText: 'Checkout description',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Changing the full Razorpay account still requires the backend service to use the matching secret for order creation and signature verification.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
                     'Free delivery rule',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
@@ -142,9 +267,7 @@ class _AdminStoreSettingsScreenState extends State<AdminStoreSettingsScreen> {
                     width: double.infinity,
                     child: FilledButton(
                       onPressed: adminProvider.isSaving ? null : _save,
-                      child: Text(
-                        adminProvider.isSaving ? 'Saving...' : 'Save settings',
-                      ),
+                      child: Text(adminProvider.isSaving ? 'Saving...' : 'Save settings'),
                     ),
                   ),
                 ],
@@ -167,15 +290,35 @@ class _AdminStoreSettingsScreenState extends State<AdminStoreSettingsScreen> {
       deliveryFee: double.tryParse(_feeController.text.trim()) ?? 49,
       supportWhatsAppNumber: _whatsAppController.text.trim(),
     );
+    final paymentSettings = PaymentSettingsModel(
+      isOnlinePaymentEnabled: _isOnlinePaymentEnabled,
+      keyId: _razorpayKeyIdController.text.trim(),
+      backendBaseUrl: _razorpayBackendUrlController.text.trim(),
+      currency: _razorpayCurrencyController.text.trim().toUpperCase(),
+      merchantName: _merchantNameController.text.trim(),
+      checkoutDescription: _checkoutDescriptionController.text.trim(),
+    );
 
     final adminProvider = context.read<AdminProvider>();
-    final success = await adminProvider.saveDeliverySettings(settings);
+    final deliverySaved = await adminProvider.saveDeliverySettings(settings);
     if (!mounted) return;
-    if (!success) {
+    if (!deliverySaved) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             adminProvider.errorMessage ?? 'Could not save delivery settings.',
+          ),
+        ),
+      );
+      return;
+    }
+    final paymentSaved = await adminProvider.savePaymentSettings(paymentSettings);
+    if (!mounted) return;
+    if (!paymentSaved) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            adminProvider.errorMessage ?? 'Could not save payment settings.',
           ),
         ),
       );
@@ -186,6 +329,6 @@ class _AdminStoreSettingsScreenState extends State<AdminStoreSettingsScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Delivery settings saved.')));
+    ).showSnackBar(const SnackBar(content: Text('Store settings saved.')));
   }
 }

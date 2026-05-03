@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shop/components/product/product_card.dart';
 import 'package:shop/constants.dart';
+import 'package:shop/core/widgets/app_loading_indicator.dart';
 import 'package:shop/core/widgets/section_empty_state.dart';
 import 'package:shop/providers/product_provider.dart';
 import 'package:shop/route/route_constants.dart';
@@ -64,7 +65,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
         ),
       ),
       body: isInitialLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const AppLoadingIndicator(message: 'Loading products...')
           : products.isEmpty
           ? const Center(
               child: Padding(
@@ -177,13 +178,12 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                           ),
                           child: productProvider.isLoadingMore
                               ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
+                                  height: 22,
+                                  width: 48,
+                                  child: AppLoadingIndicator(
+                                    size: 10,
+                                    color: Colors.white,
+                                    center: false,
                                   ),
                                 )
                               : const Text(

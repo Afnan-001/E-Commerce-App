@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shop/core/config/payment_config.dart';
 import 'package:shop/core/services/order_invoice_service.dart';
 import 'package:shop/core/services/order_export_service.dart';
 import 'package:shop/models/category_model.dart';
@@ -11,6 +12,7 @@ import 'package:shop/models/delivery_settings_model.dart';
 import 'package:shop/models/home_banner_model.dart';
 import 'package:shop/models/home_section_model.dart';
 import 'package:shop/models/order_model.dart';
+import 'package:shop/models/payment_settings_model.dart';
 import 'package:shop/models/product_model.dart';
 import 'package:shop/repositories/admin_repository.dart';
 
@@ -38,6 +40,7 @@ class AdminProvider extends ChangeNotifier {
   List<CouponModel> _coupons = const <CouponModel>[];
   List<HomeSectionModel> _homeSections = const <HomeSectionModel>[];
   DeliverySettingsModel _deliverySettings = const DeliverySettingsModel();
+  PaymentSettingsModel _paymentSettings = const PaymentSettingsModel();
 
   static const List<_SeedCategory> _discoverCategorySeed = <_SeedCategory>[
     _SeedCategory(id: 'dogs', title: 'Dogs', sortOrder: 0),
@@ -211,6 +214,7 @@ class AdminProvider extends ChangeNotifier {
   List<CouponModel> get coupons => _coupons;
   List<HomeSectionModel> get homeSections => _homeSections;
   DeliverySettingsModel get deliverySettings => _deliverySettings;
+  PaymentSettingsModel get paymentSettings => _paymentSettings;
 
   Future<void> loadAdminData() async {
     _isLoading = true;
@@ -226,6 +230,7 @@ class AdminProvider extends ChangeNotifier {
         _adminRepository.getCoupons(),
         _adminRepository.getHomeSections(),
         _adminRepository.getDeliverySettings(),
+        _adminRepository.getPaymentSettings(),
       ]);
 
       _categories = results[0] as List<CategoryModel>;
@@ -236,6 +241,8 @@ class AdminProvider extends ChangeNotifier {
       _coupons = results[4] as List<CouponModel>;
       _homeSections = results[5] as List<HomeSectionModel>;
       _deliverySettings = results[6] as DeliverySettingsModel;
+      _paymentSettings = results[7] as PaymentSettingsModel;
+      setRuntimePaymentSettings(_paymentSettings);
       _hasLoadedData = true;
     } catch (error) {
       _errorMessage = error.toString();
@@ -562,6 +569,25 @@ class AdminProvider extends ChangeNotifier {
 
     try {
       await _adminRepository.saveDeliverySettings(settings);
+      await loadAdminData();
+      return true;
+    } catch (error) {
+      _errorMessage = error.toString();
+      return false;
+    } finally {
+      _isSaving = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> savePaymentSettings(PaymentSettingsModel settings) async {
+    _isSaving = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _adminRepository.savePaymentSettings(settings);
+      setRuntimePaymentSettings(settings);
       await loadAdminData();
       return true;
     } catch (error) {

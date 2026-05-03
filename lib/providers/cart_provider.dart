@@ -7,6 +7,7 @@ import 'package:shop/models/delivery_settings_model.dart';
 import 'package:shop/models/product_model.dart';
 import 'package:shop/models/product_option_model.dart';
 import 'package:shop/repositories/coupon_repository.dart';
+import 'package:shop/repositories/product_repository.dart';
 import 'package:shop/repositories/storefront_repository.dart';
 import 'package:shop/repositories/user_data_repository.dart';
 
@@ -14,13 +15,16 @@ class CartProvider extends ChangeNotifier {
   CartProvider({
     required UserDataRepository userDataRepository,
     required CouponRepository couponRepository,
+    required ProductRepository productRepository,
     required StorefrontRepository storefrontRepository,
   }) : _userDataRepository = userDataRepository,
        _couponRepository = couponRepository,
+       _productRepository = productRepository,
        _storefrontRepository = storefrontRepository;
 
   final UserDataRepository _userDataRepository;
   final CouponRepository _couponRepository;
+  final ProductRepository _productRepository;
   final StorefrontRepository _storefrontRepository;
 
   final List<CartItemModel> _items = <CartItemModel>[];
@@ -114,6 +118,7 @@ class CartProvider extends ChangeNotifier {
       _items
         ..clear()
         ..addAll(storedItems);
+      await _refreshCartProductSnapshots();
     } catch (error) {
       _errorMessage = error.toString();
     } finally {
@@ -284,6 +289,7 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      await _refreshCartProductSnapshots();
       final coupon = await _couponRepository.getCouponByCode(normalized);
       final validationMessage = _validateCoupon(coupon);
       if (validationMessage != null) {
@@ -381,13 +387,204 @@ class CartProvider extends ChangeNotifier {
       final inProductScope = coupon.applicableProductIds.contains(
         item.product.id,
       );
-      final inCategoryScope = coupon.applicableCategoryIds.contains(
-        item.product.category,
+      final inCategoryScope = coupon.applicableCategoryIds.any(
+        (categoryId) => _couponCategoryMatchesProduct(
+          categoryId: categoryId,
+          productCategory: item.product.category,
+        ),
       );
       if (inProductScope || inCategoryScope) {
         return total + item.totalPrice;
       }
       return total;
     });
+  }
+
+  Future<void> _refreshCartProductSnapshots() async {
+    if (_items.isEmpty) {
+      return;
+    }
+
+    final productIds = _items
+        .map((item) => item.product.id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+    if (productIds.isEmpty) {
+      return;
+    }
+
+    try {
+      final latestProducts = await _productRepository.getProductsByIds(productIds);
+      if (latestProducts.isEmpty) {
+        return;
+      }
+
+      final productById = <String, ProductModel>{
+        for (final product in latestProducts) product.id: product,
+      };
+
+      var changed = false;
+      for (var index = 0; index < _items.length; index += 1) {
+        final currentItem = _items[index];
+        final latestProduct = productById[currentItem.product.id];
+        if (latestProduct == null) {
+          continue;
+        }
+
+        if (latestProduct.category != currentItem.product.category ||
+            latestProduct.name != currentItem.product.name ||
+            latestProduct.imageUrl != currentItem.product.imageUrl ||
+            latestProduct.salePrice != currentItem.product.salePrice ||
+            latestProduct.price != currentItem.product.price) {
+          _items[index] = currentItem.copyWith(product: latestProduct);
+          changed = true;
+        }
+      }
+
+      if (changed && _userId != null && _userId!.isNotEmpty) {
+        for (final item in _items) {
+          await _userDataRepository.upsertCartItem(
+            userId: _userId!,
+            item: item,
+          );
+        }
+      }
+    } catch (_) {
+      // Keep checkout usable even if product refresh fails.
+    }
+  }
+
+  bool _couponCategoryMatchesProduct({
+    required String categoryId,
+    required String productCategory,
+  }) {
+    final normalizedProductCategory = _normalizeCategoryKey(productCategory);
+    final productSegments = productCategory
+        .split('>')
+        .map(_normalizeCategoryKey)
+        .where((item) => item.isNotEmpty)
+        .toList();
+    final categoryVariants = _categoryMatchVariants(categoryId);
+
+    if (categoryVariants.isEmpty || normalizedProductCategory.isEmpty) {
+      return false;
+    }
+
+    for (final variant in categoryVariants) {
+      if (productSegments.contains(variant)) {
+        return true;
+      }
+      if (normalizedProductCategory == variant) {
+        return true;
+      }
+      if (normalizedProductCategory.startsWith('$variant ') ||
+          normalizedProductCategory.contains(' $variant ') ||
+          normalizedProductCategory.endsWith(' $variant')) {
+        return true;
+      }
+      if (_tokensAppearInOrder(
+        pattern: variant.split(' '),
+        target: normalizedProductCategory.split(' '),
+      )) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  String _normalizeCategoryKey(String value) {
+    return value
+        .trim()
+        .toLowerCase()
+        .replaceAll('_', ' ')
+        .replaceAll('(all)', ' ')
+        .replaceAll('/', ' ')
+        .replaceAll('&', ' ')
+        .replaceAll(',', ' ')
+        .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
+  Set<String> _categoryMatchVariants(String categoryId) {
+    final normalized = _normalizeCategoryKey(categoryId);
+    if (normalized.isEmpty) {
+      return const <String>{};
+    }
+
+    final variants = <String>{normalized};
+    final words = normalized.split(' ');
+    if (words.length > 1) {
+      variants.add(words.skip(1).join(' '));
+    }
+    if (words.length > 1 && words.last == 'all') {
+      variants.add(words.take(words.length - 1).join(' '));
+      if (words.length > 2) {
+        variants.add(words.skip(1).take(words.length - 2).join(' '));
+      }
+    }
+
+    if (normalized.startsWith('dogs ')) {
+      final tail = normalized.substring('dogs '.length);
+      variants
+        ..add(tail)
+        ..add('dog $tail');
+      if (tail.endsWith(' all')) {
+        final tailWithoutAll = tail.substring(0, tail.length - ' all'.length);
+        variants
+          ..add(tailWithoutAll)
+          ..add('dog $tailWithoutAll');
+      }
+      if (tail == 'food all') {
+        variants
+          ..add('dog food all')
+          ..add('dog food');
+      }
+    }
+
+    if (normalized.startsWith('cats ')) {
+      final tail = normalized.substring('cats '.length);
+      variants
+        ..add(tail)
+        ..add('cat $tail');
+      if (tail.endsWith(' all')) {
+        final tailWithoutAll = tail.substring(0, tail.length - ' all'.length);
+        variants
+          ..add(tailWithoutAll)
+          ..add('cat $tailWithoutAll');
+      }
+      if (tail == 'food all') {
+        variants
+          ..add('cat food all')
+          ..add('cat food');
+      }
+    }
+
+    return variants.where((item) => item.trim().isNotEmpty).toSet();
+  }
+
+  bool _tokensAppearInOrder({
+    required List<String> pattern,
+    required List<String> target,
+  }) {
+    if (pattern.isEmpty) return false;
+    var targetIndex = 0;
+    for (final token in pattern) {
+      var found = false;
+      while (targetIndex < target.length) {
+        if (target[targetIndex] == token) {
+          found = true;
+          targetIndex += 1;
+          break;
+        }
+        targetIndex += 1;
+      }
+      if (!found) {
+        return false;
+      }
+    }
+    return true;
   }
 }

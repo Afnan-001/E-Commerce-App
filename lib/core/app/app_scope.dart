@@ -69,6 +69,7 @@ class AppScope extends StatelessWidget {
           create: (context) => CartProvider(
             userDataRepository: context.read<UserDataRepository>(),
             couponRepository: context.read<CouponRepository>(),
+            productRepository: context.read<ProductRepository>(),
             storefrontRepository: context.read<StorefrontRepository>(),
           )..initialize(),
         ),

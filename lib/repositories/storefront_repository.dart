@@ -3,10 +3,13 @@ import 'package:firebase_core/firebase_core.dart';
 
 import 'package:shop/models/delivery_settings_model.dart';
 import 'package:shop/models/home_section_model.dart';
+import 'package:shop/models/payment_settings_model.dart';
 
 abstract class StorefrontRepository {
   Future<DeliverySettingsModel> getDeliverySettings();
   Future<void> saveDeliverySettings(DeliverySettingsModel settings);
+  Future<PaymentSettingsModel> getPaymentSettings();
+  Future<void> savePaymentSettings(PaymentSettingsModel settings);
   Future<List<HomeSectionModel>> getHomeSections();
   Future<void> saveHomeSection(HomeSectionModel section);
   Future<void> deleteHomeSection(String sectionId);
@@ -42,6 +45,28 @@ class FirestoreStorefrontRepository implements StorefrontRepository {
     await _db
         .collection('store_config')
         .doc('delivery_settings')
+        .set(settings.toMap(), SetOptions(merge: true));
+  }
+
+  @override
+  Future<PaymentSettingsModel> getPaymentSettings() async {
+    if (Firebase.apps.isEmpty) {
+      return const PaymentSettingsModel();
+    }
+
+    final snapshot = await _db.collection('store_config').doc('payment_settings').get();
+    if (!snapshot.exists) {
+      return const PaymentSettingsModel();
+    }
+    return PaymentSettingsModel.fromMap(snapshot.data()!);
+  }
+
+  @override
+  Future<void> savePaymentSettings(PaymentSettingsModel settings) async {
+    if (Firebase.apps.isEmpty) return;
+    await _db
+        .collection('store_config')
+        .doc('payment_settings')
         .set(settings.toMap(), SetOptions(merge: true));
   }
 

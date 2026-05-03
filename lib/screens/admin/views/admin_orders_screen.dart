@@ -153,16 +153,28 @@ class _OrdersHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final heroGradient = isDark
+        ? const LinearGradient(
+            colors: [Color(0xFF1B2330), Color(0xFF262037)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          )
+        : const LinearGradient(
+            colors: [Color(0xFFFFF6E7), Color(0xFFF9E5C5)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          );
+    final heroBorderColor = isDark
+        ? const Color(0xFF2E3950)
+        : const Color(0xFFEBD4A8);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFF6E7), Color(0xFFF9E5C5)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: heroGradient,
         borderRadius: const BorderRadius.all(Radius.circular(28)),
-        border: Border.all(color: const Color(0xFFEBD4A8)),
+        border: Border.all(color: heroBorderColor),
       ),
       child: Wrap(
         spacing: 16,
@@ -222,10 +234,18 @@ class _HeroBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.82),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.08)
+            : Colors.white.withValues(alpha: 0.82),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.white.withValues(alpha: 0.28),
+        ),
         borderRadius: const BorderRadius.all(Radius.circular(999)),
       ),
       child: Text(
@@ -327,12 +347,19 @@ class _OverviewTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: isDark
+            ? const Color(0xFF151D26)
+            : Theme.of(context).cardColor,
         borderRadius: const BorderRadius.all(Radius.circular(22)),
-        border: Border.all(color: Theme.of(context).dividerColor),
+        border: Border.all(
+          color: isDark
+              ? const Color(0xFF253041)
+              : Theme.of(context).dividerColor,
+        ),
       ),
       child: Row(
         children: [
@@ -379,13 +406,18 @@ class _AdminOrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isWide = MediaQuery.sizeOf(context).width >= 920;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: isDark ? const Color(0xFF151D26) : Theme.of(context).cardColor,
         borderRadius: const BorderRadius.all(Radius.circular(24)),
-        border: Border.all(color: Theme.of(context).dividerColor),
+        border: Border.all(
+          color: isDark
+              ? const Color(0xFF253041)
+              : Theme.of(context).dividerColor,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -471,8 +503,15 @@ class _AdminOrderCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
+                  color: isDark
+                      ? const Color(0xFF111821)
+                      : Theme.of(context).colorScheme.surface,
                   borderRadius: const BorderRadius.all(Radius.circular(16)),
+                  border: Border.all(
+                    color: isDark
+                        ? const Color(0xFF222C3A)
+                        : Colors.transparent,
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -728,12 +767,18 @@ class _InfoPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: isDark
+            ? const Color(0xFF111821)
+            : Theme.of(context).colorScheme.surface,
         borderRadius: const BorderRadius.all(Radius.circular(18)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF222C3A) : Colors.transparent,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

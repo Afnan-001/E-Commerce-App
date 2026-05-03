@@ -8,6 +8,7 @@ import 'package:shop/models/delivery_settings_model.dart';
 import 'package:shop/models/home_banner_model.dart';
 import 'package:shop/models/home_section_model.dart';
 import 'package:shop/models/order_model.dart';
+import 'package:shop/models/payment_settings_model.dart';
 import 'package:shop/models/product_model.dart';
 import 'package:shop/repositories/coupon_repository.dart';
 import 'package:shop/repositories/order_repository.dart';
@@ -22,6 +23,8 @@ abstract class AdminRepository {
   Future<void> deleteCoupon(String couponId);
   Future<DeliverySettingsModel> getDeliverySettings();
   Future<void> saveDeliverySettings(DeliverySettingsModel settings);
+  Future<PaymentSettingsModel> getPaymentSettings();
+  Future<void> savePaymentSettings(PaymentSettingsModel settings);
   Future<List<HomeSectionModel>> getHomeSections();
   Future<void> saveHomeSection(HomeSectionModel section);
   Future<void> deleteHomeSection(String sectionId);
@@ -197,6 +200,17 @@ class FirestoreAdminRepository implements AdminRepository {
   Future<void> saveDeliverySettings(DeliverySettingsModel settings) {
     _ensureReady();
     return _storefrontRepository.saveDeliverySettings(settings);
+  }
+
+  @override
+  Future<PaymentSettingsModel> getPaymentSettings() {
+    return _storefrontRepository.getPaymentSettings();
+  }
+
+  @override
+  Future<void> savePaymentSettings(PaymentSettingsModel settings) {
+    _ensureReady();
+    return _storefrontRepository.savePaymentSettings(settings);
   }
 
   @override

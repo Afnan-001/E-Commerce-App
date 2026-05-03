@@ -7,17 +7,25 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:119947379250:android:8841f53f01206c26a7722b",
+        "mobilesdk_app_id": "1:119947379250:android:5422b95aaebde05ea7722b",
         "android_client_info": {
-          "package_name": "com.example.shop"
+          "package_name": "com.petsworld.shop"
         }
       },
       "oauth_client": [
         {
-          "client_id": "119947379250-u2ehvus4ldmn50ol5bm8or0du1bf4amr.apps.googleusercontent.com",
+          "client_id": "119947379250-15v69g7tnnftjhvv0l64lquf9sv5mqmk.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.shop",
+            "package_name": "com.petsworld.shop",
+            "certificate_hash": "5ed0133dd1d7f2a1eaf56d4c31e4b9bec3e54105"
+          }
+        },
+        {
+          "client_id": "119947379250-rfq5mukcm9lpot6kj7ib70h8rio6neg8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.petsworld.shop",
             "certificate_hash": "ac5686cf9298d77cb847552b24a18ca374509247"
           }
         },

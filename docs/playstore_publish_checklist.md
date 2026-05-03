@@ -3,7 +3,7 @@
 ## Before uploading
 
 1. Keep or change the Android package name deliberately.
-2. The current Firebase Android config uses `com.example.shop`.
+2. The current Firebase Android config must match your final package, now `com.petsworld.shop`.
 3. If you change the package name, regenerate Firebase config with `flutterfire configure` and replace `android/app/google-services.json`.
 4. Update the app version in `pubspec.yaml` before each release.
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:shop/constants.dart';
+import 'package:shop/models/category_model.dart';
 import 'package:shop/models/coupon_model.dart';
 import 'package:shop/providers/admin_provider.dart';
 
@@ -28,7 +29,7 @@ class AdminCouponsScreen extends StatelessWidget {
               icon: Icons.local_offer_outlined,
               title: 'No coupons yet',
               message:
-                  'Create discount codes for flat, percentage, category, or product-based offers.',
+                  'Create discount codes for flat, percentage, or category-based offers.',
             )
           else
             ...coupons.map(
@@ -143,11 +144,10 @@ class _CouponCard extends StatelessWidget {
             'Usage: ${coupon.usageCount}${coupon.usageLimit == null ? '' : ' / ${coupon.usageLimit}'}',
             style: Theme.of(context).textTheme.bodySmall,
           ),
-          if (coupon.applicableCategoryIds.isNotEmpty ||
-              coupon.applicableProductIds.isNotEmpty) ...[
+          if (coupon.applicableCategoryIds.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
-              'Targets: ${[if (coupon.applicableCategoryIds.isNotEmpty) '${coupon.applicableCategoryIds.length} categories', if (coupon.applicableProductIds.isNotEmpty) '${coupon.applicableProductIds.length} products'].join(' • ')}',
+              'Targets: ${coupon.applicableCategoryIds.length} categories',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
@@ -194,7 +194,6 @@ class _CouponEditorSheetState extends State<_CouponEditorSheet> {
   late bool _isActive;
   DateTime? _expiryDate;
   final Set<String> _selectedCategoryIds = <String>{};
-  final Set<String> _selectedProductIds = <String>{};
 
   @override
   void initState() {
@@ -214,7 +213,6 @@ class _CouponEditorSheetState extends State<_CouponEditorSheet> {
     _isActive = coupon?.isActive ?? true;
     _expiryDate = coupon?.expiryDate;
     _selectedCategoryIds.addAll(coupon?.applicableCategoryIds ?? const []);
-    _selectedProductIds.addAll(coupon?.applicableProductIds ?? const []);
   }
 
   @override
@@ -230,7 +228,10 @@ class _CouponEditorSheetState extends State<_CouponEditorSheet> {
   Widget build(BuildContext context) {
     final adminProvider = context.watch<AdminProvider>();
     final categories = adminProvider.categories;
-    final products = adminProvider.products;
+    final categoryLabels = <String, String>{
+      for (final category in categories)
+        category.id: _categoryDisplayLabel(categories, category),
+    };
 
     return Padding(
       padding: EdgeInsets.only(
@@ -363,6 +364,11 @@ class _CouponEditorSheetState extends State<_CouponEditorSheet> {
                     'Applicable categories',
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Choose the categories this coupon should apply to. Any product inside those categories will automatically be eligible.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -370,18 +376,16 @@ class _CouponEditorSheetState extends State<_CouponEditorSheet> {
                     children: categories
                         .map(
                           (category) => FilterChip(
-                            label: Text(category.title),
-                            selected: _selectedCategoryIds.contains(
-                              category.title,
+                            label: Text(
+                              categoryLabels[category.id] ?? category.title,
                             ),
+                            selected: _selectedCategoryIds.contains(category.id),
                             onSelected: (_) {
                               setState(() {
-                                if (_selectedCategoryIds.contains(
-                                  category.title,
-                                )) {
-                                  _selectedCategoryIds.remove(category.title);
+                                if (_selectedCategoryIds.contains(category.id)) {
+                                  _selectedCategoryIds.remove(category.id);
                                 } else {
-                                  _selectedCategoryIds.add(category.title);
+                                  _selectedCategoryIds.add(category.id);
                                 }
                               });
                             },
@@ -389,31 +393,6 @@ class _CouponEditorSheetState extends State<_CouponEditorSheet> {
                         )
                         .toList(),
                   ),
-                  const SizedBox(height: 14),
-                  Text(
-                    'Applicable products',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  ...products
-                      .take(20)
-                      .map(
-                        (product) => CheckboxListTile(
-                          contentPadding: EdgeInsets.zero,
-                          value: _selectedProductIds.contains(product.id),
-                          onChanged: (_) {
-                            setState(() {
-                              if (_selectedProductIds.contains(product.id)) {
-                                _selectedProductIds.remove(product.id);
-                              } else {
-                                _selectedProductIds.add(product.id);
-                              }
-                            });
-                          },
-                          title: Text(product.title),
-                          subtitle: Text(product.categoryName),
-                        ),
-                      ),
                   const SizedBox(height: 14),
                   SizedBox(
                     width: double.infinity,
@@ -455,7 +434,7 @@ class _CouponEditorSheetState extends State<_CouponEditorSheet> {
         discountValue:
             double.tryParse(_discountValueController.text.trim()) ?? 0,
         applicableCategoryIds: _selectedCategoryIds.toList(),
-        applicableProductIds: _selectedProductIds.toList(),
+        applicableProductIds: const <String>[],
         minCartValue: double.tryParse(_minCartValueController.text.trim()) ?? 0,
         expiryDate: _expiryDate,
         usageLimit: int.tryParse(_usageLimitController.text.trim()),
@@ -479,6 +458,28 @@ class _CouponEditorSheetState extends State<_CouponEditorSheet> {
       return;
     }
     Navigator.pop(context);
+  }
+
+  String _categoryDisplayLabel(
+    List<CategoryModel> categories,
+    CategoryModel category,
+  ) {
+    final parentId = category.parentId;
+    if (parentId == null || parentId.isEmpty) {
+      return category.title;
+    }
+
+    CategoryModel? parent;
+    for (final item in categories) {
+      if (item.id == parentId) {
+        parent = item;
+        break;
+      }
+    }
+    if (parent == null) {
+      return category.title;
+    }
+    return '${parent.title} > ${category.title}';
   }
 }
 

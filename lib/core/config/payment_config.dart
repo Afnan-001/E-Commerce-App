@@ -1,38 +1,60 @@
-const String fallbackRazorpayKeyId = 'rzp_test_SbNb9Ak1AfEHen';
+import 'package:shop/models/payment_settings_model.dart';
 
-const String razorpayKeyId = String.fromEnvironment(
-  'RAZORPAY_KEY_ID',
-  defaultValue: fallbackRazorpayKeyId,
+const String fallbackRazorpayKeyId = 'rzp_test_SbNb9Ak1AfEHen';
+const String fallbackRazorpayBackendBaseUrl =
+    'https://petstore-razorpay-backend.onrender.com';
+
+final PaymentSettingsModel _defaultPaymentSettings = PaymentSettingsModel(
+  keyId: const String.fromEnvironment(
+    'RAZORPAY_KEY_ID',
+    defaultValue: fallbackRazorpayKeyId,
+  ),
+  backendBaseUrl: _configuredBackendBaseUrl,
+  currency: const String.fromEnvironment(
+    'RAZORPAY_CURRENCY',
+    defaultValue: 'INR',
+  ),
+  merchantName: const String.fromEnvironment(
+    'CHECKOUT_MERCHANT_NAME',
+    defaultValue: 'Store Checkout',
+  ),
+  checkoutDescription: const String.fromEnvironment(
+    'CHECKOUT_DESCRIPTION',
+    defaultValue: 'Order payment',
+  ),
 );
 
-String get razorpayBackendBaseUrl {
-  final configuredUrl = String.fromEnvironment(
-    'RAZORPAY_BACKEND_BASE_URL',
-    defaultValue: '',
-  ).trim();
-  if (configuredUrl.isNotEmpty) {
-    return configuredUrl;
-  }
+PaymentSettingsModel _runtimePaymentSettings = _defaultPaymentSettings;
 
-  return 'https://petstore-razorpay-backend.onrender.com';
+const String _configuredBackendBaseUrl = String.fromEnvironment(
+  'RAZORPAY_BACKEND_BASE_URL',
+  defaultValue: fallbackRazorpayBackendBaseUrl,
+);
+
+PaymentSettingsModel get currentPaymentSettings => _runtimePaymentSettings;
+
+void setRuntimePaymentSettings(PaymentSettingsModel? settings) {
+  _runtimePaymentSettings = (settings ?? const PaymentSettingsModel())
+      .mergeWith(_defaultPaymentSettings);
 }
 
-const String razorpayCurrency = String.fromEnvironment(
-  'RAZORPAY_CURRENCY',
-  defaultValue: 'INR',
-);
+String get razorpayKeyId => currentPaymentSettings.keyId.trim();
 
-const String checkoutMerchantName = String.fromEnvironment(
-  'CHECKOUT_MERCHANT_NAME',
-  defaultValue: 'Store Checkout',
-);
+String get razorpayBackendBaseUrl => currentPaymentSettings.backendBaseUrl.trim();
 
-const String checkoutDescription = String.fromEnvironment(
-  'CHECKOUT_DESCRIPTION',
-  defaultValue: 'Order payment',
-);
+String get razorpayCurrency => currentPaymentSettings.currency.trim().toUpperCase();
+
+String get checkoutMerchantName => currentPaymentSettings.merchantName.trim();
+
+String get checkoutDescription =>
+    currentPaymentSettings.checkoutDescription.trim();
 
 bool get isRazorpayConfigured => razorpayBackendBaseUrl.trim().isNotEmpty;
+bool get isRazorpayPublicKeyConfigured => razorpayKeyId.trim().isNotEmpty;
+bool get isOnlinePaymentEnabled =>
+    currentPaymentSettings.isOnlinePaymentEnabled;
+bool get isOnlinePaymentAvailable =>
+    currentPaymentSettings.isOnlinePaymentAvailable;
 
 String get razorpayOrderCreationUrl => _resolveBackendPath('/create-order');
 

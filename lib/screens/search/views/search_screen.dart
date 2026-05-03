@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shop/components/product/product_card.dart';
 import 'package:shop/constants.dart';
+import 'package:shop/core/widgets/app_loading_indicator.dart';
 import 'package:shop/models/product_model.dart';
 import 'package:shop/providers/product_provider.dart';
 import 'package:shop/route/route_constants.dart';
@@ -74,7 +75,7 @@ class _SearchScreenState extends State<SearchScreen> {
           else if (_isSearching)
             const SliverFillRemaining(
               hasScrollBody: false,
-              child: Center(child: CircularProgressIndicator()),
+              child: AppLoadingIndicator(message: 'Searching products...'),
             )
           else if (_results.isEmpty)
             const SliverToBoxAdapter(

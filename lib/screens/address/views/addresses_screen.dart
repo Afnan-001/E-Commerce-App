@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:shop/constants.dart';
+import 'package:shop/core/widgets/app_loading_indicator.dart';
 import 'package:shop/models/address_model.dart';
 import 'package:shop/providers/address_provider.dart';
 import 'package:shop/providers/auth_provider.dart';
@@ -42,7 +43,7 @@ class AddressesScreen extends StatelessWidget {
               ),
             )
           : addressProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const AppLoadingIndicator(message: 'Loading saved addresses...')
           : addressProvider.errorMessage != null &&
                 addressProvider.addresses.isEmpty
           ? _AddressErrorView(

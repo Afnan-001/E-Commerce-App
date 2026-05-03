@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'package:shop/constants.dart';
 import 'package:shop/models/order_model.dart';
+import 'package:shop/core/widgets/app_loading_indicator.dart';
 import 'package:shop/providers/auth_provider.dart';
 import 'package:shop/providers/order_provider.dart';
 
@@ -20,7 +21,7 @@ class OrdersScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('My Orders')),
       body: orderProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const AppLoadingIndicator(message: 'Loading your orders...')
           : orderProvider.errorMessage != null
           ? Center(
               child: Padding(

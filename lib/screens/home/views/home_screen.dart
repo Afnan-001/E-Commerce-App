@@ -6,6 +6,7 @@ import 'package:shop/components/home_banner_card.dart';
 import 'package:shop/components/network_image_with_loader.dart';
 import 'package:shop/components/product/product_card.dart';
 import 'package:shop/constants.dart';
+import 'package:shop/core/widgets/app_loading_indicator.dart';
 import 'package:shop/core/widgets/section_empty_state.dart';
 import 'package:shop/models/category_model.dart';
 import 'package:shop/models/coupon_model.dart';
@@ -50,6 +51,15 @@ class _HomeScreenState extends State<HomeScreen> {
     final banners = productProvider.homeBanners;
     final homeSections = productProvider.homeSections;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isInitialLoading =
+        productProvider.isLoading &&
+        categories.isEmpty &&
+        flashSaleProducts.isEmpty &&
+        bestSellers.isEmpty &&
+        newArrivals.isEmpty &&
+        allProducts.isEmpty &&
+        banners.isEmpty &&
+        homeSections.isEmpty;
 
     _syncBannerAutoplay(banners.length);
 
@@ -68,7 +78,9 @@ class _HomeScreenState extends State<HomeScreen> {
               )
             : null,
       ),
-      child: CustomScrollView(
+      child: isInitialLoading
+          ? const AppLoadingIndicator(message: 'Loading your pet store...')
+          : CustomScrollView(
         slivers: <Widget>[
           // ── Search + Cart ──────────────────────────────────────────────
           SliverToBoxAdapter(
